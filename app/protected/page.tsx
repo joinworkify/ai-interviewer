@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { InfoIcon } from "lucide-react";
 import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
 import { Suspense } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 async function UserDetails() {
   const supabase = await createClient();
@@ -25,6 +27,16 @@ export default function ProtectedPage() {
           This is a protected page that you can only see as an authenticated
           user
         </div>
+      </div>
+      <div className="flex flex-col gap-2 items-start">
+        <h2 className="font-bold text-2xl mb-2">AI interviews</h2>
+        <p className="text-sm text-muted-foreground mb-2">
+          Talk to the voice assistant to generate interview questions for a
+          role and save them to your account.
+        </p>
+        <Button asChild>
+          <Link href="/protected/interview">Create an interview</Link>
+        </Button>
       </div>
       <div className="flex flex-col gap-2 items-start">
         <h2 className="font-bold text-2xl mb-4">Your user details</h2>

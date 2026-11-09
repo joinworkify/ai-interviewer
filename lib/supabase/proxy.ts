@@ -51,7 +51,10 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !request.nextUrl.pathname.startsWith("/auth") &&
+    // Server-to-server webhook from Vapi (no browser session). It authorizes
+    // requests itself with a signed capability token; see VAPI_SETUP.md.
+    request.nextUrl.pathname !== "/api/vapi/generate-interview"
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
