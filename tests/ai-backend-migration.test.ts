@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const FILE = fileURLToPath(
-  new URL("../supabase/migrations/20261110000000_ai_backend.sql", import.meta.url),
+  new URL("../supabase/migrations/20261109000002_ai_backend.sql", import.meta.url),
 );
 
 const sql = readFileSync(FILE, "utf8")

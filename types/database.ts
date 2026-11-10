@@ -1,6 +1,6 @@
 // Hand-written to match supabase/migrations/20261109000000_create_interviews.sql
 // followed by 20261109000001_diagram_schema.sql and
-// 20261110000000_ai_backend.sql.
+// 20261109000002_ai_backend.sql.
 // Regenerate with `supabase gen types typescript --local > types/database.ts`
 // once the Supabase CLI is available.
 
