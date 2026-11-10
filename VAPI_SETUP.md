@@ -210,11 +210,17 @@ policy. It adds no insert/update/delete policies or grants for browsers
 4. Check **Table Editor → interviews**. The table should show **RLS enabled**
    and one policy ("Users can view their own interviews").
 
-**Option B: Supabase CLI** (only if your project is already linked)
+**Option B: Supabase CLI** (the CLI is a dev dependency; no global install needed)
 
 ```bash
-supabase db push
+npm run supabase:login
+npm run supabase:link -- --project-ref <your-project-ref>   # once
+npm run db:push
 ```
+
+Other helpers: `npm run supabase:start` / `supabase:stop` / `db:reset` run a
+local Docker stack and re-apply the migrations, `npm run db:new -- <name>`
+creates a migration, and `npm run check:env` verifies your env vars (names only).
 
 Check RLS with the Supabase **Security Advisor** (Dashboard → Advisors). It
 should not flag `public.interviews`.
