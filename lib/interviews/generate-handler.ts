@@ -255,10 +255,6 @@ export async function handleGenerateInterview(
     const { id } = await store.insert({
       user_id: userId,
       generation_id: generationId,
-      role: input.role,
-      level: input.level,
-      type: input.type,
-      techstack: input.techstack,
       questions,
     });
     return json(201, {

@@ -7,11 +7,8 @@ import { MIN_SIGNING_SECRET_LENGTH } from "@/lib/interviews/capability";
 
 interface SavedInterview {
   id: string;
-  role: string;
-  level: string;
-  type: string;
-  techstack: string[];
   questions: string[];
+  duration_minutes: number | null;
   created_at: string;
 }
 
@@ -85,7 +82,7 @@ async function InterviewContent() {
 
   const { data: interviews, error: listError } = await supabase
     .from("interviews")
-    .select("id, role, level, type, techstack, questions, created_at")
+    .select("id, questions, duration_minutes, created_at")
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -135,13 +132,13 @@ async function InterviewContent() {
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {(interviews as SavedInterview[]).map((iv) => (
+            {(interviews satisfies SavedInterview[]).map((iv) => (
               <li key={iv.id} className="rounded-md border p-4 text-sm">
                 <p className="font-semibold">
-                  {iv.role} · {iv.level} · {iv.type}
+                  {iv.questions.length} questions
+                  {iv.duration_minutes ? ` · ${iv.duration_minutes} min` : ""}
                 </p>
                 <p className="text-muted-foreground text-xs mb-2">
-                  {iv.techstack.join(", ")} ·{" "}
                   {new Date(iv.created_at).toLocaleString()}
                 </p>
                 <ol className="list-decimal pl-5 flex flex-col gap-1">

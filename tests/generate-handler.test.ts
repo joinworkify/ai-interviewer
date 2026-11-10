@@ -119,9 +119,6 @@ describe("handleGenerateInterview", () => {
     expect(store.rows[0]).toMatchObject({
       user_id: USER,
       generation_id: payload.jti,
-      role: "Frontend Developer",
-      type: "technical",
-      techstack: ["React", "TypeScript"],
       questions: ["Q one?", "Q two?"],
     });
   });

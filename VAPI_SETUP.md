@@ -47,11 +47,12 @@ Security properties:
   signed token when the tool calls back. Requests with a `userid`, `userId` or
   `user_id` field are rejected.
 - Tokens are **short-lived** (15 min), and each one can produce **at most one
-  saved interview**. The token's `jti` is stored in
-  `interviews.generation_id UNIQUE`, so the database rejects a second insert
-  for the same token, and the endpoint returns `409`.
+  saved interview**. The token's `jti` is the primary key of
+  `capability_uses`. The interview and that row are written together by the
+  `save_generated_interview` SQL function in one transaction, so the database
+  rejects a second save for the same token, and the endpoint returns `409`.
   - A token replayed **after** a successful save is rejected before the LLM is
-    called. The endpoint looks up `generation_id` first.
+    called. The endpoint looks up the `jti` in `capability_uses` first.
   - **Limitation:** this is not a lock. If several requests with the same
     token arrive **at the same time**, they can all pass the lookup before any
     of them saves. Each one then calls the LLM, and you pay for each call. The
@@ -67,11 +68,10 @@ Security properties:
 - Browsers can only `select` their own interviews (RLS). Nobody can insert,
   update or delete through the browser; inserts happen only in the tool
   endpoint.
-  - There is deliberately **no browser delete**. The saved row is also the
-    token's single-use record (`generation_id`), so if an owner could delete
-    it, a still-valid token could be replayed to call the LLM and save again.
-    If you later add deletion, do it server-side and keep a record of consumed
-    `generation_id`s.
+  - `capability_uses` is the token's single-use record and has **no browser
+    access at all** (RLS on, no policy, no grants), so a user cannot remove a
+    record to replay a still-valid token. Deleting an interview does not
+    delete its `capability_uses` row.
 - The token is **not** placed in the assistant's system prompt. It goes into a
   static tool parameter, so the conversation model never has to read or
   repeat it.
