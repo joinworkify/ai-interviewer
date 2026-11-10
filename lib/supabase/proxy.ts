@@ -54,7 +54,11 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/auth") &&
     // Server-to-server webhook from Vapi (no browser session). It authorizes
     // requests itself with a signed capability token; see VAPI_SETUP.md.
-    request.nextUrl.pathname !== "/api/vapi/generate-interview"
+    request.nextUrl.pathname !== "/api/vapi/generate-interview" &&
+    // JSON API that verifies Supabase claims itself and must answer
+    // signed-out callers with a structured 401, not an HTML login redirect.
+    // Exact path only; see GEMINI_LIVE_SETUP.md.
+    request.nextUrl.pathname !== "/api/gemini-live/token"
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

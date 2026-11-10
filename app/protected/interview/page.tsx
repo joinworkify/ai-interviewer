@@ -159,9 +159,14 @@ export default function InterviewPage() {
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <Link href="/protected" className="text-sm text-muted-foreground hover:underline">
-          ← Back to dashboard
-        </Link>
+        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <Link href="/protected" className="hover:underline">
+            ← Back to dashboard
+          </Link>
+          <Link href="/protected/interview/gemini" className="hover:underline">
+            Practice a live interview with Gemini →
+          </Link>
+        </div>
         <h1 className="font-bold text-2xl">Create an interview by voice</h1>
         <p className="text-sm text-muted-foreground">
           The assistant will ask for the role, level, interview type, tech

@@ -34,9 +34,16 @@ export default function ProtectedPage() {
           Talk to the voice assistant to generate interview questions for a
           role and save them to your account.
         </p>
-        <Button asChild>
-          <Link href="/protected/interview">Create an interview</Link>
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/protected/interview">Create an interview</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/protected/interview/gemini">
+              Practice interview (Gemini Live)
+            </Link>
+          </Button>
+        </div>
       </div>
       <div className="flex flex-col gap-2 items-start">
         <h2 className="font-bold text-2xl mb-4">Your user details</h2>
