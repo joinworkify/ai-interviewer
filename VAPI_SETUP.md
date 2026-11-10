@@ -46,18 +46,32 @@ Security properties:
   the verified Supabase session when the token is issued, and from the HMAC
   signed token when the tool calls back. Requests with a `userid`, `userId` or
   `user_id` field are rejected.
-- Tokens are **short-lived** (15 min) and bound to one user. Since the
-  diagram schema migration (`20261109000001`), `interviews` no longer stores the
-  token's `jti` (`generation_id`), so tokens are **not single-use**: within the
-  15-minute window a token can generate several interviews, each costing an LLM
-  call. If that matters, add a rate limit or a consumed-token record.
+- Tokens are **short-lived** (15 min), and each one can produce **at most one
+  saved interview**. The token's `jti` is the primary key of
+  `capability_uses`. The interview and that row are written together by the
+  `save_generated_interview` SQL function in one transaction, so the database
+  rejects a second save for the same token, and the endpoint returns `409`.
+  - A token replayed **after** a successful save is rejected before the LLM is
+    called. The endpoint looks up the `jti` in `capability_uses` first.
+  - **Limitation:** this is not a lock. If several requests with the same
+    token arrive **at the same time**, they can all pass the lookup before any
+    of them saves. Each one then calls the LLM, and you pay for each call. The
+    unique constraint still means only one interview is saved; the others get
+    `409`. So the guarantee is "no duplicate saved interviews", not "exactly
+    one LLM call". The 15-minute expiry and the token being bound to one user
+    limit how far this can be abused. If it matters to you, add a rate limit
+    or an atomic claim step (for example, inserting a pending row before
+    calling the LLM). Neither is implemented here.
 - `VAPI_TOOL_SIGNING_SECRET`, `SUPABASE_SECRET_KEY` and `LLM_API_KEY` are
   server-only. Only `NEXT_PUBLIC_VAPI_PUBLIC_KEY` and the assistant ID reach
   the browser.
 - Browsers can only `select` their own interviews (RLS). Nobody can insert,
   update or delete through the browser; inserts happen only in the tool
   endpoint.
-  - There is no browser delete; if you add one, do it server-side.
+  - `capability_uses` is the token's single-use record and has **no browser
+    access at all** (RLS on, no policy, no grants), so a user cannot remove a
+    record to replay a still-valid token. Deleting an interview does not
+    delete its `capability_uses` row.
 - The token is **not** placed in the assistant's system prompt. It goes into a
   static tool parameter, so the conversation model never has to read or
   repeat it.
@@ -196,17 +210,11 @@ policy. It adds no insert/update/delete policies or grants for browsers
 4. Check **Table Editor → interviews**. The table should show **RLS enabled**
    and one policy ("Users can view their own interviews").
 
-**Option B: Supabase CLI** (the CLI is a dev dependency; no global install needed)
+**Option B: Supabase CLI** (only if your project is already linked)
 
 ```bash
-npm run supabase:login
-npm run supabase:link -- --project-ref <your-project-ref>   # once
-npm run db:push
+supabase db push
 ```
-
-Other helpers: `npm run supabase:start` / `supabase:stop` / `db:reset` run a
-local Docker stack and re-apply the migrations, `npm run db:new -- <name>`
-creates a migration, and `npm run check:env` verifies your env vars (names only).
 
 Check RLS with the Supabase **Security Advisor** (Dashboard → Advisors). It
 should not flag `public.interviews`.
@@ -351,6 +359,7 @@ excluded from retries. Set `maxRetries` to `0` if you want no retries at all.
 | 201 | — | `{ "success": true, "interviewId", "questionCount", "message" }` |
 | 400 | `invalid_request` / `invalid_json` | Bad fields. `details[]` lists the problems. |
 | 401 | `unauthorized` | Token missing, invalid or expired. |
+| 409 | `already_generated` | This call's token was already used successfully. |
 | 413 / 415 | `payload_too_large` / `unsupported_media_type` | Body over 8 KB, or not JSON. |
 | 502 | `llm_auth_failed` / `llm_failed` | The LLM provider rejected the key, returned an error, or returned unusable output. |
 | 503 | `server_misconfigured` / `llm_rate_limited` | Missing env vars (`missing[]`), or the provider is rate-limiting. |
@@ -410,7 +419,8 @@ Rules:
   then use the end call tool.
 - If the tool result has "success": false, briefly tell the user the "message"
   from the result. If error is "invalid_request", fix the listed problem with
-  the user and call the tool again. For any other error, apologize, suggest
+  the user and call the tool again. For "already_generated", tell the user it
+  is already saved and end the call. For any other error, apologize, suggest
   trying again later from the app, and end the call.
 - Stay on topic; politely decline unrelated requests.
 ```

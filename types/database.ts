@@ -1,5 +1,6 @@
 // Hand-written to match supabase/migrations/20261109000000_create_interviews.sql
-// followed by 20261109000001_diagram_schema.sql.
+// followed by 20261109000001_diagram_schema.sql and
+// 20261109000002_ai_backend.sql.
 // Regenerate with `supabase gen types typescript --local > types/database.ts`
 // once the Supabase CLI is available.
 
@@ -193,9 +194,82 @@ export type Database = {
         };
         Relationships: [];
       };
+      capability_uses: {
+        Row: {
+          generation_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          generation_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          generation_id?: string;
+          user_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capability_uses_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      ai_usage: {
+        Row: {
+          id: string;
+          user_id: string;
+          feature: string;
+          model: string;
+          prompt_tokens: number | null;
+          completion_tokens: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          feature: string;
+          model: string;
+          prompt_tokens?: number | null;
+          completion_tokens?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          feature?: string;
+          model?: string;
+          prompt_tokens?: number | null;
+          completion_tokens?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      save_generated_interview: {
+        Args: {
+          p_generation_id: string;
+          p_user_id: string;
+          p_questions: string[];
+        };
+        Returns: string;
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

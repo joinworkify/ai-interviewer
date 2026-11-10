@@ -6,6 +6,7 @@ import {
 import { generateQuestions, LlmError, readLlmConfig } from "./llm";
 import {
   createSupabaseInterviewStore,
+  DuplicateGenerationError,
   readStoreConfig,
   type InterviewStore,
 } from "./store";
@@ -18,7 +19,7 @@ import { validateGenerateInterviewBody } from "./validation";
  *
  * Check order is intentional:
  *   content-type/size -> JSON -> capability signature/expiry -> field
- *   validation -> server config -> LLM -> insert
+ *   validation -> server config -> replay check -> LLM -> insert
  * so callers without a valid capability learn nothing about server config.
  */
 
@@ -38,6 +39,7 @@ type ErrorCode =
   | "invalid_json"
   | "invalid_request"
   | "unauthorized"
+  | "already_generated"
   | "server_misconfigured"
   | "llm_auth_failed"
   | "llm_rate_limited"
@@ -163,7 +165,7 @@ export async function handleGenerateInterview(
   if (!verified.ok) {
     return fail(401, "unauthorized", CAPABILITY_MESSAGES[verified.code]);
   }
-  const { sub: userId } = verified.payload;
+  const { sub: userId, jti: generationId } = verified.payload;
 
   // 2. Strict field validation.
   const validation = validateGenerateInterviewBody(record);
@@ -197,7 +199,20 @@ export async function handleGenerateInterview(
     ? deps.createStore(env)
     : createSupabaseInterviewStore(storeConfig.url, storeConfig.secretKey);
 
-  // 4. Generate questions with the server-side LLM.
+  // 4. Single-use: skip the paid LLM call if this capability already succeeded.
+  try {
+    if (await store.generationExists(generationId)) {
+      return fail(
+        409,
+        "already_generated",
+        "An interview was already generated in this session. Tell the user it is saved and end the call.",
+      );
+    }
+  } catch {
+    return fail(500, "storage_failed", "Could not access interview storage.");
+  }
+
+  // 5. Generate questions with the server-side LLM.
   let questions: string[];
   try {
     questions = await generateQuestions(input, llm.config, fetchImpl);
@@ -235,10 +250,11 @@ export async function handleGenerateInterview(
     return fail(502, "llm_failed", "The question generator failed.");
   }
 
-  // 5. Persist, owned by the verified user.
+  // 6. Persist, owned by the verified user.
   try {
     const { id } = await store.insert({
       user_id: userId,
+      generation_id: generationId,
       questions,
     });
     return json(201, {
@@ -247,7 +263,14 @@ export async function handleGenerateInterview(
       questionCount: questions.length,
       message: `Saved an interview with ${questions.length} questions.`,
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof DuplicateGenerationError) {
+      return fail(
+        409,
+        "already_generated",
+        "An interview was already generated in this session.",
+      );
+    }
     return fail(500, "storage_failed", "Could not save the interview.");
   }
 }

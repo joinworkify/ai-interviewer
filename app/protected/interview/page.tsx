@@ -132,7 +132,7 @@ async function InterviewContent() {
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {(interviews as SavedInterview[]).map((iv) => (
+            {(interviews satisfies SavedInterview[]).map((iv) => (
               <li key={iv.id} className="rounded-md border p-4 text-sm">
                 <p className="font-semibold">
                   {iv.questions.length} questions
