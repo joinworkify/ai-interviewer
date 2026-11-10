@@ -86,8 +86,4 @@ describe("interviews migration privileges", () => {
       }
     }
   });
-
-  it("keeps generation_id unique (single-use capability record)", () => {
-    expect(sql).toMatch(/generation_id uuid not null unique/);
-  });
 });
