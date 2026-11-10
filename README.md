@@ -5,7 +5,7 @@ Generate interview questions by talking to a voice assistant. Tell it the role, 
 ## How it works
 
 1. A signed-in user opens `/protected/interview` and starts a call with a [Vapi](https://vapi.ai) voice assistant.
-2. The assistant collects the details and calls `POST /api/vapi/generate-interview` with a short-lived, single-use signed token.
+2. The assistant collects the details and calls `POST /api/vapi/generate-interview` with a short-lived signed token.
 3. The server verifies the token, generates the questions with an OpenAI-compatible LLM (Gemini by default), and saves them to Supabase. Users can only read their own interviews (RLS).
 
 Full diagram: [VAPI_SETUP.md](VAPI_SETUP.md#how-it-works).

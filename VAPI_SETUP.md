@@ -46,32 +46,18 @@ Security properties:
   the verified Supabase session when the token is issued, and from the HMAC
   signed token when the tool calls back. Requests with a `userid`, `userId` or
   `user_id` field are rejected.
-- Tokens are **short-lived** (15 min), and each one can produce **at most one
-  saved interview**. The token's `jti` is stored in
-  `interviews.generation_id UNIQUE`, so the database rejects a second insert
-  for the same token, and the endpoint returns `409`.
-  - A token replayed **after** a successful save is rejected before the LLM is
-    called. The endpoint looks up `generation_id` first.
-  - **Limitation:** this is not a lock. If several requests with the same
-    token arrive **at the same time**, they can all pass the lookup before any
-    of them saves. Each one then calls the LLM, and you pay for each call. The
-    unique constraint still means only one interview is saved; the others get
-    `409`. So the guarantee is "no duplicate saved interviews", not "exactly
-    one LLM call". The 15-minute expiry and the token being bound to one user
-    limit how far this can be abused. If it matters to you, add a rate limit
-    or an atomic claim step (for example, inserting a pending row before
-    calling the LLM). Neither is implemented here.
+- Tokens are **short-lived** (15 min) and bound to one user. Since the
+  diagram schema migration (`20261109000001`), `interviews` no longer stores the
+  token's `jti` (`generation_id`), so tokens are **not single-use**: within the
+  15-minute window a token can generate several interviews, each costing an LLM
+  call. If that matters, add a rate limit or a consumed-token record.
 - `VAPI_TOOL_SIGNING_SECRET`, `SUPABASE_SECRET_KEY` and `LLM_API_KEY` are
   server-only. Only `NEXT_PUBLIC_VAPI_PUBLIC_KEY` and the assistant ID reach
   the browser.
 - Browsers can only `select` their own interviews (RLS). Nobody can insert,
   update or delete through the browser; inserts happen only in the tool
   endpoint.
-  - There is deliberately **no browser delete**. The saved row is also the
-    token's single-use record (`generation_id`), so if an owner could delete
-    it, a still-valid token could be replayed to call the LLM and save again.
-    If you later add deletion, do it server-side and keep a record of consumed
-    `generation_id`s.
+  - There is no browser delete; if you add one, do it server-side.
 - The token is **not** placed in the assistant's system prompt. It goes into a
   static tool parameter, so the conversation model never has to read or
   repeat it.
@@ -365,7 +351,6 @@ excluded from retries. Set `maxRetries` to `0` if you want no retries at all.
 | 201 | — | `{ "success": true, "interviewId", "questionCount", "message" }` |
 | 400 | `invalid_request` / `invalid_json` | Bad fields. `details[]` lists the problems. |
 | 401 | `unauthorized` | Token missing, invalid or expired. |
-| 409 | `already_generated` | This call's token was already used successfully. |
 | 413 / 415 | `payload_too_large` / `unsupported_media_type` | Body over 8 KB, or not JSON. |
 | 502 | `llm_auth_failed` / `llm_failed` | The LLM provider rejected the key, returned an error, or returned unusable output. |
 | 503 | `server_misconfigured` / `llm_rate_limited` | Missing env vars (`missing[]`), or the provider is rate-limiting. |
@@ -425,8 +410,7 @@ Rules:
   then use the end call tool.
 - If the tool result has "success": false, briefly tell the user the "message"
   from the result. If error is "invalid_request", fix the listed problem with
-  the user and call the tool again. For "already_generated", tell the user it
-  is already saved and end the call. For any other error, apologize, suggest
+  the user and call the tool again. For any other error, apologize, suggest
   trying again later from the app, and end the call.
 - Stay on topic; politely decline unrelated requests.
 ```

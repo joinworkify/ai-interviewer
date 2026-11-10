@@ -1,5 +1,4 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { InterviewType } from "./validation";
 
 /**
  * Persistence for generated interviews.
@@ -9,28 +8,21 @@ import type { InterviewType } from "./validation";
  * key. That key bypasses RLS, so this module is deliberately narrow:
  *  - it only touches `public.interviews`;
  *  - `user_id` always comes from a verified capability token;
- *  - `generation_id` (the token's jti) is UNIQUE, so one capability can
- *    create at most one interview.
+ *  - the schema no longer records a per-capability row, so replay protection
+ *    relies on the capability token's short expiry.
  * Users can only read (SELECT) their own rows through RLS with their normal
- * session. There is deliberately no browser DELETE: the row is the
- * capability's single-use record, so deleting it would allow replay.
+ * session.
  */
 
 export interface NewInterviewRow {
   user_id: string;
-  generation_id: string;
-  role: string;
-  level: string;
-  type: InterviewType;
-  techstack: string[];
   questions: string[];
+  duration_minutes?: number | null;
 }
 
-export class DuplicateGenerationError extends Error {}
 export class StoreError extends Error {}
 
 export interface InterviewStore {
-  generationExists(generationId: string): Promise<boolean>;
   insert(row: NewInterviewRow): Promise<{ id: string }>;
 }
 
@@ -50,8 +42,6 @@ export function readStoreConfig(
   return { ok: true, url, secretKey };
 }
 
-const PG_UNIQUE_VIOLATION = "23505";
-
 export function createSupabaseInterviewStore(
   url: string,
   secretKey: string,
@@ -62,19 +52,6 @@ export function createSupabaseInterviewStore(
   });
 
   return {
-    async generationExists(generationId) {
-      const { data, error } = await client
-        .from("interviews")
-        .select("id")
-        .eq("generation_id", generationId)
-        .maybeSingle();
-      if (error) {
-        console.error("[generate-interview] lookup failed:", error.message);
-        throw new StoreError(error.message);
-      }
-      return data !== null;
-    },
-
     async insert(row) {
       const { data, error } = await client
         .from("interviews")
@@ -82,9 +59,6 @@ export function createSupabaseInterviewStore(
         .select("id")
         .single();
       if (error) {
-        if (error.code === PG_UNIQUE_VIOLATION) {
-          throw new DuplicateGenerationError(error.message);
-        }
         console.error("[generate-interview] insert failed:", error.message);
         throw new StoreError(error.message);
       }
