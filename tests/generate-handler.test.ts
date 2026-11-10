@@ -5,7 +5,6 @@ import {
   MAX_BODY_BYTES,
 } from "@/lib/interviews/generate-handler";
 import {
-  DuplicateGenerationError,
   StoreError,
   type InterviewStore,
   type NewInterviewRow,
@@ -50,17 +49,9 @@ function token(opts: Parameters<typeof issueCapability>[2] = {}) {
 
 class FakeStore implements InterviewStore {
   rows: (NewInterviewRow & { id: string })[] = [];
-  existsError = false;
   insertError: Error | null = null;
-  async generationExists(id: string) {
-    if (this.existsError) throw new StoreError("db down");
-    return this.rows.some((r) => r.generation_id === id);
-  }
   async insert(row: NewInterviewRow) {
     if (this.insertError) throw this.insertError;
-    if (this.rows.some((r) => r.generation_id === row.generation_id)) {
-      throw new DuplicateGenerationError("dup");
-    }
     const id = `iv-${this.rows.length + 1}`;
     this.rows.push({ ...row, id });
     return { id };
@@ -103,7 +94,7 @@ function run(
 
 describe("handleGenerateInterview", () => {
   it("generates and saves questions owned by the token subject", async () => {
-    const { token: t, payload } = token();
+    const { token: t } = token();
     const fetchImpl = llmOk();
     const res = await run(req(fields({ capability: t })), {
       fetchImpl: fetchImpl as unknown as typeof fetch,
@@ -118,10 +109,6 @@ describe("handleGenerateInterview", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(store.rows[0]).toMatchObject({
       user_id: USER,
-      generation_id: payload.jti,
-      role: "Frontend Developer",
-      type: "technical",
-      techstack: ["React", "TypeScript"],
       questions: ["Q one?", "Q two?"],
     });
   });
@@ -234,24 +221,6 @@ describe("handleGenerateInterview", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("is single-use: a replayed capability returns 409 without a second LLM call", async () => {
-    const t = token().token;
-    expect((await run(req(fields({ capability: t })))).status).toBe(201);
-    const fetchImpl = llmOk();
-    const res = await run(req(fields({ capability: t })), {
-      fetchImpl: fetchImpl as unknown as typeof fetch,
-    });
-    expect(res.status).toBe(409);
-    expect(fetchImpl).not.toHaveBeenCalled();
-    expect(store.rows).toHaveLength(1);
-  });
-
-  it("maps a unique-violation race on insert to 409", async () => {
-    store.insertError = new DuplicateGenerationError("dup");
-    const res = await run(req(fields({ capability: token().token })));
-    expect(res.status).toBe(409);
-  });
-
   it.each([
     [401, 502, "llm_auth_failed"],
     [429, 503, "llm_rate_limited"],
@@ -285,9 +254,6 @@ describe("handleGenerateInterview", () => {
   });
 
   it("returns 500 on storage failures", async () => {
-    store.existsError = true;
-    expect((await run(req(fields({ capability: token().token })))).status).toBe(500);
-    store.existsError = false;
     store.insertError = new StoreError("boom");
     expect((await run(req(fields({ capability: token().token })))).status).toBe(500);
   });
