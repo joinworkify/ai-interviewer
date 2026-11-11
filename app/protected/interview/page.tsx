@@ -16,7 +16,7 @@ function SupabaseSetupIncomplete({ missing }: { missing: string[] }) {
   return (
     <div
       role="alert"
-      className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-4 text-sm flex flex-col gap-2"
+      className="flex flex-col gap-2 rounded-2xl border border-yellow-500/30 bg-yellow-500/[0.07] p-5 text-sm"
     >
       <p className="font-semibold">Setup incomplete: Supabase is not configured</p>
       <p>
@@ -38,8 +38,6 @@ function SupabaseSetupIncomplete({ missing }: { missing: string[] }) {
 }
 
 async function InterviewContent() {
-  // Check before createClient(): the Supabase client throws without these.
-  // Literal access matches what createClient() sees (inlined at build time).
   const missingSupabase = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
     [
@@ -87,9 +85,9 @@ async function InterviewContent() {
     .limit(10);
 
   return (
-    <>
+    <div className="flex flex-col gap-8">
       {missing.length > 0 && (
-        <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-4 text-sm flex flex-col gap-2">
+        <div className="flex flex-col gap-2 rounded-2xl border border-yellow-500/30 bg-yellow-500/[0.07] p-5 text-sm">
           <p className="font-semibold">Setup incomplete</p>
           <p>
             Set these environment variables (see <code>.env.example</code> and{" "}
@@ -109,39 +107,47 @@ async function InterviewContent() {
       )}
 
       {canCall ? (
-        <InterviewGeneratorCall publicKey={publicKey} assistantId={assistantId} />
+        <div className="rounded-3xl border border-foreground/10 bg-gradient-to-b from-foreground/[0.07] to-foreground/[0.02] p-6 sm:p-8">
+          <InterviewGeneratorCall publicKey={publicKey} assistantId={assistantId} />
+        </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
+        <p className="rounded-3xl border border-foreground/10 bg-foreground/[0.03] p-6 text-sm text-muted-foreground">
           The voice call is disabled until the Vapi public key and Generator
           Assistant ID are configured.
         </p>
       )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="font-bold text-xl">Your generated interviews</h2>
+      <section className="flex flex-col gap-4">
+        <h2 className="text-xl font-bold">Your generated interviews</h2>
         {listError ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p
+            role="alert"
+            className="rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive"
+          >
             Could not load interviews: {listError.message}
             {(listError.code === "PGRST205" || listError.code === "42P01") &&
               " — the interviews table is missing. Run the SQL migration in supabase/migrations (see VAPI_SETUP.md)."}
           </p>
         ) : !interviews || interviews.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="rounded-3xl border border-dashed border-foreground/15 p-6 text-sm text-muted-foreground">
             No interviews yet. Start a call and tell the assistant what role
             you are preparing for.
           </p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-4">
             {(interviews satisfies SavedInterview[]).map((iv) => (
-              <li key={iv.id} className="rounded-md border p-4 text-sm">
-                <p className="font-semibold">
+              <li
+                key={iv.id}
+                className="rounded-3xl border border-foreground/10 bg-foreground/[0.03] p-6 text-sm"
+              >
+                <p className="text-base font-semibold">
                   {iv.questions.length} questions
                   {iv.duration_minutes ? ` · ${iv.duration_minutes} min` : ""}
                 </p>
-                <p className="text-muted-foreground text-xs mb-2">
+                <p className="mb-4 text-xs text-muted-foreground">
                   {new Date(iv.created_at).toLocaleString()}
                 </p>
-                <ol className="list-decimal pl-5 flex flex-col gap-1">
+                <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-foreground/80">
                   {iv.questions.map((q, i) => (
                     <li key={i}>{q}</li>
                   ))}
@@ -151,29 +157,41 @@ async function InterviewContent() {
           </ul>
         )}
       </section>
-    </>
+    </div>
   );
 }
 
 export default function InterviewPage() {
   return (
-    <div className="flex-1 w-full flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <Link href="/protected" className="hover:underline">
+    <div className="flex w-full flex-1 flex-col gap-8">
+      <header className="relative flex flex-col gap-5 overflow-hidden rounded-3xl border border-foreground/10 bg-foreground/[0.03] p-6 sm:p-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl"
+        />
+        <nav className="relative flex flex-wrap gap-3 text-sm">
+          <Link
+            href="/protected"
+            className="rounded-full border border-foreground/10 bg-background/60 px-4 py-1.5 text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
+          >
             ← Back to dashboard
           </Link>
-          <Link href="/protected/interview/gemini" className="hover:underline">
+          <Link
+            href="/protected/interview/gemini"
+            className="rounded-full border border-foreground/10 bg-background/60 px-4 py-1.5 text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
+          >
             Practice a live interview with Gemini →
           </Link>
-        </div>
-        <h1 className="font-bold text-2xl">Create an interview by voice</h1>
-        <p className="text-sm text-muted-foreground">
+        </nav>
+        <h1 className="relative text-3xl font-bold tracking-tight sm:text-4xl">
+          Create an interview by voice
+        </h1>
+        <p className="relative max-w-2xl text-base leading-relaxed text-muted-foreground">
           The assistant will ask for the role, level, interview type, tech
           stack and number of questions, then generate and save the questions
           to your account.
         </p>
-      </div>
+      </header>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
         <InterviewContent />
       </Suspense>

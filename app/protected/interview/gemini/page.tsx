@@ -9,7 +9,7 @@ function SetupIncomplete({ items, title }: { items: string[]; title: string }) {
   return (
     <div
       role="alert"
-      className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-4 text-sm flex flex-col gap-2"
+      className="flex flex-col gap-2 rounded-2xl border border-yellow-500/30 bg-yellow-500/[0.07] p-5 text-sm"
     >
       <p className="font-semibold">{title}</p>
       <p>
@@ -55,7 +55,7 @@ async function GeminiContent() {
   // Read at request time; only variable names / a boolean reach the client.
   const config = readGeminiLiveConfig(process.env);
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {!config.ok && (
         <SetupIncomplete
           title="Setup incomplete: Gemini Live is not configured"
@@ -63,29 +63,41 @@ async function GeminiContent() {
         />
       )}
       <GeminiLiveInterview configured={config.ok} />
-    </>
+    </div>
   );
 }
 
 export default function GeminiInterviewPage() {
   return (
-    <div className="flex-1 w-full flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <Link href="/protected" className="hover:underline">
+    <div className="flex w-full flex-1 flex-col gap-8">
+      <header className="relative flex flex-col gap-5 overflow-hidden rounded-3xl border border-foreground/10 bg-foreground/[0.03] p-6 sm:p-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl"
+        />
+        <nav className="relative flex flex-wrap gap-3 text-sm">
+          <Link
+            href="/protected"
+            className="rounded-full border border-foreground/10 bg-background/60 px-4 py-1.5 text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
+          >
             ← Back to dashboard
           </Link>
-          <Link href="/protected/interview" className="hover:underline">
+          <Link
+            href="/protected/interview"
+            className="rounded-full border border-foreground/10 bg-background/60 px-4 py-1.5 text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
+          >
             Vapi interview generator
           </Link>
-        </div>
-        <h1 className="font-bold text-2xl">Practice voice interview (Gemini Live)</h1>
-        <p className="text-sm text-muted-foreground">
+        </nav>
+        <h1 className="relative text-3xl font-bold tracking-tight sm:text-4xl">
+          Practice voice interview (Gemini Live)
+        </h1>
+        <p className="relative max-w-2xl text-base leading-relaxed text-muted-foreground">
           Enter the role, level and tech stack, then press Start. A Gemini Live
           interviewer asks one question at a time by voice for up to 5 minutes.
           Say &quot;stop&quot; or &quot;bye&quot;, or press End, to finish.
         </p>
-      </div>
+      </header>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
         <GeminiContent />
       </Suspense>
