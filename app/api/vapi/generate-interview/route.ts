@@ -1,4 +1,5 @@
 import { handleGenerateInterview } from "@/lib/interviews/generate-handler";
+import { describeError } from "@/lib/log/safe-error";
 
 /**
  * Called by the Vapi "API Request" tool on the Generator Assistant, not by
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
   try {
     return await handleGenerateInterview(request, { env: process.env });
   } catch (err) {
-    console.error("[generate-interview] unhandled error", err);
+    console.error("[generate-interview] unhandled error", describeError(err));
     return Response.json(
       { success: false, error: "internal_error", message: "Internal error." },
       { status: 500, headers: { "cache-control": "no-store" } },

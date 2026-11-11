@@ -13,7 +13,6 @@
 
 export const DEFAULT_LLM_BASE_URL = "https://api.openai.com/v1";
 export const DEFAULT_LLM_TIMEOUT_MS = 25_000;
-const MAX_UPSTREAM_ERROR_LOG = 500;
 const MAX_RETRY_AFTER_MS = 5_000;
 
 export interface LlmConfig {
@@ -164,22 +163,16 @@ async function attemptOnce(
   }
 
   if (!response.ok) {
-    let detail = "";
-    try {
-      detail = (await response.text()).slice(0, MAX_UPSTREAM_ERROR_LOG);
-    } catch {
-      // ignore
-    }
     const kind: LlmErrorKind =
       response.status === 401 || response.status === 403
         ? "auth"
         : response.status === 429
           ? "rate_limited"
           : "upstream";
-    // Upstream detail is for server logs only; callers get a generic message.
-    console.error(
-      `[${logTag}] LLM provider returned ${response.status}: ${detail}`,
-    );
+    // Status only: provider error bodies can echo the prompt (transcript) or
+    // key fragments, so they are never read or logged. Release the connection.
+    response.body?.cancel().catch(() => {});
+    console.error(`[${logTag}] LLM provider returned ${response.status}`);
     const retryAfterSec = Number(response.headers.get("retry-after"));
     throw new LlmError(
       kind,

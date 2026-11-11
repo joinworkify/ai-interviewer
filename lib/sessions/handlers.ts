@@ -35,6 +35,7 @@ import {
   validateFeedbackBody,
   validateStartSessionBody,
 } from "./validation";
+import { describeError } from "@/lib/log/safe-error";
 
 /**
  * Handlers for the authenticated session endpoints. Framework-agnostic
@@ -346,7 +347,7 @@ export async function handleSubmitFeedback(
       );
     }
   } catch (err) {
-    console.error("[sessions] quota check failed", err);
+    console.error("[sessions] quota check failed", describeError(err));
     return storageFailed();
   }
 
@@ -371,7 +372,7 @@ export async function handleSubmitFeedback(
       const d = describeLlmError(err);
       return fail(d.status, d.code, d.message);
     }
-    console.error("[sessions] unexpected LLM error", err);
+    console.error("[sessions] unexpected LLM error", describeError(err));
     return fail(502, "llm_failed", "The AI provider failed.");
   }
   await recordUsage(deps.usage, userId, spent);
@@ -393,7 +394,7 @@ export async function handleSubmitFeedback(
     try {
       await deps.store.completeSession(session.id, new Date(now()).toISOString());
     } catch (err) {
-      console.error("[sessions] could not mark session completed", err);
+      console.error("[sessions] could not mark session completed", describeError(err));
     }
     return jsonResponse(201, {
       success: true,
@@ -427,7 +428,7 @@ async function recordUsage(
   );
   for (const r of results) {
     if (r.status === "rejected") {
-      console.error("[sessions] failed to record AI usage", r.reason);
+      console.error("[sessions] failed to record AI usage", describeError(r.reason));
     }
   }
 }
