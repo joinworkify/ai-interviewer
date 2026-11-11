@@ -58,7 +58,7 @@ function role(id: string, title: string, payRate: string, skills: string[]): Rol
   };
 }
 
-/** Fixture roles from the wireframe. */
+/** Fixture roles from the wireframe. Same rows as supabase/seed.sql (public.roles), kept in sync by tests. */
 export const FIXTURE_ROLES: Role[] = [
   role("software-engineer", "Software Engineer", "$10~$15/Hour", ["Python", "Java", "C++", "TypeScript"]),
   role("data-annotation-generalist", "Generalist for Data Annotation", "$21~$35/Hour", ["Annotation", "English"]),
