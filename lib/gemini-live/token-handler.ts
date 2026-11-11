@@ -4,6 +4,7 @@ import { MAX_SESSION_SECONDS, validateLiveInterviewBody } from "./interview-deta
 import { checkSameOrigin } from "./origin";
 import { buildEphemeralTokenConfig } from "./prompt";
 import type { SlidingWindowLimiter } from "./rate-limit";
+import type { SessionLinkLookup } from "./session-link";
 
 /**
  * `POST /api/gemini-live/token` — mints a one-use Gemini Live ephemeral token
@@ -35,6 +36,11 @@ export interface LiveTokenDeps {
     config: CreateAuthTokenConfig,
   ) => Promise<{ name?: string }>;
   limiter: SlidingWindowLimiter;
+  /**
+   * Resolves `sessionId` to the user's own interview session. Required to
+   * accept a sessionId; without it such requests are refused.
+   */
+  lookupSession?: SessionLinkLookup;
   now?: () => number;
   timeoutMs?: number;
 }
@@ -151,6 +157,30 @@ export async function handleLiveTokenRequest(
     });
   }
 
+  // 4b. Optional link to a stored interview: ownership first, then its
+  //     questions go into the instruction. Not-found and not-owned look alike.
+  let questions: string[] | undefined;
+  const sessionId = validation.data.sessionId;
+  if (sessionId) {
+    if (!deps.lookupSession) {
+      return fail(400, "invalid_request", "Linking a session is not available.");
+    }
+    let linked;
+    try {
+      linked = await deps.lookupSession(auth.userId, sessionId);
+    } catch {
+      console.error("[gemini-live-token] session lookup failed");
+      return fail(500, "storage_failed", "Could not load the interview session.");
+    }
+    if (linked.kind === "not_found") {
+      return fail(404, "not_found", "Interview session not found.");
+    }
+    if (linked.kind === "closed") {
+      return fail(409, "session_closed", "This interview session is already closed.");
+    }
+    questions = linked.questions;
+  }
+
   // 5. Per-user, per-instance throttle (prototype; see rate-limit.ts).
   const issuedAt = now();
   const limit = deps.limiter.hit(auth.userId, issuedAt);
@@ -168,6 +198,7 @@ export async function handleLiveTokenRequest(
   const tokenConfig = buildEphemeralTokenConfig({
     model: config.model,
     details: validation.data,
+    questions,
     now: issuedAt,
   });
   const controller = new AbortController();

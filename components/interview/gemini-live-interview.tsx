@@ -17,6 +17,8 @@ import {
   validateLiveInterviewBody,
   type InterviewLevel,
 } from "@/lib/gemini-live/interview-details";
+import { attachTranscriptSync } from "@/lib/gemini-live/transcript-sync";
+import type { SaveTranscriptOutcome } from "@/lib/transcripts/client";
 
 const STATUS_LABEL: Record<SessionPhase, string> = {
   idle: "Ready",
@@ -66,7 +68,21 @@ function downloadSession(state: ControllerState) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function GeminiLiveInterview({ configured }: { configured: boolean }) {
+const SAVE_STATUS_LABEL: Record<SaveTranscriptOutcome, string> = {
+  stored: "Transcript saved to your interview session.",
+  already_stored: "This interview session already has a saved transcript, so this one was not saved.",
+  failed:
+    "Could not save the transcript to your interview session. Download the session JSON to keep a copy.",
+};
+
+export function GeminiLiveInterview({
+  configured,
+  sessionId = null,
+}: {
+  configured: boolean;
+  /** Interview session that receives the transcript; null keeps it in this tab. */
+  sessionId?: string | null;
+}) {
   // Constructing touches no browser APIs; resources are created on Start.
   const [controller] = useState(() => new LiveInterviewController(browserControllerDeps));
   const state = useSyncExternalStore(
@@ -80,9 +96,33 @@ export function GeminiLiveInterview({ configured }: { configured: boolean }) {
   const [techstack, setTechstack] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // Cleared once a transcript is stored, so a second run is not linked to it.
+  const [linkedSessionId, setLinkedSessionId] = useState(sessionId);
+  const [saveOutcome, setSaveOutcome] = useState<SaveTranscriptOutcome | null>(null);
 
-  // Unmount / navigation: stop mic, close socket and audio.
+  // Unmount / navigation: stop mic, close socket and audio. Declared before
+  // the sync effect so its cleanup runs first and the final transcript is sent.
   useEffect(() => () => controller.dispose(), [controller]);
+
+  useEffect(() => {
+    if (!linkedSessionId) return;
+    return attachTranscriptSync(controller, {
+      sessionId: linkedSessionId,
+      onOutcome: (outcome) => {
+        setSaveOutcome(outcome);
+        if (outcome !== "failed") setLinkedSessionId(null);
+      },
+    });
+  }, [controller, linkedSessionId]);
+
+  // Tab close: end the session so its transcript is sent with keepalive.
+  useEffect(() => {
+    const onPageHide = () => {
+      if (RUNNING.has(controller.getSnapshot().phase)) controller.dispose();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [controller]);
 
   const running = RUNNING.has(state.phase);
   const timing = state.phase === "active" || state.phase === "closing";
@@ -94,14 +134,20 @@ export function GeminiLiveInterview({ configured }: { configured: boolean }) {
   }, [timing]);
 
   const start = useCallback(() => {
-    const result = validateLiveInterviewBody({ role, level, techstack });
+    const result = validateLiveInterviewBody({
+      role,
+      level,
+      techstack,
+      sessionId: linkedSessionId ?? undefined,
+    });
     if (!result.ok) {
       setFormError(result.errors.join(" "));
       return;
     }
     setFormError(null);
+    setSaveOutcome(null);
     void controller.start(result.data);
-  }, [controller, level, role, techstack]);
+  }, [controller, level, linkedSessionId, role, techstack]);
 
   const elapsedMs =
     state.startedAt === null
@@ -122,9 +168,11 @@ export function GeminiLiveInterview({ configured }: { configured: boolean }) {
             costs apply.
           </li>
           <li>
-            Sessions are capped at {MAX_SESSION_SECONDS / 60} minutes. Nothing is
-            recorded or saved: the transcript exists only in this tab until you
-            leave or start again.
+            Sessions are capped at {MAX_SESSION_SECONDS / 60} minutes. No audio is
+            recorded.{" "}
+            {linkedSessionId
+              ? "The transcript is saved to your interview session when the interview ends, and the interviewer asks that interview's stored questions."
+              : "Nothing is saved: the transcript exists only in this tab until you leave or start again."}
           </li>
           <li>
             Transcripts are machine-generated and may be inaccurate. This is
@@ -242,6 +290,18 @@ export function GeminiLiveInterview({ configured }: { configured: boolean }) {
       {state.notice && !state.error && (
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {state.notice}
+        </p>
+      )}
+
+      {saveOutcome && (
+        <p
+          role={saveOutcome === "failed" ? "alert" : undefined}
+          className={
+            saveOutcome === "failed" ? "text-sm text-destructive" : "text-sm text-muted-foreground"
+          }
+          aria-live="polite"
+        >
+          {SAVE_STATUS_LABEL[saveOutcome]}
         </p>
       )}
 

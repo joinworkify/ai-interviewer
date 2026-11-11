@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createGeminiAuthToken } from "@/lib/gemini-live/google-token";
+import { createSessionLinkLookup } from "@/lib/gemini-live/session-link";
+import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { SlidingWindowLimiter } from "@/lib/gemini-live/rate-limit";
 import {
   handleLiveTokenRequest,
@@ -48,6 +50,11 @@ export async function POST(request: Request) {
       authenticate,
       createAuthToken: createGeminiAuthToken,
       limiter,
+      lookupSession: async (userId, sessionId) =>
+        createSessionLinkLookup(createSupabaseSessionStore(await createClient()))(
+          userId,
+          sessionId,
+        ),
     });
   } catch {
     console.error("[gemini-live-token] unhandled error");

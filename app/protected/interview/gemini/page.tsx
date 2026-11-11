@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { readGeminiLiveConfig } from "@/lib/gemini-live/config";
 import { GeminiLiveInterview } from "@/components/interview/gemini-live-interview";
+import { isUuid } from "@/lib/sessions/validation";
 
 function SetupIncomplete({ items, title }: { items: string[]; title: string }) {
   return (
@@ -26,7 +27,11 @@ function SetupIncomplete({ items, title }: { items: string[]; title: string }) {
   );
 }
 
-async function GeminiContent() {
+async function GeminiContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ sessionId?: string | string[] }>;
+}) {
   // Check before createClient(): the Supabase client throws without these.
   const missingSupabase = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
@@ -54,6 +59,10 @@ async function GeminiContent() {
 
   // Read at request time; only variable names / a boolean reach the client.
   const config = readGeminiLiveConfig(process.env);
+  // `?sessionId=` links the run to an interview session; ownership is checked
+  // server side when the token and the transcript are requested.
+  const { sessionId } = await searchParams;
+  const linkedSessionId = isUuid(sessionId) ? sessionId : null;
   return (
     <>
       {!config.ok && (
@@ -62,12 +71,16 @@ async function GeminiContent() {
           items={[...config.missing, ...config.invalid]}
         />
       )}
-      <GeminiLiveInterview configured={config.ok} />
+      <GeminiLiveInterview configured={config.ok} sessionId={linkedSessionId} />
     </>
   );
 }
 
-export default function GeminiInterviewPage() {
+export default function GeminiInterviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sessionId?: string | string[] }>;
+}) {
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
       <div className="flex flex-col gap-2">
@@ -87,7 +100,7 @@ export default function GeminiInterviewPage() {
         </p>
       </div>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-        <GeminiContent />
+        <GeminiContent searchParams={searchParams} />
       </Suspense>
     </div>
   );
