@@ -92,3 +92,56 @@ export default function GeminiInterviewPage() {
     </div>
   );
 }
+
+
+
+// app/protected/interview/gemini/page.tsx
+// import { Suspense } from "react";
+// import { readGeminiLiveConfig } from "@/lib/gemini-live/config";
+// import { GeminiLiveInterview } from "@/components/interview/gemini-live-interview";
+
+// function SetupIncomplete({ items, title }: { items: string[]; title: string }) {
+//   return (
+//     <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-4 text-sm flex flex-col gap-2">
+//       <p className="font-semibold">{title}</p>
+//       <p>Set these server environment variables:</p>
+//       <ul className="list-disc pl-5 font-mono text-xs">
+//         {items.map((name) => (
+//           <li key={name}>{name}</li>
+//         ))}
+//       </ul>
+//     </div>
+//   );
+// }
+
+// async function GeminiContent() {
+//   // ⛔️ Supabase စစ်ဆေးတာ အကုန်ဖျက်ပြီး အောက်ပါအတိုင်း ပြင်ပါ
+//   const config = readGeminiLiveConfig(process.env);
+//   return (
+//     <>
+//       {!config.ok && (
+//         <SetupIncomplete
+//           title="Setup incomplete: Gemini Live is not configured"
+//           items={[...config.missing, ...config.invalid]}
+//         />
+//       )}
+//       <GeminiLiveInterview configured={config.ok} />
+//     </>
+//   );
+// }
+
+// export default function GeminiInterviewPage() {
+//   return (
+//     <div className="flex-1 w-full flex flex-col gap-8">
+//       <div className="flex flex-col gap-2">
+//         <h1 className="font-bold text-2xl">Practice voice interview (Gemini Live)</h1>
+//         <p className="text-sm text-muted-foreground">
+//           Enter the role, level and tech stack, then press Start.
+//         </p>
+//       </div>
+//       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+//         <GeminiContent />
+//       </Suspense>
+//     </div>
+//   );
+// }

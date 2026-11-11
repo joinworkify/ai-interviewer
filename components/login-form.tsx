@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+// import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,21 +28,32 @@ export function LoginForm({
 
   const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const supabase = createClient();
+    // const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
+    // try {
+    //   const { error } = await supabase.auth.signInWithPassword({
+    //     email,
+    //     password,
+    //   });
+    //   if (error) throw error;
+    //   // Update this route to redirect to an authenticated route. The user already has an active session.
+    //   router.push("/protected");
+    // } catch (error: unknown) {
+    //   setError(error instanceof Error ? error.message : "An error occurred");
+    // } finally {
+    //   setIsLoading(false);
+    // }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Fake validation (optional)
+    if (email === "test@test.com" && password === "password") {
+      // Store fake token if needed by other components
+      localStorage.setItem("fake-auth-token", "123456789");
       router.push("/protected");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
+    } else {
+      setError("Invalid credentials (Use test@test.com / password)");
       setIsLoading(false);
     }
   };
