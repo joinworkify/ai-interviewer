@@ -25,7 +25,7 @@ const MIGRATION = fileURLToPath(
 /** Migration SQL with `--` comments removed and whitespace collapsed. */
 function loadSql(): string {
   return readFileSync(MIGRATION, "utf8")
-    .split("\n")
+    .split(/\r?\n/) // Windows checkouts use CRLF
     .map((line) => line.replace(/--.*$/, ""))
     .join(" ")
     .replace(/\s+/g, " ")
