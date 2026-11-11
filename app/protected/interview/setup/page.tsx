@@ -51,10 +51,13 @@ export default function SetupPage() {
     
     setTimeout(() => setSpeakerStatus("success"), 1000);
   };
+  
 
   const handleStartInterview = () => {
     router.push("/protected/interview/gemini");
   };
+
+  const isSetupComplete = micStatus === "success" && speakerStatus === "success";
 
   return (
     <div className="flex-1 w-full flex flex-col items-center pt-10 pb-20 px-4 md:px-8">
@@ -148,14 +151,14 @@ export default function SetupPage() {
           <div className="flex flex-col items-center mt-12">
             <Button 
               onClick={handleStartInterview} 
-              disabled={micStatus !== "success"}
+              disabled={!isSetupComplete}
               className="w-full sm:w-80 text-base py-6"
             >
               Start Interview
             </Button>
-            {micStatus !== "success" && (
+            {!isSetupComplete && (
                <p className="text-sm text-destructive mt-3">
-                 Fix: allow microphone access to start.
+                 Fix: allow microphone and speaker access to start.
                </p>
             )}
           </div>
