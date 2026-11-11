@@ -24,7 +24,8 @@ export async function runTranscriptRoute(
     ],
     [
       "SUPABASE_SECRET_KEY",
-      process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
+      // `||`, not `??`: a blank SUPABASE_SECRET_KEY must fall back, as in admin.ts.
+      process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
     ],
   ]
     .filter(([, value]) => !value?.trim())
