@@ -103,6 +103,7 @@ describe("the admin (service-role) client stays server-only", () => {
       "lib/interviews/store.ts", // builds its own service-role client for the Vapi webhook path
       "lib/sessions/route-deps.ts", // 503 when the key is missing
       "lib/data-deletion/route-deps.ts", // 503 when the key is missing
+      "lib/transcripts/route-deps.ts", // 503 when the key is missing; transcript writes use the admin client
       "app/protected/interview/page.tsx", // server component: shows whether the key is set (never its value)
     ]);
     const readers = [...source.keys()].filter((f) => SECRET_ENV.test(source.get(f)!));
@@ -137,7 +138,7 @@ describe("mutating routes check the request origin", () => {
       for (const { method, body } of mutating) {
         const guard = body.indexOf("guardSameOrigin(request");
         expect(guard, `${file} ${method} must call guardSameOrigin(request, ...)`).toBeGreaterThan(-1);
-        const work = body.search(/run(?:Session|Deletion)Route\(/);
+        const work = body.search(/run(?:Session|Deletion|Transcript)Route\(/);
         expect(guard, `${file} ${method} must guard before running`).toBeLessThan(work);
       }
     },
