@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { FIXTURE_ROLES } from "@/lib/candidate/api";
+import roles from "@/lib/candidate/roles.json";
 
 /**
  * Static checks for the roles table and its seed. Parses SQL text (no database
@@ -49,8 +49,8 @@ describe("roles seed", () => {
     ([, id, title, payRate]) => ({ id, title, payRate }),
   );
 
-  it("has the same roles as the screens' fixture data", () => {
-    expect(rows).toEqual(FIXTURE_ROLES.map(({ id, title, payRate }) => ({ id, title, payRate })));
+  it("matches lib/candidate/roles.json (regenerate with node scripts/gen-roles-seed.mjs)", () => {
+    expect(rows).toEqual(roles.map(({ id, title, payRate }) => ({ id, title, payRate })));
   });
 
   it("can be re-run without duplicates", () => {
