@@ -77,23 +77,23 @@ export default function SetupPage() {
             <div className="flex-1 flex flex-col gap-6">
               
               {/* Mic Test */}
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <div className={`flex-1 border rounded-md p-4 text-sm flex items-center justify-between ${micStatus === 'success' ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted text-muted-foreground'}`}>
                   <span className="font-medium text-base">Microphone</span>
                   {micStatus === 'success' && <CheckCircle2 className="w-5 h-5" />}
                 </div>
-                <Button onClick={testMicrophone} variant="outline" className="w-36 h-12">
+                <Button onClick={testMicrophone} variant="outline" className="w-full sm:w-36 h-12">
                   {micStatus === "testing" ? "Testing..." : "Test mic"}
                 </Button>
               </div>
 
               {/* Speaker Test */}
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <div className={`flex-1 border rounded-md p-4 text-sm flex items-center justify-between ${speakerStatus === 'success' ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted text-muted-foreground'}`}>
                   <span className="font-medium text-base">Speaker</span>
                   {speakerStatus === 'success' && <CheckCircle2 className="w-5 h-5" />}
                 </div>
-                <Button onClick={testSpeaker} variant="outline" className="w-36 h-12">
+                <Button onClick={testSpeaker} variant="outline" className="w-full sm:w-36 h-12">
                   {speakerStatus === "playing" ? "Playing..." : "Play sound"}
                 </Button>
               </div>

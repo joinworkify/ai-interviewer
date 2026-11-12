@@ -214,7 +214,7 @@ export function GeminiLiveInterview({
             value={level}
             onChange={(e) => setLevel(e.target.value as InterviewLevel)}
             disabled={running}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base md:text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             {INTERVIEW_LEVELS.map((l) => (
               <option key={l.value} value={l.value}>
@@ -307,7 +307,7 @@ export function GeminiLiveInterview({
 
       {state.transcript.length > 0 && (
         <section className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-semibold">Transcript (this session only)</h2>
             {!running && (
               <Button

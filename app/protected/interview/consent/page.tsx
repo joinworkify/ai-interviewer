@@ -52,7 +52,7 @@ export default function ConsentPage() {
               checked={isAgreed} 
               onCheckedChange={(checked) => setIsAgreed(checked as boolean)} 
             />
-            <label htmlFor="consent" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+            <label htmlFor="consent" className="text-sm font-medium leading-snug peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
               I agree to the AI interview and voice recording
             </label>
           </div>

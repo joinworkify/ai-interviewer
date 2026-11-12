@@ -81,7 +81,7 @@ export default function LivePage() {
             </div>
           )}
 
-          <div className="flex gap-2 text-xs text-slate-500">
+          <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
             Test status:
             {(["connecting", "connected", "reconnecting", "failed"] as Status[]).map((s) => (
               <button key={s} onClick={() => setStatus(s)} className="underline">

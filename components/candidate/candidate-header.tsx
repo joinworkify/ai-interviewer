@@ -19,8 +19,8 @@ export function CandidateHeader() {
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">D</span>
           Candidate Interview
         </Link>
-        <div className="flex items-center gap-3 text-sm">
-          {candidateId && <span className="text-muted-foreground">● {candidateId}</span>}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          {candidateId && <span className="max-w-[10rem] truncate text-muted-foreground sm:max-w-none">● {candidateId}</span>}
           {/* shortcut: no help page yet, link it when support has one */}
           <span className="text-muted-foreground" title="Help page coming soon">
             Help
