@@ -62,6 +62,29 @@ describe("Supabase proxy login redirect", () => {
     expect(res.status).toBe(307);
   });
 
+  it.each(["/api/dograh/session", "/api/dograh/webhook"])(
+    "lets signed-out POST %s through so the route can answer for itself",
+    async (path) => {
+      const res = await updateSession(post(path));
+      expect(res.headers.get("location")).toBeNull();
+    },
+  );
+
+  it.each([
+    "/api/dograh",
+    "/api/dograh/",
+    "/api/dograh/other",
+    "/api/dograh/session/",
+    "/api/dograh/session/extra",
+    "/api/dograh/webhook/extra",
+    "/api/dograh/webhookx",
+    "/protected/interview/dograh",
+  ])("still redirects signed-out %s to /auth/login", async (path) => {
+    const res = await updateSession(post(path));
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).pathname).toMatch(/^\/auth\/login\/?$/);
+  });
+
   it("keeps the existing Vapi webhook exemption", async () => {
     const res = await updateSession(post("/api/vapi/generate-interview"));
     expect(res.headers.get("location")).toBeNull();
