@@ -17,7 +17,7 @@ export interface CanonicalTurn {
  * Values allowed by the `interview_sessions_transcript_source_check`
  * constraint. Extending this list needs a migration that re-creates it.
  */
-export const TRANSCRIPT_SOURCES = ["client_gemini_live"] as const;
+export const TRANSCRIPT_SOURCES = ["client_gemini_live", "dograh_webhook"] as const;
 export type TranscriptSource = (typeof TRANSCRIPT_SOURCES)[number];
 
 export const ENDED_REASONS = [

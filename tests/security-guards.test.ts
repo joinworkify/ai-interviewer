@@ -104,6 +104,7 @@ describe("the admin (service-role) client stays server-only", () => {
       "lib/sessions/route-deps.ts", // 503 when the key is missing
       "lib/data-deletion/route-deps.ts", // 503 when the key is missing
       "lib/transcripts/route-deps.ts", // 503 when the key is missing; transcript writes use the admin client
+      "lib/dograh/route-deps.ts", // 503 when the key is missing; the webhook writes the transcript with the admin client
       "app/protected/interview/page.tsx", // server component: shows whether the key is set (never its value)
     ]);
     const readers = [...source.keys()].filter((f) => SECRET_ENV.test(source.get(f)!));
