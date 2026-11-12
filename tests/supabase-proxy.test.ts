@@ -40,7 +40,26 @@ describe("Supabase proxy login redirect", () => {
   ])("still redirects signed-out %s to /auth/login", async (path) => {
     const res = await updateSession(post(path));
     expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toMatch(/^\/auth\/login\/?$/);
+    expect(new URL(res.headers.get("location")!).pathname).toMatch(
+      /^\/auth\/login\/?$/,
+    );
+  });
+
+  it.each([
+    "/candidate",
+    "/candidate/login",
+    "/candidate/roles/software-engineer",
+  ])(
+    "lets signed-out %s through (candidate screens have their own login)",
+    async (path) => {
+      const res = await updateSession(post(path));
+      expect(res.headers.get("location")).toBeNull();
+    },
+  );
+
+  it("still redirects signed-out /candidatex", async () => {
+    const res = await updateSession(post("/candidatex"));
+    expect(res.status).toBe(307);
   });
 
   it("keeps the existing Vapi webhook exemption", async () => {

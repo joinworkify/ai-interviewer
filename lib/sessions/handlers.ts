@@ -35,6 +35,7 @@ import {
   validateFeedbackBody,
   validateStartSessionBody,
 } from "./validation";
+import { describeError } from "@/lib/log/safe-error";
 
 /**
  * Handlers for the authenticated session endpoints. Framework-agnostic
@@ -267,7 +268,11 @@ export async function handleSubmitFeedback(
   try {
     session = await deps.store.getSession(sessionId);
     if (!session || session.user_id !== userId) return notFound();
-    if (session.status !== "in_progress") {
+    // A completed session that holds a stored transcript still awaits feedback.
+    const closed =
+      session.status === "abandoned" ||
+      (session.status === "completed" && session.transcript == null);
+    if (closed) {
       return fail(409, "session_closed", "This session is already closed.");
     }
     if (await deps.store.getFeedback(session.id)) {
@@ -346,7 +351,7 @@ export async function handleSubmitFeedback(
       );
     }
   } catch (err) {
-    console.error("[sessions] quota check failed", err);
+    console.error("[sessions] quota check failed", describeError(err));
     return storageFailed();
   }
 
@@ -371,7 +376,7 @@ export async function handleSubmitFeedback(
       const d = describeLlmError(err);
       return fail(d.status, d.code, d.message);
     }
-    console.error("[sessions] unexpected LLM error", err);
+    console.error("[sessions] unexpected LLM error", describeError(err));
     return fail(502, "llm_failed", "The AI provider failed.");
   }
   await recordUsage(deps.usage, userId, spent);
@@ -391,13 +396,17 @@ export async function handleSubmitFeedback(
     // Feedback is already saved; closing the session is best effort so a
     // transient failure here does not hide a result the user paid for.
     try {
-      await deps.store.completeSession(session.id, new Date(now()).toISOString());
+      // Already-completed sessions keep the ended_at the transcript write set.
+      if (session.status === "in_progress") {
+        await deps.store.completeSession(session.id, new Date(now()).toISOString());
+      }
     } catch (err) {
-      console.error("[sessions] could not mark session completed", err);
+      console.error("[sessions] could not mark session completed", describeError(err));
     }
     return jsonResponse(201, {
       success: true,
       source: plan.source,
+      transcriptSource: plan.source === "transcript" ? (session.transcript_source ?? null) : null,
       feedback: feedbackJson(feedback),
     });
   } catch (err) {
@@ -427,7 +436,7 @@ async function recordUsage(
   );
   for (const r of results) {
     if (r.status === "rejected") {
-      console.error("[sessions] failed to record AI usage", r.reason);
+      console.error("[sessions] failed to record AI usage", describeError(r.reason));
     }
   }
 }

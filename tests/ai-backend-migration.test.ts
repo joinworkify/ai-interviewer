@@ -13,7 +13,7 @@ const FILE = fileURLToPath(
 );
 
 const sql = readFileSync(FILE, "utf8")
-  .split("\n")
+  .split(/\r?\n/) // Windows checkouts use CRLF
   .map((l) => l.replace(/--.*$/, ""))
   .join(" ")
   .replace(/\s+/g, " ")

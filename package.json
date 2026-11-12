@@ -22,6 +22,8 @@
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
     "db:reset": "supabase db reset",
+    "db:migrate": "supabase migration up",
+    "db:seed": "supabase db query --file supabase/seed.sql",
     "db:push": "supabase db push",
     "db:new": "supabase migration new",
     "db:diff": "supabase db diff"

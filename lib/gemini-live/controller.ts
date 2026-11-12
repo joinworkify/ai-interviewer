@@ -10,6 +10,7 @@ import {
   MAX_SESSION_SECONDS,
   type LiveInterviewDetails,
 } from "./interview-details";
+import type { EndedReason } from "@/lib/transcripts/types";
 import {
   initialTranscript,
   reduceTranscript,
@@ -53,6 +54,8 @@ export interface ControllerState {
   endedAt: number | null;
   interviewerSpeaking: boolean;
   details: LiveInterviewDetails | null;
+  /** Why the session settled; null until it does. */
+  endReason: EndedReason | null;
 }
 
 export interface TokenGrant {
@@ -154,6 +157,7 @@ const INITIAL_STATE: ControllerState = {
   endedAt: null,
   interviewerSpeaking: false,
   details: null,
+  endReason: null,
 };
 
 interface Resources {
@@ -305,6 +309,7 @@ export class LiveInterviewController {
       if (!stale()) {
         this.finish(
           `Reached the ${Math.round(capSeconds / 60)}-minute prototype session limit.`,
+          "time_limit",
         );
       }
     }, capMs);
@@ -314,13 +319,13 @@ export class LiveInterviewController {
 
   /** End button: valid while connecting, active or closing. */
   end(): void {
-    if (IN_PROGRESS.has(this.state.phase)) this.finish("You ended the interview.");
+    if (IN_PROGRESS.has(this.state.phase)) this.finish("You ended the interview.", "user_ended");
   }
 
   /** Unmount cleanup. The controller stays reusable (React StrictMode remounts). */
   dispose(): void {
     if (IN_PROGRESS.has(this.state.phase)) {
-      this.finish("The interview page was closed.");
+      this.finish("The interview page was closed.", "page_closed");
     } else {
       this.attempt++;
       this.teardown();
@@ -376,12 +381,12 @@ export class LiveInterviewController {
     });
   }
 
-  private finish(notice: string) {
-    this.settle({ phase: "ended", notice });
+  private finish(notice: string, endReason: EndedReason) {
+    this.settle({ phase: "ended", notice, endReason });
   }
 
   private fail(error: string) {
-    this.settle({ phase: "error", error });
+    this.settle({ phase: "error", error, endReason: "error" });
   }
 
   private onFrames(attempt: number, frames: Float32Array) {
@@ -408,7 +413,7 @@ export class LiveInterviewController {
       onclose: (e) => {
         if (!current() || this.state.phase === "connecting") return;
         if (this.state.phase === "closing") {
-          this.finish("The interviewer ended the interview.");
+          this.finish("The interviewer ended the interview.", "interviewer_ended");
         } else {
           this.fail(describeCloseEvent(e ?? {}));
         }
@@ -513,7 +518,7 @@ export class LiveInterviewController {
       const now = this.now();
       const remaining = this.res.player?.remainingMs() ?? 0;
       if (now >= deadline || (!first && remaining <= 0)) {
-        this.finish("The interviewer ended the interview.");
+        this.finish("The interviewer ended the interview.", "interviewer_ended");
         return;
       }
       const wait = Math.min(

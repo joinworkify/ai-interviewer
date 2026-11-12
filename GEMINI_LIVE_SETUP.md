@@ -181,12 +181,29 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
   restart and is not shared across instances or serverless workers. It is a
   brake, not a quota. Use a shared store plus Google-side quotas for
   production.
-- Nothing is recorded or stored by this app: no audio, no transcript in the
-  database. The transcript lives only in the open tab and can optionally be
-  downloaded as JSON by the user. Google's data-use terms for the Gemini API
-  apply to audio sent to Google.
+- No audio is recorded or stored by this app. Google's data-use terms for the
+  Gemini API apply to audio sent to Google.
+- Transcript storage is opt-in per run. Open
+  `/protected/interview/gemini?sessionId=<interview session id>` (a session
+  created with `POST /api/sessions`). The token request then carries the
+  `sessionId`, the server checks the session is yours and still open, and the
+  interviewer is told to ask that interview's stored questions (treated as
+  data: delimited, length-capped). When the session ends (End button, time
+  cap, interviewer ending, connection error, leaving the page or closing the
+  tab) the browser sends the transcript with `PUT /api/sessions/:id/transcript`
+  (`lib/transcripts/`). It is stored once per session in
+  `interview_sessions.transcript` as `[{ role, text }]`, with
+  `transcript_source`, `duration_seconds` and `ended_reason`; a second write
+  gets 409. Limits: 200 entries, 8,000 characters per entry, 24,000 in total.
+  Without `?sessionId=`, nothing is saved: the transcript lives in the open
+  tab and can be downloaded as JSON.
+- `POST /api/sessions/:id/feedback` scores a stored transcript when the
+  request has no `answers`; the response includes `transcriptSource`.
 - Transcripts are machine-generated, may be wrong, and are **not
-  authoritative hiring evidence**. No scoring or feedback is produced.
+  authoritative hiring evidence**.
+- Apply `supabase/migrations/20261111000003_ai_transcript_persistence.sql`
+  before using a linked session. A second voice provider plugs in as another
+  adapter in `lib/transcripts/adapters/` (see `TranscriptAdapter`).
 
 ## 6. Run and verify locally
 
@@ -242,4 +259,6 @@ npm run test && npm run typecheck && npm run lint && npm run build
   controller. The Web Audio/AudioWorklet adapters (`lib/gemini-live/browser.ts`,
   the worklet) are verified only in a real browser.
 - Not verified against a live Gemini endpoint by the automated tests.
-- No persistence, scoring, feedback or recordings.
+- The transcript endpoint, set-once SQL function and migration are covered by
+  unit tests with fakes and static SQL checks, not against a live database.
+- No recordings.
