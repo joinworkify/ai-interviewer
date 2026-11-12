@@ -62,7 +62,9 @@ export async function updateSession(request: NextRequest) {
     // 401 instead of an HTML login redirect.
     !request.nextUrl.pathname.startsWith("/api/sessions") &&
     // Exact path only; see GEMINI_LIVE_SETUP.md.
-    request.nextUrl.pathname !== "/api/gemini-live/token"
+    request.nextUrl.pathname !== "/api/gemini-live/token" &&
+    // Account data deletion verifies the session itself and answers JSON 401.
+    request.nextUrl.pathname !== "/api/account/data"
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

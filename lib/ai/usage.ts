@@ -76,7 +76,7 @@ export function createSupabaseUsageStore(
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .gte("created_at", sinceIso);
-      if (error) throw new Error(`ai_usage count failed: ${error.message}`);
+      if (error) throw Object.assign(new Error("ai_usage count failed"), { code: error.code });
       return count ?? 0;
     },
     async record(entry) {
@@ -87,7 +87,7 @@ export function createSupabaseUsageStore(
         prompt_tokens: entry.promptTokens,
         completion_tokens: entry.completionTokens,
       });
-      if (error) throw new Error(`ai_usage insert failed: ${error.message}`);
+      if (error) throw Object.assign(new Error("ai_usage insert failed"), { code: error.code });
     },
   };
 }

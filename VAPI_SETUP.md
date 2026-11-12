@@ -65,13 +65,26 @@ Security properties:
 - `VAPI_TOOL_SIGNING_SECRET`, `SUPABASE_SECRET_KEY` and `LLM_API_KEY` are
   server-only. Only `NEXT_PUBLIC_VAPI_PUBLIC_KEY` and the assistant ID reach
   the browser.
-- Browsers can only `select` their own interviews (RLS). Nobody can insert,
-  update or delete through the browser; inserts happen only in the tool
-  endpoint.
+- Browsers can only `select` their own rows (RLS) in `interviews`,
+  `interview_sessions`, `feedback` and `ai_usage`. Nobody can insert, update or
+  delete them through the browser; every write happens in a server route that
+  uses the service-role key and filters by the verified user id. The browser
+  write grants on `interview_sessions` and `feedback` that the diagram schema
+  first added are revoked by
+  `20261112000004_ai_security_hardening.sql`.
   - `capability_uses` is the token's single-use record and has **no browser
     access at all** (RLS on, no policy, no grants), so a user cannot remove a
-    record to replay a still-valid token. Deleting an interview does not
-    delete its `capability_uses` row.
+    record to replay a still-valid token. It has no foreign key to
+    `interviews`, so **deleting an interview does not delete its
+    `capability_uses` row** and does not free the token. The row is deleted
+    only with the account (cascade from `profiles`).
+  - Deletion is server-side. `DELETE /api/sessions/{id}/transcript` clears a
+    session's transcript and recording URL and keeps its feedback.
+    `DELETE /api/sessions/{id}` deletes the session and its feedback.
+    `DELETE /api/account/data` with `{"confirm":"delete-my-data"}` deletes the
+    account; that cascades to every table above, `capability_uses` and
+    `ai_usage`. `vapi_events` has no user link, so those routes call
+    `purge_vapi_events` first. See `docs/security-ai-data.md`.
 - The token is **not** placed in the assistant's system prompt. It goes into a
   static tool parameter, so the conversation model never has to read or
   repeat it.
@@ -197,16 +210,24 @@ you use: <https://vapi.ai/pricing>.
 
 ## 3. Deploy the Supabase SQL
 
-The migration is `supabase/migrations/20261109000000_create_interviews.sql`.
-It creates `public.interviews`, enables RLS, and adds a single select-own
-policy. It adds no insert/update/delete policies or grants for browsers
-(see "Security properties" for why delete is excluded).
+The schema is built by every file in `supabase/migrations/`, applied in
+filename order:
+
+| File | What it does |
+| --- | --- |
+| `20261109000000_create_interviews.sql` | Creates `public.interviews`, enables RLS and adds a select-own policy. |
+| `20261109000001_diagram_schema.sql` | Adds `profiles`, `interview_sessions`, `feedback` and `vapi_events`; reshapes `interviews`. |
+| `20261109000002_ai_backend.sql` | Adds `capability_uses` (the token replay guard), `ai_usage` and `save_generated_interview`. |
+| `20261112000004_ai_security_hardening.sql` | Makes `interview_sessions` and `feedback` server-write-only and adds `purge_vapi_events`. |
+
+Browsers get no insert/update/delete on `interviews` (see "Security
+properties" for why delete is excluded).
 
 **Option A: Dashboard**
 
 1. Supabase Dashboard → your project → **SQL Editor** → **New query**.
-2. Paste the whole migration file.
-3. Click **Run**.
+2. Paste each migration file in the order above, one at a time.
+3. Click **Run** after each.
 4. Check **Table Editor → interviews**. The table should show **RLS enabled**
    and one policy ("Users can view their own interviews").
 

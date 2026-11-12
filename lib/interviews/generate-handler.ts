@@ -11,6 +11,7 @@ import {
   type InterviewStore,
 } from "./store";
 import { validateGenerateInterviewBody } from "./validation";
+import { describeError } from "@/lib/log/safe-error";
 
 /**
  * Handler for `POST /api/vapi/generate-interview`, the URL configured on the
@@ -246,7 +247,7 @@ export async function handleGenerateInterview(
           );
       }
     }
-    console.error("[generate-interview] unexpected LLM error", err);
+    console.error("[generate-interview] unexpected LLM error", describeError(err));
     return fail(502, "llm_failed", "The question generator failed.");
   }
 

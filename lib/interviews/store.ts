@@ -66,7 +66,7 @@ export function createSupabaseInterviewStore(
         .eq("generation_id", generationId)
         .maybeSingle();
       if (error) {
-        console.error("[generate-interview] lookup failed:", error.message);
+        console.error("[generate-interview] lookup failed:", error.code ?? "");
         throw new StoreError(error.message);
       }
       return data !== null;
@@ -82,7 +82,7 @@ export function createSupabaseInterviewStore(
         if (error.code === PG_UNIQUE_VIOLATION) {
           throw new DuplicateGenerationError(error.message);
         }
-        console.error("[generate-interview] insert failed:", error.message);
+        console.error("[generate-interview] insert failed:", error.code ?? "");
         throw new StoreError(error.message);
       }
       if (typeof data !== "string") {

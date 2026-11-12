@@ -4,6 +4,7 @@ import {
   issueCapability,
   SigningSecretError,
 } from "@/lib/interviews/capability";
+import { describeError } from "@/lib/log/safe-error";
 
 /**
  * Issues a short-lived generation capability for the signed-in user.
@@ -68,7 +69,7 @@ export async function POST() {
         { status: 503, headers: noStore },
       );
     }
-    console.error("[interview-capability] failed to issue capability", err);
+    console.error("[interview-capability] failed to issue capability", describeError(err));
     return Response.json(
       { error: "internal_error", message: "Could not start the interview." },
       { status: 500, headers: noStore },

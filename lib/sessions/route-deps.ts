@@ -7,6 +7,7 @@ import { jsonResponse } from "@/lib/http/json";
 
 import type { SessionHandlerDeps } from "./handlers";
 import { createSupabaseSessionStore } from "./store";
+import { describeError } from "@/lib/log/safe-error";
 
 /**
  * Builds real dependencies for the session route handlers and turns
@@ -38,18 +39,22 @@ export async function runSessionRoute(
 
   try {
     const supabase = await createClient();
+    const admin = createAdminClient();
+    const getUserId = async () => {
+      const { data, error } = await supabase.auth.getClaims();
+      const sub = data?.claims?.sub;
+      return !error && typeof sub === "string" ? sub : null;
+    };
     return await run({
       env: process.env,
-      getUserId: async () => {
-        const { data, error } = await supabase.auth.getClaims();
-        const sub = data?.claims?.sub;
-        return !error && typeof sub === "string" ? sub : null;
-      },
-      store: createSupabaseSessionStore(supabase),
-      usage: createSupabaseUsageStore(createAdminClient()),
+      getUserId,
+      // Admin client: browsers cannot write these tables. The store filters
+      // every query by the user id verified above.
+      store: createSupabaseSessionStore(admin, getUserId),
+      usage: createSupabaseUsageStore(admin),
     });
   } catch (err) {
-    console.error("[sessions] unhandled error", err);
+    console.error("[sessions] unhandled error", describeError(err));
     return jsonResponse(500, {
       success: false,
       error: "internal_error",
