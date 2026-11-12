@@ -40,23 +40,27 @@ describe("Supabase proxy login redirect", () => {
   ])("still redirects signed-out %s to /auth/login", async (path) => {
     const res = await updateSession(post(path));
     expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toMatch(/^\/auth\/login\/?$/);
-  });
-
-  it("lets signed-out DELETE /api/account/data through so the route returns JSON 401", async () => {
-    const res = await updateSession(
-      new NextRequest(`${ORIGIN}/api/account/data`, { method: "DELETE" }),
+    expect(new URL(res.headers.get("location")!).pathname).toMatch(
+      /^\/auth\/login\/?$/,
     );
-    expect(res.headers.get("location")).toBeNull();
   });
 
-  it.each(["/api/account", "/api/account/data/", "/api/account/data/extra", "/api/account/other"])(
-    "still redirects signed-out %s to /auth/login",
+  it.each([
+    "/candidate",
+    "/candidate/login",
+    "/candidate/roles/software-engineer",
+  ])(
+    "lets signed-out %s through (candidate screens have their own login)",
     async (path) => {
       const res = await updateSession(post(path));
-      expect(res.status).toBe(307);
+      expect(res.headers.get("location")).toBeNull();
     },
   );
+
+  it("still redirects signed-out /candidatex", async () => {
+    const res = await updateSession(post("/candidatex"));
+    expect(res.status).toBe(307);
+  });
 
   it("keeps the existing Vapi webhook exemption", async () => {
     const res = await updateSession(post("/api/vapi/generate-interview"));

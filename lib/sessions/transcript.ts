@@ -3,7 +3,8 @@
  * webhook in a later branch) into plain turns for the evaluation prompt.
  *
  * Accepted shapes:
- *  - an array of `{ role, message | content | text }` (Vapi messages);
+ *  - an array of `{ role | speaker, message | content | text }` (Vapi messages,
+ *    the stored canonical transcript, and Gemini Live browser entries);
  *  - `{ messages: [...] }`;
  *  - a string such as "AI: ...\nUser: ..." (Vapi's `transcript` field).
  * System/tool turns are dropped. Text is stripped of control characters.
@@ -64,7 +65,9 @@ function fromMessages(items: unknown[]): TranscriptTurn[] {
       (v): v is string => typeof v === "string",
     );
     if (text === undefined) continue;
-    const role = typeof rec.role === "string" ? roleOf(rec.role) : "unknown";
+    // Canonical and Vapi entries use `role`; Gemini Live entries use `speaker`.
+    const rawRole = typeof rec.role === "string" ? rec.role : rec.speaker;
+    const role = typeof rawRole === "string" ? roleOf(rawRole) : "unknown";
     if (role === "ignore") continue;
     turns.push({ role, text });
   }

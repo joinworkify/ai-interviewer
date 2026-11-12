@@ -79,6 +79,9 @@ export type Database = {
           ended_at: string | null;
           transcript: Json | null;
           recording_url: string | null;
+          transcript_source: string | null;
+          duration_seconds: number | null;
+          ended_reason: string | null;
         };
         Insert: {
           id?: string;
@@ -90,6 +93,9 @@ export type Database = {
           ended_at?: string | null;
           transcript?: Json | null;
           recording_url?: string | null;
+          transcript_source?: string | null;
+          duration_seconds?: number | null;
+          ended_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -101,6 +107,9 @@ export type Database = {
           ended_at?: string | null;
           transcript?: Json | null;
           recording_url?: string | null;
+          transcript_source?: string | null;
+          duration_seconds?: number | null;
+          ended_reason?: string | null;
         };
         Relationships: [
           {
@@ -269,9 +278,17 @@ export type Database = {
         };
         Returns: string;
       };
-      purge_vapi_events: {
-        Args: { p_user_id: string; p_session_id?: string | null };
-        Returns: number;
+      store_session_transcript: {
+        Args: {
+          p_session_id: string;
+          p_user_id: string;
+          p_transcript: Json;
+          p_source: string;
+          p_duration_seconds: number;
+          p_ended_reason: string;
+          p_ended_at: string;
+        };
+        Returns: { id: string; status: string }[];
       };
     };
     Enums: { [_ in never]: never };

@@ -30,6 +30,8 @@ export interface SessionRecord {
   ended_at: string | null;
   /** Raw jsonb written by the Vapi webhook; shape is normalized on use. */
   transcript: unknown;
+  /** Which provider produced `transcript`; null for Vapi or no transcript. */
+  transcript_source?: string | null;
 }
 
 export interface PerAnswerRecord {
@@ -71,7 +73,7 @@ export interface SessionStore {
 
 const PG_UNIQUE_VIOLATION = "23505";
 const SESSION_COLUMNS =
-  "id, interview_id, user_id, status, started_at, ended_at, transcript";
+  "id, interview_id, user_id, status, started_at, ended_at, transcript, transcript_source";
 const FEEDBACK_COLUMNS =
   "id, session_id, user_id, total_score, strengths, areas_for_improvement, final_assessment, per_answer, created_at";
 
