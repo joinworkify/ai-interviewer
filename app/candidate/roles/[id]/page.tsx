@@ -42,19 +42,23 @@ export default function RoleDetailPage() {
         <div>
           <h1 className="text-2xl font-semibold">{role.title}</h1>
           <p className="text-sm text-muted-foreground">Pay rate: {role.payRate}</p>
-          <p className="text-sm text-muted-foreground">Job type: {role.jobType}</p>
+          {role.jobType && <p className="text-sm text-muted-foreground">Job type: {role.jobType}</p>}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {role.skills.map((s) => (
-            <Badge key={s} variant="outline">
-              {s}
-            </Badge>
-          ))}
-        </div>
-        <section>
-          <h2 className="mb-2 font-semibold">About the role</h2>
-          <p className="text-sm">{role.about}</p>
-        </section>
+        {role.skills.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {role.skills.map((s) => (
+              <Badge key={s} variant="outline">
+                {s}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {role.about && (
+          <section>
+            <h2 className="mb-2 font-semibold">About the role</h2>
+            <p className="text-sm">{role.about}</p>
+          </section>
+        )}
         <Section title="Key Responsibilities" items={role.responsibilities} />
         <Section title="Required Skills & Qualifications" items={role.requirements} />
       </article>

@@ -42,7 +42,9 @@ describe("roles migration", () => {
 });
 
 describe("roles seed", () => {
-  const seed = read("../supabase/seed.sql");
+  // Only the generated roles block; seed.sql also holds other dev data.
+  const all = read("../supabase/seed.sql");
+  const seed = all.slice(all.indexOf("-- BEGIN candidate roles"), all.indexOf("-- END candidate roles"));
   const rows = [...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*'([^']+)'/g)].map(
     ([, id, title, payRate]) => ({ id, title, payRate }),
   );

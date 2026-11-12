@@ -9,13 +9,15 @@
  * REST API once it exists.
  */
 
+import roles from "./roles.json";
+
 export interface Role {
   id: string;
   title: string;
   payRate: string;
-  jobType: string;
+  jobType?: string;
   skills: string[];
-  about: string;
+  about?: string;
   responsibilities: { title: string; text: string }[];
   requirements: { title: string; text: string }[];
 }
@@ -29,44 +31,8 @@ export class ApiError extends Error {
   }
 }
 
-const SE_RESPONSIBILITIES = [
-  { title: "Feature Development & Bug Fixing", text: "Write clean, readable code to implement new features, resolve reported bugs, and improve day-to-day system functionality." },
-  { title: "Code Maintenance & Refactoring", text: "Assist in refactoring older components to improve codebase organization, readability, and overall maintainability." },
-  { title: "Testing & Quality Assurance", text: "Write unit and integration tests, help maintain test suites, and assist in identifying and fixing flaky tests." },
-  { title: "Backend API & Service Work", text: "Help build and maintain RESTful APIs and backend services using established engineering standards." },
-  { title: "Code Reviews & Collaboration", text: "Participate in team code reviews to give and receive constructive feedback and improve technical documentation." },
-];
-
-const SE_REQUIREMENTS = [
-  { title: "Programming Foundations", text: "Working proficiency in at least one primary backend language (Python 3, Java, TypeScript/Node.js, C++, Go, or Rust)." },
-  { title: "Core CS Concepts", text: "Solid understanding of basic data structures, algorithms, and fundamental computer science principles." },
-  { title: "Software Maintenance", text: "Hands-on experience with basic bug fixing, code refactoring, and performance optimization techniques." },
-  { title: "Testing Mindset", text: "Familiarity with writing automated tests (unit/integration) and using version control tools like git." },
-  { title: "Problem-Solving & Communication", text: "Good analytical skills with the ability to communicate technical questions and solutions clearly in a remote team." },
-];
-
-function role(id: string, title: string, payRate: string, skills: string[]): Role {
-  return {
-    id,
-    title,
-    payRate,
-    jobType: "Contractor (~15 hrs a week)",
-    skills,
-    about: `Placeholder description for the ${title} role. Final text comes from the role owner.`,
-    responsibilities: SE_RESPONSIBILITIES,
-    requirements: SE_REQUIREMENTS,
-  };
-}
-
-/** Fixture roles from the wireframe. Same rows as supabase/seed.sql (public.roles), kept in sync by tests. */
-export const FIXTURE_ROLES: Role[] = [
-  role("software-engineer", "Software Engineer", "$10~$15/Hour", ["Python", "Java", "C++", "TypeScript"]),
-  role("data-annotation-generalist", "Generalist for Data Annotation", "$21~$35/Hour", ["Annotation", "English"]),
-  role("mechanical-engineering-expert", "Mechanical Engineering Expert", "$60~$120/Hour", ["CAD", "Mechanics"]),
-  role("senior-software-engineer", "Senior Software Engineer", "$80~$120/Hour", ["System design", "TypeScript", "Go"]),
-  role("generalist", "Generalist", "$30~$49/Hour", ["Writing", "Research"]),
-  role("semiconductor-engineering-expert", "Semiconductor Engineering Expert", "$85~$185/Hour", ["VLSI", "Physics"]),
-];
+/** Roles from the company job descriptions. Same rows as supabase/seed.sql (public.roles), kept in sync by tests. */
+export const FIXTURE_ROLES: Role[] = roles;
 
 /** Invited test identities (diagram: only invited test emails can sign in). */
 const INVITED = new Set(["cand_test_01@datasea.test", "cand_test_02@datasea.test"]);
