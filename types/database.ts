@@ -267,6 +267,51 @@ export type Database = {
           },
         ];
       };
+      roles: {
+        Row: {
+          id: string;
+          title: string;
+          pay_rate: string;
+          job_type: string;
+          skills: string[];
+          about: string;
+          responsibilities: Json;
+          requirements: Json;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          title: string;
+          pay_rate: string;
+          job_type: string;
+          skills?: string[];
+          about?: string;
+          responsibilities?: Json;
+          requirements?: Json;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          pay_rate?: string;
+          job_type?: string;
+          skills?: string[];
+          about?: string;
+          responsibilities?: Json;
+          requirements?: Json;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -289,6 +334,13 @@ export type Database = {
           p_ended_at: string;
         };
         Returns: { id: string; status: string }[];
+      };
+      purge_vapi_events: {
+        Args: {
+          p_user_id: string;
+          p_session_id?: string | null;
+        };
+        Returns: number;
       };
     };
     Enums: { [_ in never]: never };

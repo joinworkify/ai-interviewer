@@ -60,7 +60,12 @@ const EXPECTED = {
 
 describe("seed.sql file", () => {
   it("has no transaction control and never touches schema", () => {
-    const sql = SEED.split("\n").map((l) => l.replace(/--.*$/, "")).join("\n").toLowerCase();
+    const sql = SEED.split("\n")
+      .map((l) => l.replace(/--.*$/, ""))
+      .join("\n")
+      // String values (e.g. role text "Create RL Environments") are data, not statements.
+      .replace(/'(?:[^']|'')*'/g, "''")
+      .toLowerCase();
     expect(sql).not.toMatch(/\b(begin|commit|rollback)\b\s*;/);
     expect(sql).not.toMatch(/\b(create|alter|drop|truncate)\b/);
     expect(sql).not.toMatch(/\bdelete\s+from\b/);

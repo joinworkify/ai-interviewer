@@ -66,3 +66,33 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * DataSea candidate theme (joindatasea.com style, burgundy accent).
+ * Scoped to the candidate, auth and /protected layouts via .theme-datasea so
+ * other pages keep the default theme. Burgundy #800020, tint #f8e9ec.
+ */
+@layer base {
+  .theme-datasea {
+    --background: 0 0% 100%;
+    --foreground: 345 30% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 345 30% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 345 30% 8%;
+    --primary: 345 100% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 350 59% 94%;
+    --secondary-foreground: 345 100% 25%;
+    --muted: 345 15% 97%;
+    --muted-foreground: 345 8% 42%;
+    --accent: 350 59% 94%;
+    --accent-foreground: 345 100% 25%;
+    --border: 345 12% 89%;
+    --input: 345 12% 86%;
+    --ring: 345 100% 25%;
+    --radius: 0.75rem;
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
+  }
+}

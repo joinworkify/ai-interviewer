@@ -50,11 +50,12 @@ export async function POST(request: Request) {
       authenticate,
       createAuthToken: createGeminiAuthToken,
       limiter,
+      // Read-only lookup with the signed-in user's own client (RLS select-own),
+      // pinned to the user id verified by authenticate().
       lookupSession: async (userId, sessionId) =>
-        createSessionLinkLookup(createSupabaseSessionStore(await createClient()))(
-          userId,
-          sessionId,
-        ),
+        createSessionLinkLookup(
+          createSupabaseSessionStore(await createClient(), async () => userId),
+        )(userId, sessionId),
     });
   } catch {
     console.error("[gemini-live-token] unhandled error");
