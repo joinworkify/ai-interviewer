@@ -43,7 +43,10 @@ describe("roles migration", () => {
 
 describe("roles seed", () => {
   const seed = read("../supabase/seed.sql");
-  const rows = [...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*'([^']+)'/g)].map(
+  // Only the roles insert: the seed also holds other tables' rows with the same
+  // `('id', 'x', 'y'` shape (the dev user's sessions and feedback).
+  const rolesSeed = seed.slice(seed.indexOf("insert into public.roles"));
+  const rows = [...rolesSeed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*'([^']+)'/g)].map(
     ([, id, title, payRate]) => ({ id, title, payRate }),
   );
 

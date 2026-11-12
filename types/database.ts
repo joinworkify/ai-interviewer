@@ -290,6 +290,13 @@ export type Database = {
         };
         Returns: { id: string; status: string }[];
       };
+      purge_vapi_events: {
+        Args: {
+          p_user_id: string;
+          p_session_id?: string | null;
+        };
+        Returns: number;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

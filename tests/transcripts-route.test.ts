@@ -38,11 +38,16 @@ const body = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-function put(payload: unknown = body()) {
+function put(payload: unknown = body(), headers: Record<string, string> = {}) {
   return PUT(
     new Request(`http://localhost:3000/api/sessions/${SID}/transcript`, {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      // Browsers always send Origin on a PUT; the route rejects a missing or foreign one.
+      headers: {
+        "content-type": "application/json",
+        origin: "http://localhost:3000",
+        ...headers,
+      },
       body: JSON.stringify(payload),
     }),
     { params: Promise.resolve({ id: SID }) },
