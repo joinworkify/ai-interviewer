@@ -72,7 +72,7 @@ async function GeminiContent({
         />
       )}
       <GeminiLiveInterview configured={config.ok} sessionId={linkedSessionId} />
-    </>
+    </div>
   );
 }
 
