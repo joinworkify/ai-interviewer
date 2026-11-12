@@ -49,6 +49,16 @@ describe("runSessionRoute", () => {
     expect(createClient).not.toHaveBeenCalled();
   });
 
+  it("falls back to the legacy SUPABASE_SERVICE_ROLE_KEY when SUPABASE_SECRET_KEY is blank", async () => {
+    configure();
+    vi.stubEnv("SUPABASE_SECRET_KEY", "");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "legacy-key");
+    const run = vi.fn(async () => Response.json({ ok: true }));
+    const res = await runSessionRoute(run);
+    expect(res.status).toBe(200);
+    expect(run).toHaveBeenCalledOnce();
+  });
+
   it("hands the handler a getUserId backed by verified claims", async () => {
     configure();
     getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });

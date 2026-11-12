@@ -114,12 +114,18 @@ describe("the admin (service-role) client stays server-only", () => {
 
 describe("mutating routes check the request origin", () => {
   const MUTATING = /export\s+(?:async\s+function|const|function)\s+(POST|PUT|PATCH|DELETE)\b/;
+  // /api/dograh/webhook is left out on purpose: Dograh calls it server to server
+  // with no browser cookies, and the handler checks a Bearer secret instead.
   const routes = [...source.keys()].filter(
-    (f) => /^app\/api\/(sessions|account)\/.*route\.ts$/.test(f) || f === "app/api/sessions/route.ts",
+    (f) =>
+      /^app\/api\/(sessions|account)\/.*route\.ts$/.test(f) ||
+      f === "app/api/sessions/route.ts" ||
+      f === "app/api/dograh/session/route.ts",
   );
 
-  it("finds the session and account routes", () => {
-    expect(routes.length).toBeGreaterThanOrEqual(4);
+  it("finds the session, account and Dograh session routes", () => {
+    expect(routes.length).toBeGreaterThanOrEqual(5);
+    expect(routes).toContain("app/api/dograh/session/route.ts");
   });
 
   /** Each mutating handler's own text: from its `export` to the next `export`. */
@@ -139,7 +145,7 @@ describe("mutating routes check the request origin", () => {
       for (const { method, body } of mutating) {
         const guard = body.indexOf("guardSameOrigin(request");
         expect(guard, `${file} ${method} must call guardSameOrigin(request, ...)`).toBeGreaterThan(-1);
-        const work = body.search(/run(?:Session|Deletion|Transcript)Route\(/);
+        const work = body.search(/(?:run(?:Session|Deletion|Transcript)Route|handleDograhSession)\(/);
         expect(guard, `${file} ${method} must guard before running`).toBeLessThan(work);
       }
     },

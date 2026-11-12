@@ -34,9 +34,12 @@ describe("dograh transcript source migration", () => {
     expect(allowed.sort()).toEqual([...TRANSCRIPT_SOURCES].sort());
   });
 
-  it("sorts after every earlier migration", () => {
+  it("sorts after the migration that creates the source check", () => {
+    // Later migrations may follow it; it only has to come after the check exists.
+    const CREATES_CHECK = "20261111000003_ai_transcript_persistence.sql";
     const names = readdirSync(DIR).filter((f) => f.endsWith(".sql")).sort();
-    expect(names[names.length - 1]).toBe(FILE);
+    expect(names).toContain(CREATES_CHECK);
+    expect(names.indexOf(FILE)).toBeGreaterThan(names.indexOf(CREATES_CHECK));
   });
 
   it("changes no table, grant, policy or function", () => {

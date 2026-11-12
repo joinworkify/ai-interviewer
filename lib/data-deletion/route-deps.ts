@@ -19,7 +19,11 @@ export async function runDeletionRoute(
   const missing = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
     ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
-    ["SUPABASE_SECRET_KEY", process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY],
+    [
+      "SUPABASE_SECRET_KEY",
+      // `||`, not `??`: a blank SUPABASE_SECRET_KEY must fall back, as in admin.ts.
+      process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+    ],
   ]
     .filter(([, value]) => !value?.trim())
     .map(([name]) => name as string);
