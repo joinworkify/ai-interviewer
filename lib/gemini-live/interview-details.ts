@@ -26,6 +26,8 @@ export interface LiveInterviewDetails {
   role: string;
   level: InterviewLevel;
   techstack: string[];
+  /** Interview session the transcript will be saved to, when linked. */
+  sessionId?: string;
 }
 
 export type LiveDetailsValidation =
@@ -37,7 +39,8 @@ export const MAX_TECH_ITEMS = 8;
 const MAX_TECH_ITEM_LENGTH = 40;
 const MAX_TECHSTACK_RAW_LENGTH = 400;
 
-const ALLOWED_KEYS = new Set(["role", "level", "techstack"]);
+const ALLOWED_KEYS = new Set(["role", "level", "techstack", "sessionId"]);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LEVELS: ReadonlyMap<string, InterviewLevel> = new Map(
   INTERVIEW_LEVELS.map((l) => [l.value, l.value]),
 );
@@ -151,8 +154,20 @@ export function validateLiveInterviewBody(body: unknown): LiveDetailsValidation 
     }
   }
 
+  let sessionId: string | undefined;
+  if (record.sessionId !== undefined) {
+    if (typeof record.sessionId === "string" && UUID_RE.test(record.sessionId)) {
+      sessionId = record.sessionId;
+    } else {
+      errors.push("sessionId must be a UUID.");
+    }
+  }
+
   if (errors.length > 0 || !role || !level || !techstack) {
     return { ok: false, errors };
   }
-  return { ok: true, data: { role, level, techstack } };
+  return {
+    ok: true,
+    data: { role, level, techstack, ...(sessionId ? { sessionId } : {}) },
+  };
 }
