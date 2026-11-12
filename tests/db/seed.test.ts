@@ -19,6 +19,7 @@ const SEED = readFileSync(
 );
 const HAS_DB = dbAvailable();
 const DEV_USER = "d0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0";
+const OTHER_USER = "e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0";
 
 const COUNTS = `
 select 'users=' || count(*) from auth.users where id = '${DEV_USER}';
@@ -28,8 +29,12 @@ select 'interviews=' || count(*) from public.interviews where user_id = '${DEV_U
 select 'sessions=' || count(*) from public.interview_sessions where user_id = '${DEV_USER}';
 select 'feedback=' || count(*) from public.feedback where user_id = '${DEV_USER}';
 select 'usage=' || count(*) from public.ai_usage where user_id = '${DEV_USER}';
+select 'timestampsSet=' || count(*) from auth.users u
+  where u.id in ('${DEV_USER}', '${OTHER_USER}') and u.created_at is not null and u.updated_at is not null
+    and exists (select 1 from auth.identities i where i.user_id = u.id
+                and i.created_at is not null and i.updated_at is not null);
 select 'passwordOk=' || count(*) from auth.users
-  where id = '${DEV_USER}' and encrypted_password = crypt('dev-password-local-only', encrypted_password);
+  where id = '${DEV_USER}' and encrypted_password = crypt('test123!', encrypted_password);
 `;
 
 function parse(stdout: string): Record<string, number> {
@@ -45,10 +50,11 @@ const EXPECTED = {
   users: 1,
   identities: 1,
   profiles: 1,
-  interviews: 3,
-  sessions: 3,
-  feedback: 1,
+  interviews: 4,
+  sessions: 6,
+  feedback: 2,
   usage: 3,
+  timestampsSet: 2,
   passwordOk: 1,
 };
 
@@ -98,8 +104,41 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"${DEV_USER}","role":"authenticated"}', true);
 select 'ownSessions=' || count(*) from public.interview_sessions;
 select 'ownFeedback=' || count(*) from public.feedback;
+select 'otherUsersRows=' || (
+  (select count(*) from public.interview_sessions where user_id = '${OTHER_USER}') +
+  (select count(*) from public.feedback where user_id = '${OTHER_USER}') +
+  (select count(*) from public.interviews where user_id = '${OTHER_USER}')
+);
 rollback;`);
     expect(r.ok).toBe(true);
-    expect(parse(r.stdout)).toEqual({ ownSessions: 3, ownFeedback: 1 });
+    expect(parse(r.stdout)).toEqual({ ownSessions: 6, ownFeedback: 2, otherUsersRows: 0 });
+  });
+
+  it("gives the dev user one session of every kind", () => {
+    const r = runSql(`begin;
+${SEED}
+select 'inProgressNoTranscript=' || count(*) from public.interview_sessions
+  where user_id = '${DEV_USER}' and status = 'in_progress' and transcript is null;
+select 'inProgressWithTranscript=' || count(*) from public.interview_sessions
+  where user_id = '${DEV_USER}' and status = 'in_progress' and transcript is not null;
+select 'completedVapi=' || count(*) from public.interview_sessions
+  where user_id = '${DEV_USER}' and status = 'completed' and transcript_source is null;
+select 'completedGemini=' || count(*) from public.interview_sessions
+  where user_id = '${DEV_USER}' and status = 'completed' and transcript_source = 'client_gemini_live';
+select 'abandoned=' || count(*) from public.interview_sessions
+  where user_id = '${DEV_USER}' and status = 'abandoned' and transcript = '[]'::jsonb;
+select 'completedWithoutFeedback=' || count(*) from public.interview_sessions s
+  where s.user_id = '${DEV_USER}' and s.status = 'completed'
+    and not exists (select 1 from public.feedback f where f.session_id = s.id);
+rollback;`);
+    expect(r.stderr).toBe("");
+    expect(parse(r.stdout)).toEqual({
+      inProgressNoTranscript: 1,
+      inProgressWithTranscript: 1,
+      completedVapi: 1,
+      completedGemini: 2,
+      abandoned: 1,
+      completedWithoutFeedback: 1,
+    });
   });
 });

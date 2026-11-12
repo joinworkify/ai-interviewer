@@ -53,7 +53,7 @@ Copy `.env.example` to `.env.local` (`npm run setup:env` does this).
 
 `db:reset` also loads `supabase/seed.sql` (the candidate roles). To add them to a running local database without wiping it: `npm run db:migrate && npm run db:seed`.
 
-`npm run db:reset` also loads [`supabase/seed.sql`](supabase/seed.sql): fake data and a dev login (`dev@example.test` / `dev-password-local-only`). It is local only and never runs on `db:push`. To load it without a reset: `docker exec -i supabase_db_ai-interviewer psql -U postgres < supabase/seed.sql`.
+`npm run db:reset` also loads [`supabase/seed.sql`](supabase/seed.sql): fake data and two dev logins (`dev@example.test` and `priya.nair@example.test`, both with the password `test123!`). It is local only and never runs on `db:push`. To load it without a reset: `docker exec -i supabase_db_ai-interviewer psql -U postgres < supabase/seed.sql`.
 
 ## Project layout
 
