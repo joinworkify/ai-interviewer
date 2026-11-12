@@ -52,9 +52,6 @@ export async function updateSession(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
-    // Candidate interview screens have their own (fixture, later TRH) login.
-    request.nextUrl.pathname !== "/candidate" &&
-    !request.nextUrl.pathname.startsWith("/candidate/") &&
     // Server-to-server webhook from Vapi (no browser session). It authorizes
     // requests itself with a signed capability token; see VAPI_SETUP.md.
     request.nextUrl.pathname !== "/api/vapi/generate-interview" &&
