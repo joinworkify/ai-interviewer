@@ -35,6 +35,7 @@ Copy `.env.example` to `.env.local` (`npm run setup:env` does this).
 | Supabase | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (server-only)                       |
 | Vapi     | `NEXT_PUBLIC_VAPI_PUBLIC_KEY`, `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID`, `VAPI_TOOL_SIGNING_SECRET` (server-only, 32+ chars) |
 | LLM      | `LLM_API_KEY` (server-only), `LLM_MODEL`; optional `LLM_BASE_URL`, `LLM_TIMEOUT_MS`                                           |
+| Dograh   | Optional. `DOGRAH_API_URL`, `DOGRAH_WEBHOOK_SECRET`, `DOGRAH_SESSION_SIGNING_SECRET` (server-only), `NEXT_PUBLIC_DOGRAH_WIDGET_SRC`; see [DOGRAH_SETUP.md](DOGRAH_SETUP.md) |
 
 ## Scripts
 
@@ -68,3 +69,5 @@ tests/                Vitest suite
 ## Docs
 
 [VAPI_SETUP.md](VAPI_SETUP.md) covers the Vapi tool and assistant, Gemini setup, the end-to-end test and troubleshooting.
+
+[DOGRAH_SETUP.md](DOGRAH_SETUP.md) covers running the self-hosted Dograh voice agent locally, building the interviewer agent and its webhook, and how transcripts come back to the app.

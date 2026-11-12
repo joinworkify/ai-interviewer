@@ -61,7 +61,12 @@ export async function updateSession(request: NextRequest) {
     // Exact path only; see GEMINI_LIVE_SETUP.md.
     request.nextUrl.pathname !== "/api/gemini-live/token" &&
     // Account data deletion verifies the session itself and answers JSON 401.
-    request.nextUrl.pathname !== "/api/account/data"
+    request.nextUrl.pathname !== "/api/account/data" &&
+    // Dograh: the session route verifies the signed-in user itself (JSON 401);
+    // the webhook is server to server and checks its own Bearer secret.
+    // Exact paths only; see DOGRAH_SETUP.md.
+    request.nextUrl.pathname !== "/api/dograh/session" &&
+    request.nextUrl.pathname !== "/api/dograh/webhook"
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

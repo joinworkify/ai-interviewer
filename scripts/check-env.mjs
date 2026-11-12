@@ -50,6 +50,33 @@ if (isSet("LLM_BASE_URL") && !get("LLM_BASE_URL").startsWith("https://")) {
   problems.push("LLM_BASE_URL must be HTTPS");
 }
 
+// Dograh is optional, but half a setup is a mistake: when any of its variables
+// is set, all the required ones must be, and the secrets must be usable.
+const DOGRAH_REQUIRED = [
+  "DOGRAH_API_URL",
+  "DOGRAH_WEBHOOK_SECRET",
+  "DOGRAH_SESSION_SIGNING_SECRET",
+  "NEXT_PUBLIC_DOGRAH_WIDGET_SRC",
+];
+const dograhInUse = [...DOGRAH_REQUIRED, "DOGRAH_STORAGE_URL"].some(isSet);
+if (dograhInUse) {
+  const dograhMissing = DOGRAH_REQUIRED.filter((n) => !isSet(n));
+  if (dograhMissing.length) {
+    problems.push(`Dograh is partly configured. Missing or placeholder: ${dograhMissing.join(", ")}`);
+  }
+  for (const name of ["DOGRAH_WEBHOOK_SECRET", "DOGRAH_SESSION_SIGNING_SECRET"]) {
+    if (isSet(name) && get(name).length < 32) {
+      problems.push(`${name} must be at least 32 characters (npm run setup:secret)`);
+    }
+  }
+  if (
+    isSet("DOGRAH_WEBHOOK_SECRET") &&
+    get("DOGRAH_WEBHOOK_SECRET") === get("DOGRAH_SESSION_SIGNING_SECRET")
+  ) {
+    problems.push("DOGRAH_SESSION_SIGNING_SECRET must differ from DOGRAH_WEBHOOK_SECRET");
+  }
+}
+
 const unsetOptional = OPTIONAL.filter((n) => !isSet(n));
 if (unsetOptional.length) console.log(`Optional, not set: ${unsetOptional.join(", ")}`);
 
