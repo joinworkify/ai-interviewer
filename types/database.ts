@@ -267,6 +267,51 @@ export type Database = {
           },
         ];
       };
+      roles: {
+        Row: {
+          id: string;
+          title: string;
+          pay_rate: string;
+          job_type: string;
+          skills: string[];
+          about: string;
+          responsibilities: Json;
+          requirements: Json;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          title: string;
+          pay_rate: string;
+          job_type: string;
+          skills?: string[];
+          about?: string;
+          responsibilities?: Json;
+          requirements?: Json;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          pay_rate?: string;
+          job_type?: string;
+          skills?: string[];
+          about?: string;
+          responsibilities?: Json;
+          requirements?: Json;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {

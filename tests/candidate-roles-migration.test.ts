@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { FIXTURE_ROLES } from "@/lib/candidate/api";
+import roles from "@/lib/candidate/roles.json";
 
 /**
  * Static checks for the roles table and its seed. Parses SQL text (no database
@@ -42,16 +42,15 @@ describe("roles migration", () => {
 });
 
 describe("roles seed", () => {
-  const seed = read("../supabase/seed.sql");
-  // Only the roles insert: the seed also holds other tables' rows with the same
-  // `('id', 'x', 'y'` shape (the dev user's sessions and feedback).
-  const rolesSeed = seed.slice(seed.indexOf("insert into public.roles"));
-  const rows = [...rolesSeed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*'([^']+)'/g)].map(
+  // Only the generated roles block; seed.sql also holds other dev data.
+  const all = read("../supabase/seed.sql");
+  const seed = all.slice(all.indexOf("-- BEGIN candidate roles"), all.indexOf("-- END candidate roles"));
+  const rows = [...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*'([^']+)'/g)].map(
     ([, id, title, payRate]) => ({ id, title, payRate }),
   );
 
-  it("has the same roles as the screens' fixture data", () => {
-    expect(rows).toEqual(FIXTURE_ROLES.map(({ id, title, payRate }) => ({ id, title, payRate })));
+  it("matches lib/candidate/roles.json (regenerate with node scripts/gen-roles-seed.mjs)", () => {
+    expect(rows).toEqual(roles.map(({ id, title, payRate }) => ({ id, title, payRate })));
   });
 
   it("can be re-run without duplicates", () => {
