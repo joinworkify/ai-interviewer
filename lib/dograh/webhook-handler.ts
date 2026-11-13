@@ -38,6 +38,12 @@ export interface DograhWebhookDeps {
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   now?: () => number;
+  /**
+   * Called once, after a transcript was stored for the first time (not for a
+   * repeat delivery). Used to start the AI evaluation without delaying the
+   * answer to Dograh. A throw here never changes the webhook's response.
+   */
+  onStored?: (info: { userId: string; sessionId: string }) => void;
 }
 
 function fail(
@@ -241,6 +247,11 @@ export async function handleDograhWebhook(
     if (outcome.kind === "not_found") return fail(404, "not_found", "Session not found.");
     if (outcome.kind === "already_stored") {
       return jsonResponse(200, { success: true, duplicate: true });
+    }
+    try {
+      deps.onStored?.({ userId: token.payload.sub, sessionId: token.payload.sid });
+    } catch {
+      console.error("[dograh-webhook] post-store hook failed");
     }
     return jsonResponse(200, {
       success: true,

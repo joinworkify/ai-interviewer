@@ -145,7 +145,28 @@ Apply the database migration: `npm run db:migrate` (local) or `npm run db:push` 
 
 ## 4. Try it
 
-You need an `interview_sessions` row for your user (there is no screen that creates one yet). With the local Supabase running and a user who has an interview:
+### The candidate flow (recommended)
+
+With the `DOGRAH_*` variables set and Dograh running, sign in and go to `/candidate/roles`, open a role, press **Apply now**, tick the consent box and continue, pass the mic check, and start. The screens do this for you:
+
+1. **Consent** calls `POST /api/candidate/attempts { roleId }`. The server builds the role's questions from `lib/candidate/roles.json`, creates an `interviews` row and an `interview_sessions` row for you, and returns the session id. That id is the `attempt` in the URL.
+2. **Live** loads the role from `public.roles`, asks `POST /api/dograh/session` for the signed call context, and starts the Dograh call.
+3. When the call ends, Dograh posts the transcript to the webhook and it is saved on that session.
+4. Right after the webhook has answered, the server runs the AI evaluation for that session and stores the feedback for reviewers (see "Results and feedback" below).
+5. The **result** screen polls `GET /api/candidate/attempts/:id` until the transcript has arrived, then shows **Submitted** (at least one spoken answer) or **Incomplete** (no answer). After about a minute without a transcript it says it is still processing and offers "Check again".
+
+If `NEXT_PUBLIC_DOGRAH_WIDGET_SRC` is not set, the live screen runs a scripted fake interviewer instead, so the screens still work without Dograh (nothing is saved). Check that a real attempt stored its transcript with the query at the end of this section.
+
+### Results and feedback
+
+- **Candidates never see scores.** The result screen shows only a status. `GET /api/candidate/attempts/:id` returns `processing`, `submitted` or `incomplete` and nothing else: no transcript, feedback or score.
+- **Feedback is generated for reviewers.** After the first successful store the webhook route schedules `evaluateStoredSession` (`lib/sessions/auto-evaluate.ts`) with Next's `after()`, so Dograh is not kept waiting on the model. It goes through the same code as `POST /api/sessions/:id/feedback`, so the daily AI quota, the one-feedback-per-session guard and the prompt-injection handling apply. A repeated webhook delivery does not evaluate again. It needs `LLM_API_KEY` and `LLM_MODEL`; without them it logs `server_misconfigured` and the candidate flow is unaffected.
+- **Known limit:** the feedback row is still readable by its owner through the existing `GET /api/sessions/:id` route and Supabase's own row-level security (that is what the practice flows use). Hiding it from candidates at the database level needs a reviewer role and a policy change, which is not done yet.
+- **Without Dograh** (`NEXT_PUBLIC_DOGRAH_WIDGET_SRC` unset) the live screen runs the scripted fake, no transcript is stored, and the result screen ends on "still processing".
+
+### Manual session (no candidate screens)
+
+You can also create the session row by hand. With the local Supabase running and a user who has an interview:
 
 ```bash
 docker exec -i supabase_db_ai-interviewer psql -U postgres -c \

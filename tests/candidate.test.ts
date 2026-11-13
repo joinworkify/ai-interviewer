@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { filterRoles, getResult, isValidEmail, roleFromRow, type Role } from "@/lib/candidate/api";
+import { ApiError, filterRoles, getResult, isValidEmail, roleFromRow, waitForResult, type Role } from "@/lib/candidate/api";
 import { formatCountdown, setupGate } from "@/lib/candidate/setup";
 import { createFakeVoiceSession, type VoiceStatus } from "@/lib/candidate/voice";
 import seedRoles from "@/lib/candidate/roles.json";
@@ -49,9 +49,91 @@ describe("isValidEmail", () => {
 });
 
 describe("getResult", () => {
-  it("never returns a score or pass/fail", async () => {
-    expect(Object.keys(await getResult("att_1", "complete")).sort()).toEqual(["attemptId", "status", "summary"]);
-    expect((await getResult("att_1", "early")).status).toBe("incomplete");
+  const reply = (status: unknown, httpStatus = 200) =>
+    vi.fn(async () => Response.json({ success: true, attempt: { sessionId: "s", status } }, { status: httpStatus }));
+
+  it.each(["processing", "submitted", "incomplete"] as const)("maps %s from the server, with no score or pass/fail", async (status) => {
+    const result = await getResult("s", reply(status) as never);
+    expect(Object.keys(result).sort()).toEqual(["attemptId", "status", "summary"]);
+    expect(result.status).toBe(status);
+    expect(result.summary).not.toMatch(/score|pass|fail|reject|accept/i);
+  });
+
+  it("asks for the attempt by id, same origin, uncached", async () => {
+    const f = reply("submitted");
+    await getResult("a b", f as never);
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/candidate/attempts/a%20b");
+    expect(init).toMatchObject({ credentials: "same-origin", cache: "no-store" });
+  });
+
+  it.each([
+    ["an unknown status", () => reply("scored")],
+    ["a server error", () => reply("submitted", 500)],
+    ["a 401", () => reply("submitted", 401)],
+  ])("throws an ApiError for %s", async (_l, make) => {
+    await expect(getResult("s", make() as never)).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("throws an ApiError when the network fails", async () => {
+    await expect(
+      getResult("s", (async () => {
+        throw new TypeError("offline");
+      }) as never),
+    ).rejects.toMatchObject({ code: "NETWORK" });
+  });
+});
+
+describe("waitForResult", () => {
+  const answers = (...statuses: unknown[]) => {
+    let i = 0;
+    return vi.fn(async () => {
+      const status = statuses[Math.min(i++, statuses.length - 1)];
+      if (status === "boom") throw new TypeError("offline");
+      return Response.json({ success: true, attempt: { sessionId: "s", status } });
+    });
+  };
+  const clock = () => {
+    let t = 0;
+    return { now: () => t, sleep: async (ms: number) => void (t += ms) };
+  };
+
+  it("polls until the transcript has arrived", async () => {
+    const f = answers("processing", "processing", "submitted");
+    const result = await waitForResult("s", { fetchImpl: f as never, intervalMs: 1000, timeoutMs: 30_000, ...clock() });
+    expect(result.status).toBe("submitted");
+    expect(f).toHaveBeenCalledTimes(3);
+  });
+
+  it("returns the last processing result at the timeout instead of failing", async () => {
+    const f = answers("processing");
+    const result = await waitForResult("s", { fetchImpl: f as never, intervalMs: 1000, timeoutMs: 5000, ...clock() });
+    expect(result.status).toBe("processing");
+    expect(f.mock.calls.length).toBeGreaterThan(1);
+    expect(f.mock.calls.length).toBeLessThanOrEqual(6);
+  });
+
+  it("survives one failed poll", async () => {
+    const f = answers("boom", "incomplete");
+    const result = await waitForResult("s", { fetchImpl: f as never, intervalMs: 1000, timeoutMs: 30_000, ...clock() });
+    expect(result.status).toBe("incomplete");
+  });
+
+  it("throws only when every poll failed", async () => {
+    const f = answers("boom");
+    await expect(
+      waitForResult("s", { fetchImpl: f as never, intervalMs: 1000, timeoutMs: 3000, ...clock() }),
+    ).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("stops when aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const f = answers("processing");
+    await expect(
+      waitForResult("s", { fetchImpl: f as never, signal: controller.signal, ...clock() }),
+    ).rejects.toMatchObject({ code: "ABORTED" });
+    expect(f).not.toHaveBeenCalled();
   });
 });
 

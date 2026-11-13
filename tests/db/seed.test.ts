@@ -60,7 +60,11 @@ const EXPECTED = {
 
 describe("seed.sql file", () => {
   it("has no transaction control and never touches schema", () => {
-    const sql = SEED.split("\n")
+    const sql = SEED
+      // Dollar-quoted values ($t$...$t$, used for jsonb) first: they hold
+      // apostrophes and "--" that would break the passes below.
+      .replace(/(\$\w*\$)[\s\S]*?\1/g, "''")
+      .split("\n")
       .map((l) => l.replace(/--.*$/, ""))
       .join("\n")
       // String values (e.g. role text "Create RL Environments") are data, not statements.
