@@ -8,6 +8,13 @@ const chain = { select: vi.fn(() => chain), eq: vi.fn(() => chain), maybeSingle:
 const createAdminClient = vi.fn(() => ({ rpc, from: vi.fn(() => chain) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient }));
 
+// `after` only works inside a real request; capture what the route schedules.
+const afterCallbacks: (() => unknown)[] = [];
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: (fn: () => unknown) => void afterCallbacks.push(fn),
+}));
+
 const getClaims = vi.fn();
 const createClient = vi.fn(async () => ({ auth: { getClaims } }));
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
@@ -43,6 +50,7 @@ const hook = () => ({
 });
 
 beforeEach(() => {
+  afterCallbacks.length = 0;
   rpc.mockReset();
   lookup.mockReset();
   getClaims.mockReset();
@@ -171,5 +179,45 @@ describe("POST /api/dograh/session", () => {
     expect(res.status).toBe(503);
     expect((await res.json()).missing).toEqual(["NEXT_PUBLIC_SUPABASE_URL"]);
     expect(createClient).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/dograh/webhook: AI evaluation after the response", () => {
+  it("schedules one evaluation for the token's user after a first store", async () => {
+    stubDograhEnv();
+    rpc.mockResolvedValue({ data: [{ id: SESSION, status: "completed" }], error: null });
+    expect((await webhook(hook())).status).toBe(200);
+    expect(afterCallbacks).toHaveLength(1);
+
+    // Run it: the session lookup must be pinned to the token's user id.
+    lookup.mockResolvedValue({ data: null, error: null });
+    await afterCallbacks[0]();
+    expect(chain.eq).toHaveBeenCalledWith("user_id", USER);
+    expect(chain.eq).toHaveBeenCalledWith("id", SESSION);
+  });
+
+  it("schedules nothing for a repeated delivery", async () => {
+    stubDograhEnv();
+    rpc.mockResolvedValue({ data: [], error: null });
+    lookup.mockResolvedValue({ data: { id: SESSION }, error: null });
+    expect((await webhook(hook())).status).toBe(200);
+    expect(afterCallbacks).toHaveLength(0);
+  });
+
+  it("schedules nothing when the request is rejected", async () => {
+    stubDograhEnv();
+    expect((await webhook(hook(), { authorization: "Bearer wrong" })).status).toBe(401);
+    expect(afterCallbacks).toHaveLength(0);
+  });
+
+  it("does not let a failing evaluation escape the scheduled callback", async () => {
+    stubDograhEnv();
+    rpc.mockResolvedValue({ data: [{ id: SESSION, status: "completed" }], error: null });
+    await webhook(hook());
+    createAdminClient.mockImplementationOnce(() => {
+      throw new Error("SECRET-KEY-DETAIL");
+    });
+    await expect(afterCallbacks[0]()).resolves.toBeUndefined();
+    expect((console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" ")).not.toContain("SECRET-KEY-DETAIL");
   });
 });

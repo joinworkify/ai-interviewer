@@ -1,6 +1,12 @@
 import "server-only";
 
+import { after } from "next/server";
+
+import { createSupabaseUsageStore } from "@/lib/ai/usage";
 import { jsonResponse } from "@/lib/http/json";
+import { describeError } from "@/lib/log/safe-error";
+import { evaluateStoredSession } from "@/lib/sessions/auto-evaluate";
+import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { defaultAdapters } from "@/lib/transcripts/adapters";
 import { createSupabaseTranscriptStore } from "@/lib/transcripts/store";
@@ -41,6 +47,22 @@ export async function runDograhWebhookRoute(
       env: process.env,
       store: createSupabaseTranscriptStore(createAdminClient()),
       adapters: defaultAdapters,
+      // Evaluate for reviewers once the response has gone out, so Dograh is not
+      // kept waiting on the model. The user id is the one in the signed token.
+      onStored: ({ userId, sessionId }) => {
+        after(async () => {
+          try {
+            const admin = createAdminClient();
+            await evaluateStoredSession(userId, sessionId, {
+              env: process.env,
+              store: createSupabaseSessionStore(admin, async () => userId),
+              usage: createSupabaseUsageStore(admin),
+            });
+          } catch (err) {
+            console.error("[dograh-webhook] evaluation failed", describeError(err));
+          }
+        });
+      },
     });
   } catch {
     console.error("[dograh-webhook] unhandled error");

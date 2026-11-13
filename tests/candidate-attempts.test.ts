@@ -6,7 +6,10 @@ import {
   MAX_ATTEMPT_QUESTIONS,
   buildRoleQuestions,
   findRole,
+  attemptProgress,
+  handleGetAttempt,
   handleStartAttempt,
+  type AttemptSession,
   type AttemptStore,
 } from "@/lib/candidate/attempts";
 import { createSupabaseAttemptStore } from "@/lib/candidate/attempt-store";
@@ -34,6 +37,7 @@ function deps(over: Partial<{ userId: string | null; store: AttemptStore }> = {}
     deps: {
       getUserId: async () => (over.userId === undefined ? USER : over.userId),
       store,
+      sessions: { getSession: async () => null },
     },
   };
 }
@@ -262,5 +266,98 @@ describe("giveConsentAndCreateAttempt", () => {
         throw new TypeError("offline");
       }) as never),
     ).rejects.toMatchObject({ code: "NETWORK" });
+  });
+});
+
+const turns = (...t: [string, string][]) => t.map(([speaker, text]) => ({ speaker, text }));
+
+describe("attemptProgress", () => {
+  it.each([
+    ["no transcript yet", { status: "in_progress", transcript: null }, "processing"],
+    ["an abandoned session", { status: "abandoned", transcript: null }, "incomplete"],
+    [
+      "a transcript with a spoken answer",
+      { status: "completed", transcript: turns(["interviewer", "Q?"], ["candidate", "An answer."]) },
+      "submitted",
+    ],
+    [
+      "a Vapi-shaped transcript with a spoken answer",
+      { status: "completed", transcript: [{ role: "assistant", message: "Q?" }, { role: "user", message: "Yes." }] },
+      "submitted",
+    ],
+    [
+      "a transcript with only the interviewer talking",
+      { status: "completed", transcript: turns(["interviewer", "Hello?"], ["interviewer", "Anyone there?"]) },
+      "incomplete",
+    ],
+    ["an empty transcript", { status: "completed", transcript: [] }, "incomplete"],
+    ["a blank candidate turn", { status: "completed", transcript: turns(["interviewer", "Q?"], ["candidate", "   "]) }, "incomplete"],
+    [
+      "a transcript too large to evaluate",
+      { status: "completed", transcript: turns(["interviewer", "Q?"], ["candidate", "x".repeat(70_000)]) },
+      "submitted",
+    ],
+  ])("is %s -> %s", (_label, session, expected) => {
+    expect(attemptProgress(session as AttemptSession)).toBe(expected);
+  });
+});
+
+describe("handleGetAttempt", () => {
+  const sessions = (row: AttemptSession | null | Error) => ({
+    getSession: vi.fn(async () => {
+      if (row instanceof Error) throw row;
+      return row;
+    }),
+  });
+  const own = (over: Partial<AttemptSession> = {}): AttemptSession => ({
+    user_id: USER,
+    status: "completed",
+    transcript: turns(["interviewer", "Q?"], ["candidate", "SECRET-ANSWER"]),
+    ...over,
+  });
+  const call = (id: string, row: AttemptSession | null | Error, userId: string | null = USER) =>
+    handleGetAttempt(id, { getUserId: async () => userId, sessions: sessions(row) });
+
+  it("returns only the status for the caller's own attempt", async () => {
+    const res = await call(SESSION, own());
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    const text = await res.text();
+    expect(JSON.parse(text)).toEqual({ success: true, attempt: { sessionId: SESSION, status: "submitted" } });
+    // Nothing a reviewer decides, and nothing the candidate said, comes back.
+    expect(text).not.toMatch(/SECRET-ANSWER|transcript|feedback|score/i);
+  });
+
+  it("reports processing while the transcript has not arrived", async () => {
+    const res = await call(SESSION, own({ status: "in_progress", transcript: null }));
+    expect((await res.json()).attempt.status).toBe("processing");
+  });
+
+  it("answers 401 when nobody is signed in, without reading anything", async () => {
+    const s = sessions(own());
+    const res = await handleGetAttempt(SESSION, { getUserId: async () => null, sessions: s });
+    expect(res.status).toBe(401);
+    expect(s.getSession).not.toHaveBeenCalled();
+  });
+
+  it("answers 404 for a malformed id, without reading anything", async () => {
+    const s = sessions(own());
+    const res = await handleGetAttempt("nope", { getUserId: async () => USER, sessions: s });
+    expect(res.status).toBe(404);
+    expect(s.getSession).not.toHaveBeenCalled();
+  });
+
+  it("answers 404 for a missing session and for someone else's, the same way", async () => {
+    const missing = await call(SESSION, null);
+    const foreign = await call(SESSION, own({ user_id: "99999999-2222-4333-8444-555555555555" }));
+    expect(missing.status).toBe(404);
+    expect(foreign.status).toBe(404);
+    expect(await foreign.text()).toBe(await missing.text());
+  });
+
+  it("answers a generic 500 when the store throws", async () => {
+    const res = await call(SESSION, new Error("secret row value leaked"));
+    expect(res.status).toBe(500);
+    expect(await res.text()).not.toContain("leaked");
   });
 });

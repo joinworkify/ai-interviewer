@@ -1,4 +1,6 @@
 import { jsonResponse, readJsonBody } from "@/lib/http/json";
+import { normalizeTranscript } from "@/lib/sessions/transcript";
+import { isUuid } from "@/lib/sessions/validation";
 
 import roles from "./roles.json";
 
@@ -53,10 +55,41 @@ export interface AttemptStore {
   createAttempt(userId: string, questions: string[]): Promise<{ sessionId: string }>;
 }
 
+/** The part of a session the candidate-facing status is derived from. */
+export interface AttemptSession {
+  user_id: string;
+  status: string;
+  transcript: unknown;
+}
+
 export interface AttemptHandlerDeps {
   /** Verified Supabase user id, or null when not signed in. */
   getUserId: () => Promise<string | null>;
   store: AttemptStore;
+  /** Reads one session (the caller's own). Used by the status route only. */
+  sessions: { getSession(sessionId: string): Promise<AttemptSession | null> };
+}
+
+/**
+ * What a candidate is told about an attempt. Deliberately small: no transcript,
+ * no feedback, no score, nothing a reviewer decides. The AI evaluation is for
+ * reviewers; see lib/sessions/auto-evaluate.ts.
+ *
+ *  - processing: the transcript has not arrived yet
+ *  - submitted:  a transcript with at least one spoken answer is stored
+ *  - incomplete: the call produced no answer (or the session was abandoned)
+ */
+export type AttemptProgress = "processing" | "submitted" | "incomplete";
+
+export function attemptProgress(session: Pick<AttemptSession, "status" | "transcript">): AttemptProgress {
+  if (session.status === "abandoned") return "incomplete";
+  if (session.transcript == null) return "processing";
+  const transcript = normalizeTranscript(session.transcript);
+  // Too large to evaluate still means the candidate spoke.
+  if (!transcript.ok) return transcript.reason === "too_large" ? "submitted" : "incomplete";
+  return transcript.turns.some((t) => t.role === "candidate" && t.text.length > 0)
+    ? "submitted"
+    : "incomplete";
 }
 
 type ErrorCode =
@@ -112,5 +145,28 @@ export async function handleStartAttempt(
     return jsonResponse(201, { success: true, attempt: { sessionId, roleId: role.id } });
   } catch {
     return fail(500, "storage_failed", "Could not start the interview.");
+  }
+}
+
+/** GET /api/candidate/attempts/:id: the caller's own attempt, as a candidate-safe status. */
+export async function handleGetAttempt(
+  sessionId: string,
+  deps: Pick<AttemptHandlerDeps, "getUserId" | "sessions">,
+): Promise<Response> {
+  const userId = await deps.getUserId();
+  if (!userId) return fail(401, "unauthorized", "Sign in to see this interview.");
+  if (!isUuid(sessionId)) return fail(404, "not_found", "Interview not found.");
+  try {
+    const session = await deps.sessions.getSession(sessionId);
+    // Compared explicitly so a store on an RLS-bypassing client cannot leak rows.
+    if (!session || session.user_id !== userId) {
+      return fail(404, "not_found", "Interview not found.");
+    }
+    return jsonResponse(200, {
+      success: true,
+      attempt: { sessionId, status: attemptProgress(session) },
+    });
+  } catch {
+    return fail(500, "storage_failed", "Could not load the interview.");
   }
 }

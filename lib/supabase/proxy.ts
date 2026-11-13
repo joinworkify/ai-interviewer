@@ -67,8 +67,10 @@ export async function updateSession(request: NextRequest) {
     // Exact paths only; see DOGRAH_SETUP.md.
     request.nextUrl.pathname !== "/api/dograh/session" &&
     request.nextUrl.pathname !== "/api/dograh/webhook" &&
-    // Starting an attempt verifies the session itself and answers JSON 401.
-    request.nextUrl.pathname !== "/api/candidate/attempts"
+    // Starting an attempt, and reading its status (/<uuid>), verify the
+    // session themselves and answer JSON 401.
+    request.nextUrl.pathname !== "/api/candidate/attempts" &&
+    !/^\/api\/candidate\/attempts\/[0-9a-f-]{36}$/i.test(request.nextUrl.pathname)
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

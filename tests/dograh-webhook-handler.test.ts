@@ -311,3 +311,55 @@ describe("handleDograhWebhook: storing", () => {
     }
   });
 });
+
+describe("handleDograhWebhook: post-store hook", () => {
+  beforeEach(() => void vi.spyOn(console, "error").mockImplementation(() => {}));
+  afterEach(() => vi.restoreAllMocks());
+
+  it("calls onStored once, with the user and session from the signed token", async () => {
+    const onStored = vi.fn();
+    const { deps } = harness({ onStored });
+    const res = await handleDograhWebhook(post(body()), deps);
+    expect(res.status).toBe(200);
+    expect(onStored).toHaveBeenCalledOnce();
+    expect(onStored).toHaveBeenCalledWith({ userId: USER, sessionId: SESSION });
+  });
+
+  it("does not call it for a repeated delivery", async () => {
+    const onStored = vi.fn();
+    const { deps } = harness({ onStored }, { kind: "already_stored" });
+    const res = await handleDograhWebhook(post(body()), deps);
+    expect(await res.json()).toEqual({ success: true, duplicate: true });
+    expect(onStored).not.toHaveBeenCalled();
+  });
+
+  it("does not call it when the session is not found or the write fails", async () => {
+    const notFound = vi.fn();
+    expect((await handleDograhWebhook(post(body()), harness({ onStored: notFound }, { kind: "not_found" }).deps)).status).toBe(404);
+    expect(notFound).not.toHaveBeenCalled();
+
+    const failed = vi.fn();
+    const h = harness({ onStored: failed });
+    h.store.storeOnce.mockRejectedValue(new Error("db down"));
+    expect((await handleDograhWebhook(post(body()), h.deps)).status).toBe(500);
+    expect(failed).not.toHaveBeenCalled();
+  });
+
+  it("does not call it when the request is rejected before storing", async () => {
+    const onStored = vi.fn();
+    const { deps } = harness({ onStored });
+    await handleDograhWebhook(post(body(), { authorization: "Bearer wrong" }), deps);
+    expect(onStored).not.toHaveBeenCalled();
+  });
+
+  it("still answers 200 when the hook throws, and logs nothing from the error", async () => {
+    const { deps } = harness({
+      onStored: () => {
+        throw new Error("SECRET-HOOK-DETAIL");
+      },
+    });
+    const res = await handleDograhWebhook(post(body()), deps);
+    expect(res.status).toBe(200);
+    expect((console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" ")).not.toContain("SECRET-HOOK-DETAIL");
+  });
+});

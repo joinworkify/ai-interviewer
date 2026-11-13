@@ -29,6 +29,7 @@ export interface Role {
 export type AttemptStatus =
   | "created"
   | "in_progress"
+  | "processing"
   | "interrupted"
   | "incomplete"
   | "submitted"
@@ -40,7 +41,6 @@ export interface AttemptResult {
   status: AttemptStatus;
   /** Shown as-is. Never a score, pass/fail, accent, emotion or personality. */
   summary: string;
-  nextAttemptOn?: string;
 }
 
 export class ApiError extends Error {
@@ -145,16 +145,80 @@ export async function giveConsentAndCreateAttempt(
   return { attemptId: sessionId };
 }
 
-/** GET /attempts/:id/result (fixture). */
-export async function getResult(attemptId: string, ended: "complete" | "early"): Promise<AttemptResult> {
-  await new Promise((r) => setTimeout(r, 300));
-  if (ended === "early") {
-    return {
-      attemptId,
-      status: "incomplete",
-      summary: "Your interview didn't finish. Counts as 1 attempt.",
-      nextAttemptOn: "23 Nov",
-    };
+const RESULT_SUMMARY: Record<"processing" | "submitted" | "incomplete", string> = {
+  processing: "We're still processing your interview.",
+  submitted: "Your answers were received.",
+  incomplete: "We didn't hear an answer, so there is nothing to review.",
+};
+
+/**
+ * GET /api/candidate/attempts/:id. Where the attempt really stands, read from
+ * the stored session: processing (transcript not here yet), submitted, or
+ * incomplete. Never a score or any evaluation; reviewers get those separately.
+ */
+export async function getResult(
+  attemptId: string,
+  fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
+): Promise<AttemptResult> {
+  let res: Response;
+  try {
+    res = await fetchImpl(`/api/candidate/attempts/${encodeURIComponent(attemptId)}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+      signal,
+    });
+  } catch {
+    throw new ApiError("NETWORK", "Network error. Check your connection and try again.");
   }
-  return { attemptId, status: "submitted", summary: "No scores, no auto-reject" };
+  const json: unknown = await res.json().catch(() => null);
+  const status = (json as { attempt?: { status?: unknown } } | null)?.attempt?.status;
+  if (!res.ok || (status !== "processing" && status !== "submitted" && status !== "incomplete")) {
+    throw new ApiError("RESULT_FAILED", "Could not load the result.");
+  }
+  return { attemptId, status, summary: RESULT_SUMMARY[status] };
+}
+
+export interface WaitForResultOptions {
+  fetchImpl?: typeof fetch;
+  signal?: AbortSignal;
+  intervalMs?: number;
+  timeoutMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+  now?: () => number;
+}
+
+/**
+ * After the call ends the transcript reaches us a few seconds later (Dograh's
+ * webhook). Polls until the attempt is no longer "processing". At the timeout
+ * it returns the last "processing" result so the screen can say so; it throws
+ * only when every poll failed.
+ */
+export async function waitForResult(
+  attemptId: string,
+  options: WaitForResultOptions = {},
+): Promise<AttemptResult> {
+  const interval = options.intervalMs ?? 2000;
+  const timeout = options.timeoutMs ?? 60_000;
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const now = options.now ?? Date.now;
+  const start = now();
+  let last: AttemptResult | null = null;
+  let lastError: unknown = null;
+
+  for (;;) {
+    if (options.signal?.aborted) throw new ApiError("ABORTED", "Cancelled.");
+    try {
+      last = await getResult(attemptId, options.fetchImpl, options.signal);
+      lastError = null;
+      if (last.status !== "processing") return last;
+    } catch (err) {
+      if (options.signal?.aborted) throw new ApiError("ABORTED", "Cancelled.");
+      lastError = err;
+    }
+    if (now() - start + interval >= timeout) break;
+    await sleep(interval);
+  }
+  if (last) return last;
+  throw lastError ?? new ApiError("RESULT_FAILED", "Could not load the result.");
 }

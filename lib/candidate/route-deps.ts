@@ -2,6 +2,7 @@ import "server-only";
 
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
+import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,13 +44,17 @@ export async function runAttemptRoute(
 
   try {
     const supabase = await createClient();
+    const getUserId = async () => {
+      const { data, error } = await supabase.auth.getClaims();
+      const sub = data?.claims?.sub;
+      return !error && typeof sub === "string" ? sub : null;
+    };
     return await run({
-      getUserId: async () => {
-        const { data, error } = await supabase.auth.getClaims();
-        const sub = data?.claims?.sub;
-        return !error && typeof sub === "string" ? sub : null;
-      },
+      getUserId,
       store: createSupabaseAttemptStore(createAdminClient()),
+      // Reads go through the signed-in user's own client (RLS select-own), and
+      // the store pins every query to the verified user id as well.
+      sessions: createSupabaseSessionStore(supabase, getUserId),
     });
   } catch (err) {
     console.error("[candidate-attempts] unhandled error", describeError(err));
