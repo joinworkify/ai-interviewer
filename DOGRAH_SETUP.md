@@ -157,6 +157,12 @@ With the `DOGRAH_*` variables set and Dograh running, sign in and go to `/candid
 
 If `NEXT_PUBLIC_DOGRAH_WIDGET_SRC` is not set, the live screen runs a scripted fake interviewer instead, so the screens still work without Dograh (nothing is saved). Check that a real attempt stored its transcript with the query at the end of this section.
 
+### Live captions
+
+The live screen shows what the AI interviewer is saying as it says it. Dograh's widget has no caption API, so the app listens to the call's own WebSocket (`window.DograhWidget.getState().ws`), the same stream Dograh's dashboard uses for its Live Transcript panel. The messages it reads are `rtf-bot-text`, `rtf-bot-started-speaking`, `rtf-bot-stopped-speaking` and `rtf-user-transcription` (`lib/dograh/captions.ts`). Only the interviewer's words become captions. The candidate's speech just switches "Your turn to answer" on.
+
+This relies on widget internals that Dograh does not document. If a Dograh update changes them, captions stop appearing ("Captions will appear here." stays), but the call and the saved transcript keep working. In that case check `lib/dograh/widget-client.ts` (`listenToCallMessages`) against Dograh's `ui/public/embed/dograh-widget.js`.
+
 ### Results and feedback
 
 - **Candidates never see scores.** The result screen shows only a status. `GET /api/candidate/attempts/:id` returns `processing`, `submitted` or `incomplete` and nothing else: no transcript, feedback or score.
