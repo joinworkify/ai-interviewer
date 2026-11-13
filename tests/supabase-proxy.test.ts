@@ -56,7 +56,7 @@ describe("Supabase proxy login redirect", () => {
     expect(new URL(res.headers.get("location")!).pathname).toMatch(/^\/auth\/login\/?$/);
   });
 
-  it.each(["/api/dograh/session", "/api/dograh/webhook"])(
+  it.each(["/api/dograh/session", "/api/dograh/webhook", "/api/candidate/attempts"])(
     "lets signed-out POST %s through so the route can answer for itself",
     async (path) => {
       const res = await updateSession(post(path));
@@ -72,6 +72,10 @@ describe("Supabase proxy login redirect", () => {
     "/api/dograh/session/extra",
     "/api/dograh/webhook/extra",
     "/api/dograh/webhookx",
+    "/api/candidate",
+    "/api/candidate/attempts/",
+    "/api/candidate/attempts/extra",
+    "/api/candidate/other",
     "/protected/interview/dograh",
   ])("still redirects signed-out %s to /auth/login", async (path) => {
     const res = await updateSession(post(path));

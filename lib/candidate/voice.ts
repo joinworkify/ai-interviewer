@@ -1,7 +1,15 @@
 /**
- * Live interview voice session. SHH owns the real voice WebSocket; the live
- * screen only talks to this interface, so the fake below can be swapped out.
+ * Live interview voice session. The live screen only talks to this interface,
+ * so the voice backend can be swapped: `createDograhVoiceSession` runs a real
+ * Dograh call, `createFakeVoiceSession` is a scripted stand-in for local work
+ * without Dograh.
  */
+
+import {
+  loadDograhWidget,
+  requestDograhSession,
+  type DograhSessionRequest,
+} from "@/lib/dograh/widget-client";
 
 export type VoiceStatus = "connecting" | "connected" | "reconnecting" | "ended" | "failed";
 export type Speaker = "interviewer" | "candidate" | null;
@@ -69,6 +77,100 @@ export function createFakeVoiceSession(handlers: VoiceHandlers, opts: FakeOption
   return {
     stop() {
       timers.forEach(clearTimeout);
+    },
+  };
+}
+
+export interface DograhVoiceOptions extends DograhSessionRequest {
+  /** URL of the Dograh widget script (NEXT_PUBLIC_DOGRAH_WIDGET_SRC). */
+  widgetSrc: string;
+  /** Injectable for tests. */
+  requestSession?: typeof requestDograhSession;
+  loadWidget?: typeof loadDograhWidget;
+}
+
+/**
+ * A real call through the Dograh widget. The server signs the call context
+ * (POST /api/dograh/session), the widget runs the call, and Dograh posts the
+ * transcript to our webhook when it ends. The widget has no captions or
+ * speaker events, so only the status changes are reported; a failure is
+ * explained through onCaption.
+ */
+export function createDograhVoiceSession(
+  handlers: VoiceHandlers,
+  options: DograhVoiceOptions,
+): VoiceSession {
+  const { widgetSrc, requestSession = requestDograhSession, loadWidget = loadDograhWidget } = options;
+  let stopped = false;
+  let finished = false;
+  let connected = false;
+  let started = false;
+  let widget: Awaited<ReturnType<typeof loadDograhWidget>> | null = null;
+
+  const finish = (status: "ended" | "failed", message?: string) => {
+    if (stopped || finished) return;
+    finished = true;
+    if (message) handlers.onCaption(message);
+    handlers.onSpeaker(null);
+    handlers.onStatus(status);
+  };
+
+  handlers.onStatus("connecting");
+
+  void (async () => {
+    const session = await requestSession({
+      sessionId: options.sessionId,
+      role: options.role,
+      level: options.level,
+      techstack: options.techstack,
+    });
+    if (stopped) return;
+    if (!session.ok) return finish("failed", session.message);
+
+    try {
+      widget = await loadWidget(widgetSrc);
+    } catch {
+      return finish("failed", "Could not load the voice service. Please try again.");
+    }
+    if (stopped) return;
+
+    // The widget has no way to unsubscribe; these callbacks check the flags
+    // above so a stopped or finished session ignores them.
+    widget.onCallConnected?.(() => {
+      if (stopped || finished) return;
+      connected = true;
+      handlers.onStatus("connected");
+    });
+    widget.onCallDisconnected?.(() => finish("ended"));
+    widget.onCallEnd?.(() =>
+      connected ? finish("ended") : finish("failed", "The call could not be started."),
+    );
+    widget.onStatusChange?.((status) => {
+      if (status === "failed") finish("failed", "The voice connection failed.");
+    });
+    // The raw error can quote request details; show a fixed message.
+    widget.onError?.(() => finish("failed", "The voice call failed."));
+
+    try {
+      widget.setContext(session.contextVariables);
+      started = true;
+      await widget.start();
+    } catch {
+      finish("failed", "The call could not be started. Check your microphone and try again.");
+    }
+  })();
+
+  return {
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      if (started && !finished) {
+        try {
+          widget?.end();
+        } catch {
+          // The page is going away; nothing to report.
+        }
+      }
     },
   };
 }

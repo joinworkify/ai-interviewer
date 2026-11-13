@@ -27,7 +27,9 @@ export default function ConsentPage() {
     setSaveError(false);
     try {
       const { attemptId } = await giveConsentAndCreateAttempt(roleId);
-      router.push(`/candidate/setup?attempt=${attemptId}`);
+      router.push(
+        `/candidate/setup?attempt=${encodeURIComponent(attemptId)}&role=${encodeURIComponent(roleId)}`,
+      );
     } catch {
       setSaveError(true); // keep the tick so they can just retry
       setSaving(false);

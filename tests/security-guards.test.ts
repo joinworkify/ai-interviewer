@@ -104,6 +104,7 @@ describe("the admin (service-role) client stays server-only", () => {
       "lib/sessions/route-deps.ts", // 503 when the key is missing
       "lib/data-deletion/route-deps.ts", // 503 when the key is missing
       "lib/transcripts/route-deps.ts", // 503 when the key is missing; transcript writes use the admin client
+      "lib/candidate/route-deps.ts", // 503 when the key is missing; attempts create interviews and sessions with the admin client
       "lib/dograh/route-deps.ts", // 503 when the key is missing; the webhook writes the transcript with the admin client
       "app/protected/interview/page.tsx", // server component: shows whether the key is set (never its value)
     ]);
@@ -120,12 +121,14 @@ describe("mutating routes check the request origin", () => {
     (f) =>
       /^app\/api\/(sessions|account)\/.*route\.ts$/.test(f) ||
       f === "app/api/sessions/route.ts" ||
-      f === "app/api/dograh/session/route.ts",
+      f === "app/api/dograh/session/route.ts" ||
+      f === "app/api/candidate/attempts/route.ts",
   );
 
   it("finds the session, account and Dograh session routes", () => {
-    expect(routes.length).toBeGreaterThanOrEqual(5);
+    expect(routes.length).toBeGreaterThanOrEqual(6);
     expect(routes).toContain("app/api/dograh/session/route.ts");
+    expect(routes).toContain("app/api/candidate/attempts/route.ts");
   });
 
   /** Each mutating handler's own text: from its `export` to the next `export`. */
@@ -145,7 +148,7 @@ describe("mutating routes check the request origin", () => {
       for (const { method, body } of mutating) {
         const guard = body.indexOf("guardSameOrigin(request");
         expect(guard, `${file} ${method} must call guardSameOrigin(request, ...)`).toBeGreaterThan(-1);
-        const work = body.search(/(?:run(?:Session|Deletion|Transcript)Route|handleDograhSession)\(/);
+        const work = body.search(/(?:run(?:Session|Deletion|Transcript|Attempt)Route|handleDograhSession)\(/);
         expect(guard, `${file} ${method} must guard before running`).toBeLessThan(work);
       }
     },

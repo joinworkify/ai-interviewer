@@ -12,7 +12,9 @@ const SELECT =
   "h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 export default function SetupPage() {
-  const attemptId = useSearchParams().get("attempt");
+  const params = useSearchParams();
+  const attemptId = params.get("attempt");
+  const roleId = params.get("role");
   const router = useRouter();
   const mic = useMic();
   const gate = setupGate(mic.state);
@@ -99,7 +101,8 @@ export default function SetupPage() {
           disabled={!gate.canStart}
           onClick={() => {
             mic.stop(); // the live screen opens its own stream
-            router.push(`/candidate/live?attempt=${attemptId}`);
+            const role = roleId ? `&role=${encodeURIComponent(roleId)}` : "";
+            router.push(`/candidate/live?attempt=${encodeURIComponent(attemptId)}${role}`);
           }}
         >
           Start interview

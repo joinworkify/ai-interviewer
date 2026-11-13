@@ -145,7 +145,21 @@ Apply the database migration: `npm run db:migrate` (local) or `npm run db:push` 
 
 ## 4. Try it
 
-You need an `interview_sessions` row for your user (there is no screen that creates one yet). With the local Supabase running and a user who has an interview:
+### The candidate flow (recommended)
+
+With the `DOGRAH_*` variables set and Dograh running, sign in and go to `/candidate/roles`, open a role, press **Apply now**, tick the consent box and continue, pass the mic check, and start. The screens do this for you:
+
+1. **Consent** calls `POST /api/candidate/attempts { roleId }`. The server builds the role's questions from `lib/candidate/roles.json`, creates an `interviews` row and an `interview_sessions` row for you, and returns the session id. That id is the `attempt` in the URL.
+2. **Live** loads the role from `public.roles`, asks `POST /api/dograh/session` for the signed call context, and starts the Dograh call.
+3. When the call ends, Dograh posts the transcript to the webhook and it is saved on that session.
+
+If `NEXT_PUBLIC_DOGRAH_WIDGET_SRC` is not set, the live screen runs a scripted fake interviewer instead, so the screens still work without Dograh (nothing is saved). Check that a real attempt stored its transcript with the query at the end of this section.
+
+The results screen still shows placeholder text; feedback is not wired to it yet.
+
+### Manual session (no candidate screens)
+
+You can also create the session row by hand. With the local Supabase running and a user who has an interview:
 
 ```bash
 docker exec -i supabase_db_ai-interviewer psql -U postgres -c \

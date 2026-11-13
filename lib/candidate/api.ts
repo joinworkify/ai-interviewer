@@ -115,10 +115,34 @@ export async function getInstructions(roleId: string): Promise<string> {
   );
 }
 
-/** POST /consents then POST /attempts (fixture). Returns the new attempt id. */
-export async function giveConsentAndCreateAttempt(roleId: string): Promise<{ attemptId: string }> {
-  await getRole(roleId);
-  return { attemptId: `att_${roleId}_${Date.now().toString(36)}` };
+/**
+ * POST /api/candidate/attempts. Creates the interview (the role's questions)
+ * and its session on the server; the attempt id is the interview session id,
+ * which the Dograh call, the transcript webhook and feedback all use.
+ *
+ * shortcut: the consent itself is not stored yet (no consent table).
+ */
+export async function giveConsentAndCreateAttempt(
+  roleId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ attemptId: string }> {
+  let res: Response;
+  try {
+    res = await fetchImpl("/api/candidate/attempts", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ roleId }),
+    });
+  } catch {
+    throw new ApiError("NETWORK", "Network error. Check your connection and try again.");
+  }
+  const json: unknown = await res.json().catch(() => null);
+  const sessionId = (json as { attempt?: { sessionId?: unknown } } | null)?.attempt?.sessionId;
+  if (!res.ok || typeof sessionId !== "string" || sessionId.length === 0) {
+    throw new ApiError("ATTEMPT_FAILED", "Could not start the interview.");
+  }
+  return { attemptId: sessionId };
 }
 
 /** GET /attempts/:id/result (fixture). */
