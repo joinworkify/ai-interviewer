@@ -7,12 +7,28 @@ import { ATTEMPT_DURATION_MINUTES, type AttemptStore } from "./attempts";
 
 /**
  * Must be given the service-role (admin) client: browsers cannot write
- * `interviews` or `interview_sessions`. RLS protects nothing here, so every
- * row is written with the user id the route verified from the JWT claims.
+ * `interviews`, `interview_sessions` or `candidate_consents`. RLS protects
+ * nothing here, so every row is written with the user id the route verified
+ * from the JWT claims.
+ *
+ * The three inserts are not one transaction, so a failure after the first
+ * deletes the interview; the session and consent rows go with it (cascade).
+ * An attempt therefore never exists without its consent record.
  */
 export function createSupabaseAttemptStore(client: SupabaseClient<Database>): AttemptStore {
   return {
-    async createAttempt(userId, questions) {
+    async createAttempt(userId, questions, consent) {
+      const removeInterview = async (interviewId: string) => {
+        const cleanup = await client
+          .from("interviews")
+          .delete()
+          .eq("id", interviewId)
+          .eq("user_id", userId);
+        if (cleanup.error) {
+          console.error("[candidate-attempts] cleanup failed:", describeError(cleanup.error));
+        }
+      };
+
       const interview = await client
         .from("interviews")
         .insert({
@@ -35,14 +51,20 @@ export function createSupabaseAttemptStore(client: SupabaseClient<Database>): At
       if (session.error || !session.data) {
         console.error("[candidate-attempts] insert session failed:", describeError(session.error));
         // Do not leave an interview with no session behind.
-        const cleanup = await client
-          .from("interviews")
-          .delete()
-          .eq("id", interview.data.id)
-          .eq("user_id", userId);
-        if (cleanup.error) {
-          console.error("[candidate-attempts] cleanup failed:", describeError(cleanup.error));
-        }
+        await removeInterview(interview.data.id);
+        throw new Error("createAttempt failed");
+      }
+
+      const recorded = await client.from("candidate_consents").insert({
+        user_id: userId,
+        session_id: session.data.id,
+        role_id: consent.roleId,
+        consent_version: consent.version,
+      });
+      if (recorded.error) {
+        console.error("[candidate-attempts] insert consent failed:", describeError(recorded.error));
+        // No consent record, no attempt (the session goes with its interview).
+        await removeInterview(interview.data.id);
         throw new Error("createAttempt failed");
       }
 

@@ -7,7 +7,8 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { getInstructions, giveConsentAndCreateAttempt } from "@/lib/candidate/api";
+import { ApiError, getInstructions, giveConsentAndCreateAttempt } from "@/lib/candidate/api";
+import { CONSENT_LABEL, CONSENT_POINTS } from "@/lib/candidate/consent";
 
 export default function ConsentPage() {
   const roleId = useSearchParams().get("role") ?? "";
@@ -16,7 +17,7 @@ export default function ConsentPage() {
   const [loadError, setLoadError] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     getInstructions(roleId).then(setInstructions, () => setLoadError(true));
@@ -24,14 +25,19 @@ export default function ConsentPage() {
 
   async function onContinue() {
     setSaving(true);
-    setSaveError(false);
+    setSaveError(null);
     try {
       const { attemptId } = await giveConsentAndCreateAttempt(roleId);
       router.push(
         `/candidate/setup?attempt=${encodeURIComponent(attemptId)}&role=${encodeURIComponent(roleId)}`,
       );
-    } catch {
-      setSaveError(true); // keep the tick so they can just retry
+    } catch (err) {
+      // Keep the tick so they can just retry. An outdated page needs a reload instead.
+      setSaveError(
+        err instanceof ApiError && err.code === "CONSENT_OUTDATED"
+          ? err.message
+          : "Couldn't save your consent. Please try again.",
+      );
       setSaving(false);
     }
   }
@@ -56,14 +62,21 @@ export default function ConsentPage() {
       ) : (
         <div className="min-h-40 rounded-lg border bg-muted/40 p-4 text-sm">{instructions}</div>
       )}
-      <div className="flex items-center gap-2">
+      <ul className="list-disc space-y-1 pl-5 text-sm">
+        {CONSENT_POINTS.map((point) => (
+          <li key={point}>{point}</li>
+        ))}
+      </ul>
+      <div className="flex items-start gap-2">
         <Checkbox
           id="consent"
           checked={agreed}
           disabled={instructions === null}
           onCheckedChange={(v) => setAgreed(v === true)}
         />
-        <Label htmlFor="consent">I agree to the AI interview and voice recording</Label>
+        <Label htmlFor="consent" className="leading-snug">
+          {CONSENT_LABEL}
+        </Label>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Button className="w-40" disabled={!agreed || saving} onClick={onContinue}>
@@ -72,7 +85,7 @@ export default function ConsentPage() {
         </Button>
         {saveError && (
           <p role="alert" className="text-sm text-destructive">
-            Couldn&apos;t save your consent. Please try again.
+            {saveError}
           </p>
         )}
         <Link href="/candidate/roles" className="text-sm text-muted-foreground hover:underline">

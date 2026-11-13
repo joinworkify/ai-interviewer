@@ -21,6 +21,7 @@ const B = IDS.userB;
 /** Every public table that holds rows keyed by user_id, and how it is deleted. */
 const KNOWN_USER_TABLES = [
   "ai_usage", // cascade from profiles (see docs/security-ai-data.md)
+  "candidate_consents", // cascade from profiles (and from its session)
   "capability_uses", // cascade from profiles
   "feedback", // cascade from profiles (and from its session)
   "interview_sessions", // cascade from profiles (and from its interview)
@@ -34,6 +35,9 @@ insert into public.capability_uses (generation_id, user_id) values
 insert into public.ai_usage (user_id, feature, model) values
   ('${A}', 'session-feedback', 'm'),
   ('${B}', 'session-feedback', 'm');
+insert into public.candidate_consents (user_id, session_id, role_id, consent_version) values
+  ('${A}', '${IDS.sessionA}', 'generalist', 'v1'),
+  ('${B}', '${IDS.sessionB}', 'generalist', 'v1');
 insert into public.vapi_events (vapi_call_id, type, payload) values
   ('call-a1', 'end-of-call-report', '{"transcript":"secret-a"}'),
   ('call-a1', 'status-update', '{}'),

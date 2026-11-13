@@ -267,6 +267,48 @@ export type Database = {
           },
         ];
       };
+      candidate_consents: {
+        Row: {
+          id: string;
+          user_id: string;
+          session_id: string;
+          role_id: string;
+          consent_version: string;
+          accepted_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          session_id: string;
+          role_id: string;
+          consent_version: string;
+          accepted_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          session_id?: string;
+          role_id?: string;
+          consent_version?: string;
+          accepted_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "candidate_consents_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "candidate_consents_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: true;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       roles: {
         Row: {
           id: string;
