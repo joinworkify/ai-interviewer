@@ -53,6 +53,63 @@ function setup(over: { session?: unknown; widget?: ReturnType<typeof fakeWidget>
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
+/** A widget whose call socket the test can push messages through. */
+function widgetWithSocket() {
+  const listeners = new Set<(e: { data?: unknown }) => void>();
+  const ws = {
+    addEventListener: (_t: string, fn: (e: { data?: unknown }) => void) => void listeners.add(fn),
+    removeEventListener: (_t: string, fn: (e: { data?: unknown }) => void) => void listeners.delete(fn),
+  };
+  const f = fakeWidget();
+  const widget = { ...f.widget, getState: () => ({ ws }) } as unknown as DograhWidgetApi & typeof f.widget;
+  const push = (type: string, payload: unknown = {}) =>
+    listeners.forEach((fn) => fn({ data: JSON.stringify({ type, payload }) }));
+  return { widget, cb: f.cb, push, listenerCount: () => listeners.size };
+}
+
+describe("live captions", () => {
+  it("shows what the interviewer says and who is speaking", async () => {
+    const w = widgetWithSocket();
+    const t = setup({ widget: w.widget });
+    await flush();
+    w.cb.connected();
+    w.push("rtf-bot-started-speaking");
+    w.push("rtf-bot-text", { text: "Hi, thanks for joining." });
+    w.push("rtf-bot-stopped-speaking");
+    expect(t.captions).toEqual(["Hi, thanks for joining."]);
+    expect(t.speakers).toEqual(["interviewer", "interviewer", "candidate"]);
+  });
+
+  it("stops listening when the call ends, and ignores messages after that", async () => {
+    const w = widgetWithSocket();
+    const t = setup({ widget: w.widget });
+    await flush();
+    expect(w.listenerCount()).toBe(1);
+    w.cb.connected();
+    w.cb.disconnected();
+    expect(w.listenerCount()).toBe(0);
+    w.push("rtf-bot-text", { text: "too late" });
+    expect(t.captions).toEqual([]);
+  });
+
+  it("stops listening when the session is stopped", async () => {
+    const w = widgetWithSocket();
+    const t = setup({ widget: w.widget });
+    await flush();
+    t.session.stop();
+    expect(w.listenerCount()).toBe(0);
+    w.push("rtf-bot-text", { text: "too late" });
+    expect(t.captions).toEqual([]);
+  });
+
+  it("still runs the call when the widget exposes no socket", async () => {
+    const t = setup(); // fakeWidget has no getState
+    await flush();
+    expect(t.widget.start).toHaveBeenCalledOnce();
+    expect(t.captions).toEqual([]);
+  });
+});
+
 describe("createDograhVoiceSession", () => {
   it("requests a signed session with the attempt id, then starts the call with its context", async () => {
     const t = setup();
