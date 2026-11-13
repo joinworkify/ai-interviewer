@@ -123,13 +123,6 @@ export default function RoleDetailPage() {
           >
             Continue with Google
           </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setNotice("Coming soon")}
-          >
-            Continue with LinkedIn
-          </Button>
           {notice && (
             <p
               role="status"

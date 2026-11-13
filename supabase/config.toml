@@ -434,7 +434,7 @@ secret = "env(GOOGLE_CLIENT_SECRET)"
 redirect_uri = ""
 
 [auth.external.linkedin_oidc]
-enabled = true
+enabled = false
 client_id = "env(LINKEDIN_CLIENT_ID)"
 secret = "env(LINKEDIN_CLIENT_SECRET)"
 redirect_uri = ""

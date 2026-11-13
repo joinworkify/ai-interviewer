@@ -1,4 +1,4 @@
-﻿# Google and LinkedIn sign-in setup
+# Google and LinkedIn sign-in setup
 
 The login and sign-up forms use Supabase OAuth for Google and LinkedIn OIDC. The app-side callback is `/auth/callback`. It exchanges Supabase's authorization code for a session and sends the user to `/candidate/roles`.
 
