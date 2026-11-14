@@ -14,7 +14,9 @@ export function CandidateHeader() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => setEmail(session?.user.email ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) =>
+      setEmail(session?.user.email ?? null),
+    );
     return () => data.subscription.unsubscribe();
   }, [pathname]);
 
@@ -32,13 +34,23 @@ export function CandidateHeader() {
           </span>
           Candidate Interview
         </Link>
+
         <nav className="flex items-center gap-3 text-sm">
-          {email && <span className="hidden text-muted-foreground sm:inline">{email}</span>}
-          {/* shortcut: no help page yet, link it when support has one */}
+          {email && (
+            <Link
+              href="/candidate/resume"
+              className="hidden text-muted-foreground hover:text-primary hover:underline sm:inline"
+            >
+              {email}
+            </Link>
+          )}
+
           <span className="text-muted-foreground" title="Help page coming soon">
             Help
           </span>
+
           <span className="text-border">|</span>
+
           {email ? (
             <button className="font-medium text-primary hover:underline" onClick={logOut}>
               Log out
