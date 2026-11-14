@@ -16,26 +16,35 @@ export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: {
-          id: string;
-          name: string | null;
-          email: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id: string;
-          name?: string | null;
-          email?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string | null;
-          email?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
+  Row: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    linkedin_url: string | null;
+    portfolio_url: string | null;
+    created_at: string;
+  };
+  Insert: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    linkedin_url?: string | null;
+    portfolio_url?: string | null;
+    created_at?: string;
+  };
+  Update: {
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    linkedin_url?: string | null;
+    portfolio_url?: string | null;
+    created_at?: string;
+  };
+  Relationships: [];
+};
       interviews: {
         Row: {
           id: string;
