@@ -15,7 +15,6 @@ export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null);
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -114,30 +113,6 @@ export default function RoleDetailPage() {
           >
             Confirm
           </Button>
-          <p className="text-center text-xs text-muted-foreground">Or</p>
-          {/* shortcut: social sign-in is UI only, wire it to the real auth provider later */}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setNotice("Coming soon")}
-          >
-            Continue with Google
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setNotice("Coming soon")}
-          >
-            Continue with LinkedIn
-          </Button>
-          {notice && (
-            <p
-              role="status"
-              className="text-center text-xs text-muted-foreground"
-            >
-              {notice}
-            </p>
-          )}
         </div>
       </aside>
     </div>
