@@ -1,5 +1,10 @@
 import "server-only";
 
+import {
+  createS3Client,
+  deleteUserResumeFiles,
+  readResumeS3Config,
+} from "@/lib/candidate/resume-s3";
 import { jsonResponse } from "@/lib/http/json";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -36,6 +41,9 @@ export async function runDeletionRoute(
     });
   }
 
+  // shortcut: with S3 unset (e.g. no resume feature configured) files are not
+  // checked; once AWS is configured in every environment, require it here.
+  const s3 = readResumeS3Config(process.env);
   try {
     const supabase = await createClient();
     return await run({
@@ -46,6 +54,10 @@ export async function runDeletionRoute(
         return !error && typeof sub === "string" ? sub : null;
       },
       store: createSupabaseDeletionStore(createAdminClient()),
+      // Resume files live in S3, which no database cascade reaches.
+      deleteUserFiles: s3.ok
+        ? (userId) => deleteUserResumeFiles(createS3Client(s3.config), s3.config.bucket, userId)
+        : undefined,
       // Clears the auth cookies of the account that no longer exists.
       afterAccountDeleted: async () => {
         await supabase.auth.signOut();

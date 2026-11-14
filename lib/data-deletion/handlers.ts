@@ -16,6 +16,11 @@ export interface DeletionHandlerDeps {
   /** Verified Supabase user id, or null when not signed in. */
   getUserId: () => Promise<string | null>;
   store: DeletionStore;
+  /**
+   * Removes the user's files outside the database (resumes in S3) before the
+   * account goes. A failure aborts the deletion so it can be retried.
+   */
+  deleteUserFiles?: (userId: string) => Promise<void>;
   /** Best-effort cleanup once the account is gone (e.g. clear auth cookies). */
   afterAccountDeleted?: () => Promise<void>;
 }
@@ -93,6 +98,7 @@ export async function handleDeleteAccount(
   }
 
   try {
+    await deps.deleteUserFiles?.(userId);
     await deps.store.deleteAccount(userId);
   } catch {
     return storageFailed();
