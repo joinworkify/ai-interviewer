@@ -10,6 +10,7 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
+import { CONSENT_VERSION } from "./consent";
 import type { Database } from "@/types/database";
 
 type RoleRow = Database["public"]["Tables"]["roles"]["Row"];
@@ -118,9 +119,9 @@ export async function getInstructions(roleId: string): Promise<string> {
 /**
  * POST /api/candidate/attempts. Creates the interview (the role's questions)
  * and its session on the server; the attempt id is the interview session id,
- * which the Dograh call, the transcript webhook and feedback all use.
- *
- * shortcut: the consent itself is not stored yet (no consent table).
+ * which the Dograh call, the transcript webhook and feedback all use. The
+ * request also records the consent: it sends the version of the consent text
+ * the page showed, and the server stores it with the attempt.
  */
 export async function giveConsentAndCreateAttempt(
   roleId: string,
@@ -132,12 +133,15 @@ export async function giveConsentAndCreateAttempt(
       method: "POST",
       credentials: "same-origin",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ roleId }),
+      body: JSON.stringify({ roleId, consentVersion: CONSENT_VERSION }),
     });
   } catch {
     throw new ApiError("NETWORK", "Network error. Check your connection and try again.");
   }
   const json: unknown = await res.json().catch(() => null);
+  if (res.status === 409 && (json as { error?: unknown } | null)?.error === "consent_outdated") {
+    throw new ApiError("CONSENT_OUTDATED", "The consent text has changed. Reload the page and agree again.");
+  }
   const sessionId = (json as { attempt?: { sessionId?: unknown } } | null)?.attempt?.sessionId;
   if (!res.ok || typeof sessionId !== "string" || sessionId.length === 0) {
     throw new ApiError("ATTEMPT_FAILED", "Could not start the interview.");

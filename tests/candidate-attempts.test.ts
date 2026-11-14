@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { ApiError, giveConsentAndCreateAttempt } from "@/lib/candidate/api";
+import { CONSENT_VERSION } from "@/lib/candidate/consent";
 import {
   ATTEMPT_DURATION_MINUTES,
   MAX_ATTEMPT_QUESTIONS,
@@ -28,6 +29,12 @@ function post(body: unknown, headers: Record<string, string> = {}) {
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
+
+const valid = (over: Record<string, unknown> = {}) => ({
+  roleId: "software-engineer",
+  consentVersion: CONSENT_VERSION,
+  ...over,
+});
 
 function deps(over: Partial<{ userId: string | null; store: AttemptStore }> = {}) {
   const createAttempt = vi.fn(async () => ({ sessionId: SESSION }));
@@ -82,37 +89,52 @@ describe("interviewDetailsForRole", () => {
 describe("handleStartAttempt", () => {
   it("creates the attempt from the role's own questions and returns the session id", async () => {
     const { deps: d, createAttempt } = deps();
-    const res = await handleStartAttempt(post({ roleId: "software-engineer" }), d);
+    const res = await handleStartAttempt(post(valid()), d);
     expect(res.status).toBe(201);
     expect(res.headers.get("cache-control")).toBe("no-store");
     expect(await res.json()).toEqual({
       success: true,
       attempt: { sessionId: SESSION, roleId: "software-engineer" },
     });
-    expect(createAttempt).toHaveBeenCalledWith(USER, buildRoleQuestions(findRole("software-engineer")!));
+    expect(createAttempt).toHaveBeenCalledWith(USER, buildRoleQuestions(findRole("software-engineer")!), {
+      roleId: "software-engineer",
+      version: CONSENT_VERSION,
+    });
+  });
+
+  it("answers 409 and creates nothing when the consent text the page showed is out of date", async () => {
+    const { deps: d, createAttempt } = deps();
+    const res = await handleStartAttempt(post(valid({ consentVersion: "2020-01-01" })), d);
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("consent_outdated");
+    expect(createAttempt).not.toHaveBeenCalled();
   });
 
   it("answers 401 and writes nothing when nobody is signed in", async () => {
     const { deps: d, createAttempt } = deps({ userId: null });
-    const res = await handleStartAttempt(post({ roleId: "software-engineer" }), d);
+    const res = await handleStartAttempt(post(valid()), d);
     expect(res.status).toBe(401);
     expect(createAttempt).not.toHaveBeenCalled();
   });
 
   it("answers 404 for an unknown role", async () => {
     const { deps: d, createAttempt } = deps();
-    const res = await handleStartAttempt(post({ roleId: "no-such-role" }), d);
+    const res = await handleStartAttempt(post(valid({ roleId: "no-such-role" })), d);
     expect(res.status).toBe(404);
     expect(createAttempt).not.toHaveBeenCalled();
   });
 
   it.each([
-    ["a user id in the body", { roleId: "software-engineer", userId: "x" }],
-    ["questions in the body", { roleId: "software-engineer", questions: ["a"] }],
-    ["no roleId", {}],
-    ["a numeric roleId", { roleId: 5 }],
-    ["an unsafe roleId", { roleId: "../etc/passwd" }],
-    ["an overlong roleId", { roleId: "a".repeat(81) }],
+    ["a user id in the body", valid({ userId: "x" })],
+    ["questions in the body", valid({ questions: ["a"] })],
+    ["no roleId", { consentVersion: CONSENT_VERSION }],
+    ["no consentVersion", { roleId: "software-engineer" }],
+    ["a numeric consentVersion", valid({ consentVersion: 1 })],
+    ["an empty consentVersion", valid({ consentVersion: "" })],
+    ["an overlong consentVersion", valid({ consentVersion: "v".repeat(41) })],
+    ["a numeric roleId", valid({ roleId: 5 })],
+    ["an unsafe roleId", valid({ roleId: "../etc/passwd" })],
+    ["an overlong roleId", valid({ roleId: "a".repeat(81) })],
     ["an array body", ["software-engineer"]],
     ["a null body", null],
   ])("answers 400 for %s", async (_label, body) => {
@@ -134,7 +156,7 @@ describe("handleStartAttempt", () => {
 
   it("answers 413 for an oversized body", async () => {
     const { deps: d } = deps();
-    const res = await handleStartAttempt(post({ roleId: "x", pad: "y".repeat(2000) }), d);
+    const res = await handleStartAttempt(post(valid({ pad: "y".repeat(2000) })), d);
     expect(res.status).toBe(413);
   });
 
@@ -146,14 +168,14 @@ describe("handleStartAttempt", () => {
         },
       },
     });
-    const res = await handleStartAttempt(post({ roleId: "software-engineer" }), d);
+    const res = await handleStartAttempt(post(valid()), d);
     expect(res.status).toBe(500);
     expect(await res.text()).not.toContain("leaked");
   });
 });
 
 describe("createSupabaseAttemptStore", () => {
-  function fakeClient(opts: { interviewError?: boolean; sessionError?: boolean }) {
+  function fakeClient(opts: { interviewError?: boolean; sessionError?: boolean; consentError?: boolean }) {
     const calls: { table: string; op: string; row?: unknown; eq?: [string, unknown][] }[] = [];
     const client = {
       from(table: string) {
@@ -174,9 +196,10 @@ describe("createSupabaseAttemptStore", () => {
             call.eq?.push([col, value]);
             return chain;
           },
-          // `await client.from(..).delete().eq(..).eq(..)` resolves the chain itself.
-          then(resolve: (v: { error: null }) => void) {
-            resolve({ error: null });
+          // `await client.from(..).delete().eq(..).eq(..)` and a bare
+          // `await client.from(..).insert(..)` resolve the chain itself.
+          then(resolve: (v: { error: unknown }) => void) {
+            resolve({ error: table === "candidate_consents" && opts.consentError ? { code: "23505" } : null });
           },
           select() {
             return chain;
@@ -202,10 +225,12 @@ describe("createSupabaseAttemptStore", () => {
     return { client, calls };
   }
 
-  it("writes the interview, then the session for the same user, and returns the session id", async () => {
+  const CONSENT = { roleId: "generalist", version: CONSENT_VERSION };
+
+  it("writes the interview, the session and the consent for the same user, and returns the session id", async () => {
     const { client, calls } = fakeClient({});
     const store = createSupabaseAttemptStore(client as never);
-    expect(await store.createAttempt(USER, ["q1", "q2"])).toEqual({ sessionId: SESSION });
+    expect(await store.createAttempt(USER, ["q1", "q2"], CONSENT)).toEqual({ sessionId: SESSION });
     expect(calls[0]).toMatchObject({
       table: "interviews",
       op: "insert",
@@ -216,19 +241,37 @@ describe("createSupabaseAttemptStore", () => {
       op: "insert",
       row: { user_id: USER, interview_id: "iv-1" },
     });
+    expect(calls[2]).toMatchObject({
+      table: "candidate_consents",
+      op: "insert",
+      row: { user_id: USER, session_id: SESSION, role_id: "generalist", consent_version: CONSENT_VERSION },
+    });
+    expect(calls.some((c) => c.op === "delete")).toBe(false);
+  });
+
+  it("deletes the interview (and with it the session) when the consent insert fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { client, calls } = fakeClient({ consentError: true });
+    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT)).rejects.toThrow();
+    const del = calls.find((c) => c.op === "delete");
+    expect(del?.table).toBe("interviews");
+    expect(del?.eq).toEqual([
+      ["id", "iv-1"],
+      ["user_id", USER],
+    ]);
   });
 
   it("creates no session when the interview insert fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { client, calls } = fakeClient({ interviewError: true });
-    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"])).rejects.toThrow();
+    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT)).rejects.toThrow();
     expect(calls.map((c) => c.table)).toEqual(["interviews"]);
   });
 
   it("deletes the interview (for this user only) when the session insert fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { client, calls } = fakeClient({ sessionError: true });
-    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"])).rejects.toThrow();
+    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT)).rejects.toThrow();
     const del = calls.find((c) => c.op === "delete");
     expect(del?.table).toBe("interviews");
     expect(del?.eq).toEqual([
@@ -239,7 +282,7 @@ describe("createSupabaseAttemptStore", () => {
 });
 
 describe("giveConsentAndCreateAttempt", () => {
-  it("posts the role id and returns the session id as the attempt id", async () => {
+  it("posts the role id and the consent version, and returns the session id as the attempt id", async () => {
     const fetchImpl = vi.fn(async () =>
       Response.json({ success: true, attempt: { sessionId: SESSION, roleId: "generalist" } }, { status: 201 }),
     );
@@ -247,7 +290,7 @@ describe("giveConsentAndCreateAttempt", () => {
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/candidate/attempts");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body as string)).toEqual({ roleId: "generalist" });
+    expect(JSON.parse(init.body as string)).toEqual({ roleId: "generalist", consentVersion: CONSENT_VERSION });
   });
 
   it.each([
@@ -258,6 +301,13 @@ describe("giveConsentAndCreateAttempt", () => {
     await expect(giveConsentAndCreateAttempt("generalist", (async () => make()) as never)).rejects.toBeInstanceOf(
       ApiError,
     );
+  });
+
+  it("tells the caller when the consent text is out of date", async () => {
+    await expect(
+      giveConsentAndCreateAttempt("generalist", (async () =>
+        Response.json({ success: false, error: "consent_outdated" }, { status: 409 })) as never),
+    ).rejects.toMatchObject({ code: "CONSENT_OUTDATED" });
   });
 
   it("throws an ApiError when the network fails", async () => {
