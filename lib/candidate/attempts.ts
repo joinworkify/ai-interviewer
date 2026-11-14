@@ -26,6 +26,15 @@ export const MAX_ATTEMPT_BODY_BYTES = 1024;
 /** One intro question plus up to four about the role's requirements: about 5 minutes. */
 export const MAX_ATTEMPT_QUESTIONS = 5;
 export const ATTEMPT_DURATION_MINUTES = 5;
+/** A candidate may start this many attempts per role; abandoned ones do not count. */
+export const MAX_ATTEMPTS_PER_ROLE = 3;
+/**
+ * An attempt still `in_progress` with no transcript this long after it began
+ * is treated as abandoned (closed tab, failed microphone, dropped call). It is
+ * far longer than the call itself, so a transcript webhook that is merely slow
+ * still finds its session; a late transcript also still completes it.
+ */
+export const STALE_ATTEMPT_MINUTES = 30;
 
 const ROLE_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -61,6 +70,13 @@ export interface AttemptConsent {
 }
 
 export interface AttemptStore {
+  /**
+   * Marks the user's `in_progress` sessions that began before `cutoff` and
+   * have no transcript as `abandoned`, so they stop counting as attempts.
+   */
+  abandonStaleAttempts(userId: string, cutoff: Date): Promise<void>;
+  /** How many non-abandoned attempts the user already has for this role. */
+  countAttempts(userId: string, roleId: string): Promise<number>;
   /**
    * Creates the interview, its first session and the consent record, all or
    * nothing; resolves with the session id.
@@ -116,6 +132,7 @@ type ErrorCode =
   | "invalid_json"
   | "invalid_request"
   | "consent_outdated"
+  | "attempt_limit"
   | "not_found"
   | "storage_failed";
 
@@ -174,6 +191,18 @@ export async function handleStartAttempt(
   }
 
   try {
+    // Attempts that never produced a transcript must not use up the limit.
+    await deps.store.abandonStaleAttempts(
+      userId,
+      new Date(Date.now() - STALE_ATTEMPT_MINUTES * 60_000),
+    );
+    if ((await deps.store.countAttempts(userId, role.id)) >= MAX_ATTEMPTS_PER_ROLE) {
+      return fail(
+        429,
+        "attempt_limit",
+        "You have used all of your attempts for this role. Contact DataSea if you need another.",
+      );
+    }
     const { sessionId } = await deps.store.createAttempt(userId, buildRoleQuestions(role), {
       roleId: role.id,
       version: consentVersion,

@@ -1,16 +1,17 @@
-# [NAME] AI Interviewer
+# DataSea AI Interviewer
 
-Generate interview questions by talking to a voice assistant. Tell it the role, interview type, tech stacks and how many questions you want, and it saves a tailored set to your account.
+A candidate picks a role, agrees to the consent text, and has a short voice interview with an AI interviewer. The call is recorded, the transcript comes back to the app, and an LLM writes feedback for a DataSea reviewer. Candidates never see scores or feedback.
 
 ## How it works
 
-1. A signed-in user opens `/protected/interview` and starts a call with a [Vapi](https://vapi.ai) voice assistant.
-2. The assistant collects the details and calls `POST /api/vapi/generate-interview` with a short-lived signed token.
-3. The server verifies the token, generates the questions with an OpenAI-compatible LLM (Gemini by default), and saves them to Supabase. Users can only read their own interviews (RLS).
+1. A signed-in candidate opens `/candidate`, picks a role and agrees to the consent text. `POST /api/candidate/attempts` records the agreement (`candidate_consents`), creates the interview with the role's questions and an `interview_sessions` row, and returns the session id. A candidate gets at most 3 attempts per role; attempts left `in_progress` for 30 minutes with no transcript are marked `abandoned` and stop counting.
+2. The page starts a call with the self-hosted [Dograh](DOGRAH_SETUP.md) voice agent, using a short-lived signed session token.
+3. When the call ends, Dograh calls `POST /api/dograh/webhook` (Bearer secret). The server downloads the transcript from Dograh's own API, stores it on the session and, in the background, has the LLM write feedback (`feedback`, `ai_usage`).
+4. Candidates and reviewers only ever read their own rows (RLS); every write goes through server routes with the service-role key.
 
-Full diagram: [VAPI_SETUP.md](VAPI_SETUP.md#how-it-works).
+**Stack:** Next.js (App Router) · React 19 · Tailwind + shadcn/ui · Supabase Auth + Postgres · Dograh · OpenAI-compatible LLM (Gemini by default) · Vitest
 
-**Stack:** Next.js (App Router) · React 19 · Tailwind + shadcn/ui · Supabase Auth + Postgres · Vapi · Vitest
+An earlier prototype that generates interview questions over a [Vapi](VAPI_SETUP.md) call still exists under `/protected/interview` and `/api/vapi/generate-interview`, alongside a Gemini Live variant ([GEMINI_LIVE_SETUP.md](GEMINI_LIVE_SETUP.md)). The candidate flow does not use them.
 
 ## Quick start
 
@@ -24,7 +25,9 @@ npm run db:push        # hosted project (after supabase:login + supabase:link)
 npm run dev            # http://localhost:3000
 ```
 
-The Vapi tool and assistant are created by hand in the Vapi dashboard, and the app needs a public HTTPS URL for Vapi to call. Follow [VAPI_SETUP.md](VAPI_SETUP.md).
+The Dograh agent is set up by hand, and the webhook needs a public HTTPS URL in production: follow [DOGRAH_SETUP.md](DOGRAH_SETUP.md). The Vapi prototype needs its own setup in [VAPI_SETUP.md](VAPI_SETUP.md); `npm run check:env` still asks for the Vapi variables for that reason.
+
+Before deploying to a hosted Supabase project, run `npm run db:push` so every migration is applied. The candidate flow writes to `candidate_consents` (migration `20261113000000`) and fails without it.
 
 ## Environment variables
 
@@ -33,9 +36,9 @@ Copy `.env.example` to `.env.local` (`npm run setup:env` does this).
 | Group    | Variables                                                                                                                     |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Supabase | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (server-only)                       |
-| Vapi     | `NEXT_PUBLIC_VAPI_PUBLIC_KEY`, `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID`, `VAPI_TOOL_SIGNING_SECRET` (server-only, 32+ chars) |
-| LLM      | `LLM_API_KEY` (server-only), `LLM_MODEL`; optional `LLM_BASE_URL`, `LLM_TIMEOUT_MS`                                           |
-| Dograh   | Optional. `DOGRAH_API_URL`, `DOGRAH_WEBHOOK_SECRET`, `DOGRAH_SESSION_SIGNING_SECRET` (server-only), `NEXT_PUBLIC_DOGRAH_WIDGET_SRC`; see [DOGRAH_SETUP.md](DOGRAH_SETUP.md) |
+| Vapi (prototype only) | `NEXT_PUBLIC_VAPI_PUBLIC_KEY`, `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID`, `VAPI_TOOL_SIGNING_SECRET` (server-only, 32+ chars) |
+| LLM      | `LLM_API_KEY` (server-only), `LLM_MODEL`; optional `LLM_BASE_URL`, `LLM_TIMEOUT_MS`, `AI_DAILY_CALL_LIMIT`. For Gemini use `LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai` and a text model such as `gemini-3.1-flash-lite` (not the live model). The app logs a warning for settings known to fail. |
+| Dograh   | `DOGRAH_API_URL`, `DOGRAH_WEBHOOK_SECRET`, `DOGRAH_SESSION_SIGNING_SECRET` (server-only), `NEXT_PUBLIC_DOGRAH_WIDGET_SRC`; see [DOGRAH_SETUP.md](DOGRAH_SETUP.md) |
 
 ## Scripts
 
@@ -58,12 +61,16 @@ Copy `.env.example` to `.env.local` (`npm run setup:env` does this).
 ## Project layout
 
 ```
-app/api/              Route handlers (capability token, generate-interview)
-app/protected/        Signed-in pages, including /protected/interview
-lib/interviews/       Token signing, validation, LLM client, storage
-components/interview/ Voice call UI
+app/candidate/        Candidate pages: roles, consent, setup, live call, result
+app/api/candidate/    Start an attempt, read its status
+app/api/dograh/       Session token for the call, transcript webhook
+lib/candidate/        Roles, consent text and version, attempt rules and storage
+lib/dograh/           Session token, webhook, transcript download
+lib/sessions/         Transcript storage, AI feedback
+lib/ai/               LLM client, prompts, daily usage cap
+lib/interviews/       Vapi prototype: token signing, question generation
 supabase/migrations/  Database schema + RLS
-tests/                Vitest suite
+tests/                Vitest suite (tests/db needs the local Supabase container)
 ```
 
 ## Docs

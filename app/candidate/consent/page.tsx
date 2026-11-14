@@ -34,7 +34,7 @@ export default function ConsentPage() {
     } catch (err) {
       // Keep the tick so they can just retry. An outdated page needs a reload instead.
       setSaveError(
-        err instanceof ApiError && err.code === "CONSENT_OUTDATED"
+        err instanceof ApiError && (err.code === "CONSENT_OUTDATED" || err.code === "ATTEMPT_LIMIT")
           ? err.message
           : "Couldn't save your consent. Please try again.",
       );

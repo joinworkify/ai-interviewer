@@ -17,6 +17,35 @@ import { ATTEMPT_DURATION_MINUTES, type AttemptStore } from "./attempts";
  */
 export function createSupabaseAttemptStore(client: SupabaseClient<Database>): AttemptStore {
   return {
+    async abandonStaleAttempts(userId, cutoff) {
+      const { error } = await client
+        .from("interview_sessions")
+        .update({ status: "abandoned", ended_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("status", "in_progress")
+        .is("transcript", null)
+        .lt("started_at", cutoff.toISOString());
+      if (error) {
+        console.error("[candidate-attempts] abandon stale failed:", describeError(error));
+        throw new Error("abandonStaleAttempts failed");
+      }
+    },
+
+    async countAttempts(userId, roleId) {
+      // Each attempt has exactly one consent row, which carries the role.
+      const { count, error } = await client
+        .from("candidate_consents")
+        .select("session_id, interview_sessions!inner(status)", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("role_id", roleId)
+        .neq("interview_sessions.status", "abandoned");
+      if (error || count == null) {
+        console.error("[candidate-attempts] count attempts failed:", describeError(error));
+        throw new Error("countAttempts failed");
+      }
+      return count;
+    },
+
     async createAttempt(userId, questions, consent) {
       const removeInterview = async (interviewId: string) => {
         const cleanup = await client
