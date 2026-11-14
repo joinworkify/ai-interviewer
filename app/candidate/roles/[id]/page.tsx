@@ -109,7 +109,7 @@ export default function RoleDetailPage() {
           <Button
             className="w-full"
             disabled={!isValidEmail(email)}
-            onClick={() => router.push(`/candidate/consent?role=${role.id}`)}
+            onClick={() => router.push(`/candidate/resume?role=${role.id}`)}
           >
             Confirm
           </Button>
