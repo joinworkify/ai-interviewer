@@ -105,6 +105,7 @@ describe("the admin (service-role) client stays server-only", () => {
       "lib/data-deletion/route-deps.ts", // 503 when the key is missing
       "lib/transcripts/route-deps.ts", // 503 when the key is missing; transcript writes use the admin client
       "lib/candidate/route-deps.ts", // 503 when the key is missing; attempts create interviews and sessions with the admin client
+      "lib/candidate/resume-route-deps.ts", // 503 when the key is missing; resume rows are written with the admin client
       "lib/dograh/route-deps.ts", // 503 when the key is missing; the webhook writes the transcript with the admin client
       "app/protected/interview/page.tsx", // server component: shows whether the key is set (never its value)
     ]);

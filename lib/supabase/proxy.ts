@@ -70,7 +70,9 @@ export async function updateSession(request: NextRequest) {
     // Starting an attempt, and reading its status (/<uuid>), verify the
     // session themselves and answer JSON 401.
     request.nextUrl.pathname !== "/api/candidate/attempts" &&
-    !/^\/api\/candidate\/attempts\/[0-9a-f-]{36}$/i.test(request.nextUrl.pathname)
+    !/^\/api\/candidate\/attempts\/[0-9a-f-]{36}$/i.test(request.nextUrl.pathname) &&
+    // Resume routes verify the session themselves and answer JSON 401.
+    !/^\/api\/candidate\/resume(\/(upload-url|confirm))?$/.test(request.nextUrl.pathname)
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
