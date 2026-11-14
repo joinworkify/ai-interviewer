@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { chat, LlmError, type LlmConfig } from "@/lib/ai/client";
+import { chat, llmConfigWarnings, LlmError, readLlmConfig, type LlmConfig } from "@/lib/ai/client";
 
 const config: LlmConfig = {
   apiKey: "k",
@@ -149,5 +149,45 @@ describe("chat", () => {
     );
     expect(err).toBeInstanceOf(LlmError);
     expect(err?.message).not.toContain("secret-detail");
+  });
+});
+
+describe("llmConfigWarnings", () => {
+  const GEMINI = "https://generativelanguage.googleapis.com/v1beta/openai";
+
+  it("is quiet for the settings that work", () => {
+    expect(llmConfigWarnings({ model: "gemini-3.1-flash-lite", baseUrl: GEMINI })).toEqual([]);
+    expect(llmConfigWarnings({ model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" })).toEqual([]);
+  });
+
+  it("warns when LLM_MODEL is a live (realtime) model", () => {
+    const [w] = llmConfigWarnings({ model: "gemini-3.8-live", baseUrl: GEMINI });
+    expect(w).toContain("LLM_MODEL");
+    expect(w).toContain("GEMINI_LIVE_MODEL");
+  });
+
+  it("warns when the Gemini base URL lacks /v1beta/openai", () => {
+    const [w] = llmConfigWarnings({ model: "gemini-3.1-flash-lite", baseUrl: "https://generativelanguage.googleapis.com" });
+    expect(w).toContain("LLM_BASE_URL");
+    expect(w).toContain("/v1beta/openai");
+  });
+
+  it("does not warn for a Gemini URL with a trailing slash removed by readLlmConfig", () => {
+    expect(llmConfigWarnings({ model: "m", baseUrl: `${GEMINI}/` })).toEqual([]);
+  });
+});
+
+describe("readLlmConfig warnings", () => {
+  it("logs a suspicious setting once, never the key, and still accepts the config", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const env = {
+      LLM_API_KEY: "secret-key-do-not-log",
+      LLM_MODEL: "warn-once-test-live",
+      LLM_BASE_URL: "https://api.openai.com/v1",
+    };
+    expect(readLlmConfig(env).ok).toBe(true);
+    expect(readLlmConfig(env).ok).toBe(true);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).not.toContain("secret-key-do-not-log");
   });
 });
