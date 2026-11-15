@@ -3,8 +3,10 @@
 ## Who can write what
 
 Browsers (the `authenticated` role) can **select their own rows only**, in
-`interviews`, `interview_sessions`, `feedback` and `ai_usage`. They cannot insert, update or
-delete anything in those tables. All writes happen in server routes with the
+`interviews`, `interview_sessions`, `feedback`, `candidate_consents` and
+`ai_usage`. They cannot insert, update or delete anything in those tables.
+`public.roles` (job listings, no personal data) is readable by anyone for active
+rows and is not writable from a browser. All writes happen in server routes with the
 service-role client (`lib/supabase/admin.ts`), and every query is filtered by
 the user id verified from the session (`getClaims`), because the service role
 bypasses RLS. Enforced by `supabase/migrations/20261112000004_ai_security_hardening.sql`.
@@ -23,6 +25,7 @@ Every table holding user data, and what happens when it is deleted.
 | `interviews` | generated questions | `user_id` -> `profiles` **cascade** | account deletion |
 | `interview_sessions` | transcript, recording URL, call id | `user_id` -> `profiles` **cascade**; `interview_id` -> `interviews` **cascade** | session delete, account deletion |
 | `feedback` | scores, assessment, per-answer text | `user_id` -> `profiles` **cascade**; `session_id` -> `interview_sessions` **cascade** | session delete, account deletion |
+| `candidate_consents` | role id, consent wording version, time of agreement | `user_id` -> `profiles` **cascade**; `session_id` -> `interview_sessions` **cascade** | session delete, account deletion (the proof of consent goes with the session; see the open decision below) |
 | `capability_uses` | token id only | `user_id` -> `profiles` **cascade**; no FK to `interviews` | account deletion only |
 | `ai_usage` | feature, model, token counts | `user_id` -> `profiles` **cascade** | account deletion |
 | `vapi_events` | webhook payloads (can hold transcripts) | **none**: no user column, no FK. Linked only by `vapi_call_id` to `interview_sessions` | `purge_vapi_events(user, session?)`, called **before** the session or user is deleted |
@@ -31,6 +34,10 @@ Notes:
 
 - Deleting an **interview** cascades to its sessions and feedback but not to
   `capability_uses`, so its token stays used.
+- `candidate_consents` is deleted with its session and with the user, so
+  deleting a session removes the only proof that consent was given. Keeping an
+  anonymised record (role, wording version, time) is an open decision.
+- `roles` holds no personal data and is not part of deletion.
 - `ai_usage` is deleted with the user. This also resets that user's rolling
   daily AI quota history. Anonymizing instead is an open decision.
 - Nothing writes `vapi_events` on this branch, but the purge is in place so
