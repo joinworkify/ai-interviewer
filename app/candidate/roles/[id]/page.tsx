@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SocialAuthButtons } from "@/components/social-auth-buttons";
 import { getRole, isValidEmail, type Role } from "@/lib/candidate/api";
 import { createClient } from "@/lib/supabase/client";
 
@@ -113,6 +114,10 @@ export default function RoleDetailPage() {
           >
             Confirm
           </Button>
+          <p className="text-center text-xs text-muted-foreground">Or</p>
+          <SocialAuthButtons
+            next={`/candidate/consent?role=${encodeURIComponent(role.id)}`}
+          />
         </div>
       </aside>
     </div>
