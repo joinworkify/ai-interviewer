@@ -309,6 +309,50 @@ export type Database = {
           },
         ];
       };
+      candidate_resumes: {
+        Row: {
+          id: string;
+          user_id: string;
+          s3_key: string;
+          file_name: string;
+          content_type: string;
+          size_bytes: number;
+          status: string;
+          created_at: string;
+          uploaded_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          s3_key: string;
+          file_name: string;
+          content_type: string;
+          size_bytes: number;
+          status?: string;
+          created_at?: string;
+          uploaded_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          s3_key?: string;
+          file_name?: string;
+          content_type?: string;
+          size_bytes?: number;
+          status?: string;
+          created_at?: string;
+          uploaded_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "candidate_resumes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       roles: {
         Row: {
           id: string;
