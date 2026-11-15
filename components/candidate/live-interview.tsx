@@ -139,7 +139,7 @@ export function LiveInterview({ widgetSrc }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <Badge
-        variant={status === "connected" ? "default" : status === "failed" ? "destructive" : "secondary"}
+        variant={status === "connected" ? "default" : "secondary"}
         className="w-fit"
         aria-live="polite"
       >

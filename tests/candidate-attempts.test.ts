@@ -5,6 +5,8 @@ import { CONSENT_VERSION } from "@/lib/candidate/consent";
 import {
   ATTEMPT_DURATION_MINUTES,
   MAX_ATTEMPT_QUESTIONS,
+  MAX_ATTEMPTS_PER_ROLE,
+  STALE_ATTEMPT_MINUTES,
   buildRoleQuestions,
   findRole,
   attemptProgress,
@@ -36,11 +38,17 @@ const valid = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-function deps(over: Partial<{ userId: string | null; store: AttemptStore }> = {}) {
+function deps(
+  over: Partial<{ userId: string | null; store: AttemptStore; attemptCount: number }> = {},
+) {
   const createAttempt = vi.fn(async () => ({ sessionId: SESSION }));
-  const store: AttemptStore = over.store ?? { createAttempt };
+  const abandonStaleAttempts = vi.fn(async () => {});
+  const countAttempts = vi.fn(async () => over.attemptCount ?? 0);
+  const store: AttemptStore = over.store ?? { createAttempt, abandonStaleAttempts, countAttempts };
   return {
     createAttempt,
+    abandonStaleAttempts,
+    countAttempts,
     deps: {
       getUserId: async () => (over.userId === undefined ? USER : over.userId),
       store,
@@ -163,6 +171,8 @@ describe("handleStartAttempt", () => {
   it("answers a generic 500 when the store throws, leaking nothing", async () => {
     const { deps: d } = deps({
       store: {
+        abandonStaleAttempts: async () => {},
+        countAttempts: async () => 0,
         createAttempt: async () => {
           throw new Error("secret row value leaked");
         },
@@ -171,6 +181,102 @@ describe("handleStartAttempt", () => {
     const res = await handleStartAttempt(post(valid()), d);
     expect(res.status).toBe(500);
     expect(await res.text()).not.toContain("leaked");
+  });
+
+  it("closes the user's stale attempts before counting, using the stale cutoff", async () => {
+    const now = new Date("2026-11-14T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    try {
+      const { deps: d, abandonStaleAttempts, countAttempts } = deps();
+      await handleStartAttempt(post(valid()), d);
+      expect(abandonStaleAttempts).toHaveBeenCalledWith(
+        USER,
+        new Date(now.getTime() - STALE_ATTEMPT_MINUTES * 60_000),
+      );
+      expect(abandonStaleAttempts.mock.invocationCallOrder[0]).toBeLessThan(
+        countAttempts.mock.invocationCallOrder[0],
+      );
+      expect(countAttempts).toHaveBeenCalledWith(USER, "software-engineer");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("allows an attempt while the user is under the limit", async () => {
+    const { deps: d, createAttempt } = deps({ attemptCount: MAX_ATTEMPTS_PER_ROLE - 1 });
+    expect((await handleStartAttempt(post(valid()), d)).status).toBe(201);
+    expect(createAttempt).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers 429 attempt_limit and creates nothing once the limit is reached", async () => {
+    const { deps: d, createAttempt } = deps({ attemptCount: MAX_ATTEMPTS_PER_ROLE });
+    const res = await handleStartAttempt(post(valid()), d);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ success: false, error: "attempt_limit" });
+    expect(createAttempt).not.toHaveBeenCalled();
+  });
+
+  it("answers a generic 500 when the attempt count cannot be read", async () => {
+    const { deps: d, createAttempt } = deps({
+      store: {
+        abandonStaleAttempts: async () => {},
+        countAttempts: async () => {
+          throw new Error("secret count failure");
+        },
+        createAttempt: vi.fn(),
+      },
+    });
+    const res = await handleStartAttempt(post(valid()), d);
+    expect(res.status).toBe(500);
+    expect(await res.text()).not.toContain("secret");
+    expect(createAttempt).not.toHaveBeenCalled();
+  });
+});
+
+describe("createSupabaseAttemptStore attempt limits", () => {
+  function recordingClient(result: { count?: number | null; error?: unknown }) {
+    const ops: [string, ...unknown[]][] = [];
+    const chain: Record<string, unknown> = {};
+    for (const m of ["update", "select", "eq", "neq", "is", "lt"]) {
+      chain[m] = (...args: unknown[]) => {
+        ops.push([m, ...args]);
+        return chain;
+      };
+    }
+    chain.then = (resolve: (v: unknown) => void) =>
+      resolve({ count: result.count ?? null, error: result.error ?? null });
+    return { client: { from: (t: string) => (ops.push(["from", t]), chain) }, ops };
+  }
+
+  it("abandons only this user's in_progress sessions with no transcript that began before the cutoff", async () => {
+    const { client, ops } = recordingClient({});
+    const cutoff = new Date("2026-11-14T11:30:00.000Z");
+    await createSupabaseAttemptStore(client as never).abandonStaleAttempts(USER, cutoff);
+    expect(ops).toContainEqual(["from", "interview_sessions"]);
+    expect(ops.find((o) => o[0] === "update")?.[1]).toMatchObject({ status: "abandoned" });
+    expect(ops).toContainEqual(["eq", "user_id", USER]);
+    expect(ops).toContainEqual(["eq", "status", "in_progress"]);
+    expect(ops).toContainEqual(["is", "transcript", null]);
+    expect(ops).toContainEqual(["lt", "started_at", cutoff.toISOString()]);
+  });
+
+  it("counts the user's non-abandoned attempts for the role", async () => {
+    const { client, ops } = recordingClient({ count: 2 });
+    expect(await createSupabaseAttemptStore(client as never).countAttempts(USER, "generalist")).toBe(2);
+    expect(ops).toContainEqual(["from", "candidate_consents"]);
+    expect(ops).toContainEqual(["eq", "user_id", USER]);
+    expect(ops).toContainEqual(["eq", "role_id", "generalist"]);
+    expect(ops).toContainEqual(["neq", "interview_sessions.status", "abandoned"]);
+  });
+
+  it("throws, rather than reporting zero, when the count or the cleanup fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const failing = recordingClient({ error: { code: "XX000" } });
+    await expect(createSupabaseAttemptStore(failing.client as never).countAttempts(USER, "generalist")).rejects.toThrow();
+    await expect(
+      createSupabaseAttemptStore(failing.client as never).abandonStaleAttempts(USER, new Date()),
+    ).rejects.toThrow();
   });
 });
 
@@ -308,6 +414,13 @@ describe("giveConsentAndCreateAttempt", () => {
       giveConsentAndCreateAttempt("generalist", (async () =>
         Response.json({ success: false, error: "consent_outdated" }, { status: 409 })) as never),
     ).rejects.toMatchObject({ code: "CONSENT_OUTDATED" });
+  });
+
+  it("tells the caller when the attempt limit is reached", async () => {
+    await expect(
+      giveConsentAndCreateAttempt("generalist", (async () =>
+        Response.json({ success: false, error: "attempt_limit" }, { status: 429 })) as never),
+    ).rejects.toMatchObject({ code: "ATTEMPT_LIMIT" });
   });
 
   it("throws an ApiError when the network fails", async () => {
