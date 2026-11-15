@@ -1,41 +1,32 @@
-# Google and LinkedIn sign-in setup
+# Google sign-in setup
 
-The login and sign-up forms use Supabase OAuth for Google and LinkedIn OIDC. The app-side callback is `/auth/callback`. It exchanges Supabase's authorization code for a session and sends the user to `/candidate/roles`.
+The login and sign-up forms, and the Apply panel on a role page, use Supabase OAuth for Google. The app-side callback is `/auth/callback`. It exchanges Supabase's authorization code for a session and sends the user to the page they were heading to (the `next` path), or `/candidate/roles` when there is none.
+
+If sign-in is cancelled or fails, the callback sends the user back to `/auth/login` with a message.
 
 ## 1. Add the app callback to Supabase
 
-In **Supabase Dashboard > Authentication > URL Configuration**, add these Redirect URLs for local development:
+Local Supabase already allows `localhost:3000` and `127.0.0.1:3000` through `additional_redirect_urls` in `supabase/config.toml`.
 
-- `http://localhost:3000/auth/callback`
-- `http://127.0.0.1:3000/auth/callback`
-
-Set the Site URL to the local app origin you normally use (for example, `http://localhost:3000`). For production, add the production callback URL and set the production Site URL as well.
+For hosted Supabase, open **Dashboard > Authentication > URL Configuration**, add the production callback URL (`https://<your-domain>/auth/callback`), and set the production Site URL.
 
 ## 2. Configure Google
 
 1. Create or select an OAuth 2.0 Client ID of type **Web application** in Google Cloud Console.
-2. In its **Authorized redirect URIs**, add the Supabase Auth callback URL:
+2. In its **Authorized redirect URIs**, add the Supabase Auth callback URL. Google matches it exactly (scheme, host, port, no trailing slash):
    - Local Supabase: `http://127.0.0.1:54321/auth/v1/callback`
    - Hosted Supabase: `https://<project-ref>.supabase.co/auth/v1/callback`
-3. In Supabase **Authentication > Sign In / Providers > Google**, enable Google and enter the Google Client ID and Client Secret.
-4. Save the provider settings.
+3. Provide the Client ID and Client Secret:
+   - Local Supabase: set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your environment (see `.env.example`). `supabase/config.toml` reads them through `env(...)`.
+   - Hosted Supabase: enter them in **Authentication > Sign In / Providers > Google** and enable the provider.
 
-## 3. Configure LinkedIn
+## 3. Run and test locally
 
-1. Create an app in the LinkedIn Developer Portal and enable the **Sign In with LinkedIn using OpenID Connect** product.
-2. Add the Supabase Auth callback URL as the app's authorized redirect URL:
-   - Local Supabase: `http://127.0.0.1:54321/auth/v1/callback`
-   - Hosted Supabase: `https://<project-ref>.supabase.co/auth/v1/callback`
-3. In Supabase **Authentication > Sign In / Providers > LinkedIn (OIDC)**, enable the provider and enter the LinkedIn Client ID and Client Secret.
-4. Save the provider settings.
-
-The app uses Supabase provider ID `linkedin_oidc`, not the legacy `linkedin` provider.
-
-## 4. Run and test locally
-
-1. Start local Supabase: `npx supabase start`.
+1. Start local Supabase: `npx supabase start`. Supabase reads `config.toml` and the environment only when it starts, so run `npx supabase stop` and `npx supabase start` again after changing either.
 2. Start Next.js: `npm run dev`.
 3. Open `/auth/login` or `/auth/sign-up` using the same local hostname you added to Supabase's Redirect URLs.
-4. Test Google and LinkedIn separately. Each should return through `/auth/callback` and land at `/candidate/roles`.
+4. Click **Continue with Google**. You should return through `/auth/callback` and land at `/candidate/roles`.
 
-Provider credentials belong in Supabase provider settings. Never commit credentials or put them in `NEXT_PUBLIC_` environment variables. The local Supabase dashboard is normally available at `http://127.0.0.1:54323`.
+If Google shows `redirect_uri_mismatch`, the URI in step 2 is missing from the Google client the app is using.
+
+Provider credentials belong in Supabase provider settings or the local environment. Never commit credentials or put them in `NEXT_PUBLIC_` environment variables. The local Supabase dashboard is normally available at `http://127.0.0.1:54323`.

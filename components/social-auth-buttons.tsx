@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_NEXT, safeNext } from "@/lib/auth/safe-next";
 import { createClient } from "@/lib/supabase/client";
 
 type OAuthProvider = "google";
@@ -16,11 +17,8 @@ function GoogleMark() {
       <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.83l-7.72-5.99c-2.14 1.45-4.88 2.32-8.19 2.32-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z" />
     </svg>
   );
-}
-
-
-
-export function SocialAuthButtons() {
+}/** `next` is the same-origin path to open after sign-in. */
+export function SocialAuthButtons({ next = DEFAULT_NEXT }: { next?: string }) {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +27,7 @@ export function SocialAuthButtons() {
     setError(null);
     try {
       const supabase = createClient();
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/candidate/roles")}`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext(next))}`;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo },

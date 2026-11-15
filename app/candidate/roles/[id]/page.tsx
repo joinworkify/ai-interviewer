@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SocialAuthButtons } from "@/components/social-auth-buttons";
 import { getRole, isValidEmail, type Role } from "@/lib/candidate/api";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,7 +16,6 @@ export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null);
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -115,22 +115,9 @@ export default function RoleDetailPage() {
             Confirm
           </Button>
           <p className="text-center text-xs text-muted-foreground">Or</p>
-          {/* shortcut: social sign-in is UI only, wire it to the real auth provider later */}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setNotice("Coming soon")}
-          >
-            Continue with Google
-          </Button>
-          {notice && (
-            <p
-              role="status"
-              className="text-center text-xs text-muted-foreground"
-            >
-              {notice}
-            </p>
-          )}
+          <SocialAuthButtons
+            next={`/candidate/consent?role=${encodeURIComponent(role.id)}`}
+          />
         </div>
       </aside>
     </div>
