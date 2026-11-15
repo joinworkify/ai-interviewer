@@ -13,15 +13,12 @@ export function CandidateHeader() {
 
   useEffect(() => {
     const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
-    });
-
-    const { data } = supabase.auth.onAuthStateChange(
-      (_event, session) => setEmail(session?.user.email ?? null)
+    supabase.auth
+      .getUser()
+      .then(({ data }) => setEmail(data.user?.email ?? null));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) =>
+      setEmail(session?.user.email ?? null),
     );
-
     return () => data.subscription.unsubscribe();
   }, [pathname]);
 
@@ -45,16 +42,15 @@ export function CandidateHeader() {
 
         <nav className="flex items-center gap-3 text-sm">
           {email && (
-            <span className="hidden text-muted-foreground sm:inline">
+            <Link
+              href="/candidate/resume"
+              className="hidden text-muted-foreground hover:text-primary hover:underline sm:inline"
+            >
               {email}
-            </span>
+            </Link>
           )}
 
-          {/* shortcut: no help page yet, link it when support has one */}
-          <span
-            className="text-muted-foreground"
-            title="Help page coming soon"
-          >
+          <span className="text-muted-foreground" title="Help page coming soon">
             Help
           </span>
 
