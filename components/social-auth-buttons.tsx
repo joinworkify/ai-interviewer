@@ -1,26 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GoogleLogo } from "@/components/google-logo";
 import { DEFAULT_NEXT, safeNext } from "@/lib/auth/safe-next";
 import { createClient } from "@/lib/supabase/client";
 
 type OAuthProvider = "google";
 
-function GoogleMark() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 48 48" className="h-5 w-5">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z" />
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.47-4.74 7.16l7.72 5.99c4.51-4.16 7.06-10.28 7.06-17.62Z" />
-      <path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19Z" />
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.83l-7.72-5.99c-2.14 1.45-4.88 2.32-8.19 2.32-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z" />
-    </svg>
-  );
-}/** `next` is the same-origin path to open after sign-in. */
+/** `next` is the same-origin path to open after sign-in. */
 export function SocialAuthButtons({ next = DEFAULT_NEXT }: { next?: string }) {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Pressing Back from Google can restore this page from the browser cache with
+  // the button still disabled, so clear the loading state when that happens.
+  useEffect(() => {
+    const reset = (event: PageTransitionEvent) => {
+      if (event.persisted) setLoadingProvider(null);
+    };
+    window.addEventListener("pageshow", reset);
+    return () => window.removeEventListener("pageshow", reset);
+  }, []);
 
   async function startOAuth(provider: OAuthProvider) {
     setLoadingProvider(provider);
@@ -41,14 +43,16 @@ export function SocialAuthButtons({ next = DEFAULT_NEXT }: { next?: string }) {
 
   return (
     <div className="space-y-3">
+      {/* Follows Google's button guidelines: white fill, 1px #747775 border,
+          #1F1F1F text, 20px logo, 10px gap, light-gray hover. */}
       <Button
         type="button"
         variant="outline"
-        className="h-11 w-full justify-center gap-3 border-border bg-white text-foreground hover:bg-muted"
+        className="h-11 w-full justify-center gap-2.5 border-[#747775] bg-white text-[#1F1F1F] shadow-none hover:bg-[#EEEEEE] hover:text-[#1F1F1F] [&_svg]:size-5"
         disabled={loadingProvider !== null}
         onClick={() => void startOAuth("google")}
       >
-        {loadingProvider === "google" ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleMark />}
+        {loadingProvider === "google" ? <Loader2 className="animate-spin" /> : <GoogleLogo />}
         Continue with Google
       </Button>
       {error && (
