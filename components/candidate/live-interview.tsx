@@ -83,6 +83,14 @@ export function LiveInterview({ widgetSrc }: Props) {
     };
   }, [attemptId, roleId, widgetSrc, dropOnce, startMic]);
 
+  // Failed: say so, then send the candidate back to the Apply now screen.
+  const applyHref = roleId ? `/candidate/roles/${encodeURIComponent(roleId)}` : "/candidate/roles";
+  useEffect(() => {
+    if (status !== "failed") return;
+    const t = setTimeout(() => router.push(applyHref), 2500);
+    return () => clearTimeout(t);
+  }, [status, applyHref, router]);
+
   // Finished: go to results.
   useEffect(() => {
     if (status !== "ended") return;
@@ -114,10 +122,24 @@ export function LiveInterview({ widgetSrc }: Props) {
     );
   }
 
+  if (status === "failed") {
+    return (
+      <div
+        role="alert"
+        className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center shadow-sm"
+      >
+        <p className="text-lg font-semibold">Session terminated. Try again.</p>
+        <Button asChild>
+          <Link href={applyHref}>Back to apply</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Badge
-        variant={status === "connected" ? "default" : status === "failed" ? "destructive" : "secondary"}
+        variant={status === "connected" ? "default" : "secondary"}
         className="w-fit"
         aria-live="polite"
       >

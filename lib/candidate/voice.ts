@@ -5,7 +5,9 @@
  * without Dograh.
  */
 
+import { createCaptionTracker } from "@/lib/dograh/captions";
 import {
+  listenToCallMessages,
   loadDograhWidget,
   requestDograhSession,
   type DograhSessionRequest,
@@ -92,9 +94,10 @@ export interface DograhVoiceOptions extends DograhSessionRequest {
 /**
  * A real call through the Dograh widget. The server signs the call context
  * (POST /api/dograh/session), the widget runs the call, and Dograh posts the
- * transcript to our webhook when it ends. The widget has no captions or
- * speaker events, so only the status changes are reported; a failure is
- * explained through onCaption.
+ * transcript to our webhook when it ends. The widget's own callbacks only
+ * cover status changes, so live captions and the speaker come from the call's
+ * WebSocket (see lib/dograh/captions.ts); a failure is explained through
+ * onCaption.
  */
 export function createDograhVoiceSession(
   handlers: VoiceHandlers,
@@ -106,10 +109,13 @@ export function createDograhVoiceSession(
   let connected = false;
   let started = false;
   let widget: Awaited<ReturnType<typeof loadDograhWidget>> | null = null;
+  let stopListening: (() => void) | null = null;
 
   const finish = (status: "ended" | "failed", message?: string) => {
     if (stopped || finished) return;
     finished = true;
+    stopListening?.();
+    stopListening = null;
     if (message) handlers.onCaption(message);
     handlers.onSpeaker(null);
     handlers.onStatus(status);
@@ -151,6 +157,14 @@ export function createDograhVoiceSession(
     // The raw error can quote request details; show a fixed message.
     widget.onError?.(() => finish("failed", "The voice call failed."));
 
+    // Start listening before start(): the call's WebSocket is created inside
+    // it, and the first thing the interviewer says arrives soon after.
+    const captions = createCaptionTracker(handlers);
+    stopListening = listenToCallMessages(widget, (raw) => {
+      if (stopped || finished) return;
+      captions.handle(raw);
+    });
+
     try {
       widget.setContext(session.contextVariables);
       started = true;
@@ -164,6 +178,8 @@ export function createDograhVoiceSession(
     stop() {
       if (stopped) return;
       stopped = true;
+      stopListening?.();
+      stopListening = null;
       if (started && !finished) {
         try {
           widget?.end();

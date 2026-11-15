@@ -16,6 +16,13 @@ export interface DograhWidgetApi {
   onCallEnd?: (cb: () => void) => unknown;
   onStatusChange?: (cb: (status: string) => void) => unknown;
   onError?: (cb: (error: unknown) => void) => unknown;
+  /**
+   * Not part of Dograh's documented API, but the widget exposes it. Its `ws`
+   * is the call's signaling WebSocket, which carries the live caption events
+   * (see lib/dograh/captions.ts). Optional on purpose: if a Dograh update
+   * removes it, captions go quiet and the call keeps working.
+   */
+  getState?: () => { ws?: unknown } | null | undefined;
 }
 
 declare global {
@@ -111,6 +118,72 @@ export function loadDograhWidget(
     // The script may already have finished loading on an earlier attempt.
     waitForGlobal();
   });
+}
+
+interface MessageSource {
+  addEventListener(type: "message", listener: (event: { data?: unknown }) => void): void;
+  removeEventListener(type: "message", listener: (event: { data?: unknown }) => void): void;
+}
+
+function isMessageSource(v: unknown): v is MessageSource {
+  return (
+    !!v &&
+    typeof (v as MessageSource).addEventListener === "function" &&
+    typeof (v as MessageSource).removeEventListener === "function"
+  );
+}
+
+export interface ListenOptions {
+  /** How often to look for the call's WebSocket. */
+  intervalMs?: number;
+  /** Give up looking after this long (the mic permission prompt can be slow). */
+  timeoutMs?: number;
+}
+
+/**
+ * Listens to the text messages on the widget's call WebSocket. The socket only
+ * exists once start() is under way, so this looks for it until it appears (or
+ * the timeout passes). Call it just before start(). Returns a function that
+ * stops listening. If the widget has no socket to offer, nothing happens.
+ */
+export function listenToCallMessages(
+  widget: DograhWidgetApi,
+  onMessage: (data: string) => void,
+  options: ListenOptions = {},
+): () => void {
+  const intervalMs = options.intervalMs ?? 100;
+  const deadline = Date.now() + (options.timeoutMs ?? 60_000);
+  let stopped = false;
+  let source: MessageSource | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const listener = (event: { data?: unknown }) => {
+    if (typeof event.data === "string") onMessage(event.data);
+  };
+
+  const look = () => {
+    if (stopped) return;
+    let candidate: unknown;
+    try {
+      candidate = widget.getState?.()?.ws;
+    } catch {
+      candidate = null;
+    }
+    if (isMessageSource(candidate)) {
+      source = candidate;
+      source.addEventListener("message", listener);
+      return;
+    }
+    if (Date.now() < deadline) timer = setTimeout(look, intervalMs);
+  };
+  look();
+
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    source?.removeEventListener("message", listener);
+    source = null;
+  };
 }
 
 export interface WaitForSavedOptions {

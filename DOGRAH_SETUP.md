@@ -149,13 +149,19 @@ Apply the database migration: `npm run db:migrate` (local) or `npm run db:push` 
 
 With the `DOGRAH_*` variables set and Dograh running, sign in and go to `/candidate/roles`, open a role, press **Apply now**, tick the consent box and continue, pass the mic check, and start. The screens do this for you:
 
-1. **Consent** calls `POST /api/candidate/attempts { roleId }`. The server builds the role's questions from `lib/candidate/roles.json`, creates an `interviews` row and an `interview_sessions` row for you, and returns the session id. That id is the `attempt` in the URL.
+1. **Consent** calls `POST /api/candidate/attempts { roleId, consentVersion }`. The server builds the role's questions from `lib/candidate/roles.json`, creates an `interviews` row, an `interview_sessions` row and a `candidate_consents` row (user, session, role, consent version, time) for you, and returns the session id. A `consentVersion` that is not the current `CONSENT_VERSION` in `lib/candidate/consent.ts` is refused with 409, so nobody agrees to wording they did not see. Change the wording and you must bump the version. That id is the `attempt` in the URL.
 2. **Live** loads the role from `public.roles`, asks `POST /api/dograh/session` for the signed call context, and starts the Dograh call.
 3. When the call ends, Dograh posts the transcript to the webhook and it is saved on that session.
 4. Right after the webhook has answered, the server runs the AI evaluation for that session and stores the feedback for reviewers (see "Results and feedback" below).
 5. The **result** screen polls `GET /api/candidate/attempts/:id` until the transcript has arrived, then shows **Submitted** (at least one spoken answer) or **Incomplete** (no answer). After about a minute without a transcript it says it is still processing and offers "Check again".
 
 If `NEXT_PUBLIC_DOGRAH_WIDGET_SRC` is not set, the live screen runs a scripted fake interviewer instead, so the screens still work without Dograh (nothing is saved). Check that a real attempt stored its transcript with the query at the end of this section.
+
+### Live captions
+
+The live screen shows what the AI interviewer is saying as it says it. Dograh's widget has no caption API, so the app listens to the call's own WebSocket (`window.DograhWidget.getState().ws`), the same stream Dograh's dashboard uses for its Live Transcript panel. The messages it reads are `rtf-bot-text`, `rtf-bot-started-speaking`, `rtf-bot-stopped-speaking` and `rtf-user-transcription` (`lib/dograh/captions.ts`). Only the interviewer's words become captions. The candidate's speech just switches "Your turn to answer" on.
+
+This relies on widget internals that Dograh does not document. If a Dograh update changes them, captions stop appearing ("Captions will appear here." stays), but the call and the saved transcript keep working. In that case check `lib/dograh/widget-client.ts` (`listenToCallMessages`) against Dograh's `ui/public/embed/dograh-widget.js`.
 
 ### Results and feedback
 
@@ -197,7 +203,7 @@ Then request feedback with the existing `POST /api/sessions/:id/feedback` route.
 
 ## Data and privacy
 
-Dograh stores its own copy of each call: the transcript in its Postgres and the transcript (and any recording) in its MinIO or S3 storage. Deleting a transcript through this app (`DELETE /api/sessions/:id/transcript`) removes only this app's copy. Decide how long Dograh keeps runs and how they are deleted, and name Dograh in the consent text candidates see.
+Dograh stores its own copy of each call: the transcript in its Postgres and the transcript (and any recording) in its MinIO or S3 storage. Deleting a transcript through this app (`DELETE /api/sessions/:id/transcript`) removes only this app's copy. Decide how long Dograh keeps runs and how they are deleted, The consent text candidates see (`lib/candidate/consent.ts`) names Dograh; update it to say how long Dograh keeps runs once you decide.
 
 ## Troubleshooting
 

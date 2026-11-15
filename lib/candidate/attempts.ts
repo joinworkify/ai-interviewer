@@ -2,13 +2,16 @@ import { jsonResponse, readJsonBody } from "@/lib/http/json";
 import { normalizeTranscript } from "@/lib/sessions/transcript";
 import { isUuid } from "@/lib/sessions/validation";
 
+import { CONSENT_VERSION } from "./consent";
 import roles from "./roles.json";
 
 /**
- * `POST /api/candidate/attempts { roleId }`: starts one interview attempt for
- * the signed-in candidate. It creates an `interviews` row holding the role's
- * questions and an `interview_sessions` row for the attempt, and answers with
- * the session id. That id is what the Dograh call, the transcript webhook and
+ * `POST /api/candidate/attempts { roleId, consentVersion }`: starts one
+ * interview attempt for the signed-in candidate. It creates an `interviews`
+ * row holding the role's questions, an `interview_sessions` row for the
+ * attempt and a `candidate_consents` row recording which consent wording the
+ * candidate agreed to, and answers with the session id. Posting is the
+ * agreement: without a current `consentVersion` no attempt is created. That id is what the Dograh call, the transcript webhook and
  * the feedback route all hang off.
  *
  * Framework-agnostic (Request -> Response) with injected dependencies, like
@@ -23,6 +26,15 @@ export const MAX_ATTEMPT_BODY_BYTES = 1024;
 /** One intro question plus up to four about the role's requirements: about 5 minutes. */
 export const MAX_ATTEMPT_QUESTIONS = 5;
 export const ATTEMPT_DURATION_MINUTES = 5;
+/** A candidate may start this many attempts per role; abandoned ones do not count. */
+export const MAX_ATTEMPTS_PER_ROLE = 3;
+/**
+ * An attempt still `in_progress` with no transcript this long after it began
+ * is treated as abandoned (closed tab, failed microphone, dropped call). It is
+ * far longer than the call itself, so a transcript webhook that is merely slow
+ * still finds its session; a late transcript also still completes it.
+ */
+export const STALE_ATTEMPT_MINUTES = 30;
 
 const ROLE_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -50,9 +62,30 @@ export function buildRoleQuestions(role: Pick<RoleData, "title" | "requirements"
   return questions;
 }
 
+/** What the candidate agreed to when the attempt was created. */
+export interface AttemptConsent {
+  roleId: string;
+  /** The wording shown (CONSENT_VERSION at the time). */
+  version: string;
+}
+
 export interface AttemptStore {
-  /** Creates the interview and its first session; resolves with the session id. */
-  createAttempt(userId: string, questions: string[]): Promise<{ sessionId: string }>;
+  /**
+   * Marks the user's `in_progress` sessions that began before `cutoff` and
+   * have no transcript as `abandoned`, so they stop counting as attempts.
+   */
+  abandonStaleAttempts(userId: string, cutoff: Date): Promise<void>;
+  /** How many non-abandoned attempts the user already has for this role. */
+  countAttempts(userId: string, roleId: string): Promise<number>;
+  /**
+   * Creates the interview, its first session and the consent record, all or
+   * nothing; resolves with the session id.
+   */
+  createAttempt(
+    userId: string,
+    questions: string[],
+    consent: AttemptConsent,
+  ): Promise<{ sessionId: string }>;
 }
 
 /** The part of a session the candidate-facing status is derived from. */
@@ -98,6 +131,8 @@ type ErrorCode =
   | "payload_too_large"
   | "invalid_json"
   | "invalid_request"
+  | "consent_outdated"
+  | "attempt_limit"
   | "not_found"
   | "storage_failed";
 
@@ -124,24 +159,54 @@ export async function handleStartAttempt(
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return fail(400, "invalid_request", "Request body must be a JSON object.");
   }
-  const unknown = Object.keys(value).filter((k) => k !== "roleId");
-  const roleId = value.roleId;
+  const unknown = Object.keys(value).filter((k) => k !== "roleId" && k !== "consentVersion");
+  const { roleId, consentVersion } = value;
   if (
     unknown.length > 0 ||
     typeof roleId !== "string" ||
     roleId.length > 80 ||
-    !ROLE_ID_RE.test(roleId)
+    !ROLE_ID_RE.test(roleId) ||
+    typeof consentVersion !== "string" ||
+    consentVersion.length === 0 ||
+    consentVersion.length > 40
   ) {
     return fail(400, "invalid_request", "Invalid request.", {
-      details: ["Send only roleId, a role id such as software-engineer."],
+      details: [
+        "Send only roleId (a role id such as software-engineer) and consentVersion (the version of the consent text shown).",
+      ],
     });
   }
 
   const role = findRole(roleId);
   if (!role) return fail(404, "not_found", "This role is not available.");
 
+  // A page opened before the wording changed must not record agreement to
+  // text the candidate never saw.
+  if (consentVersion !== CONSENT_VERSION) {
+    return fail(
+      409,
+      "consent_outdated",
+      "The consent text has changed. Reload the page and agree again.",
+    );
+  }
+
   try {
-    const { sessionId } = await deps.store.createAttempt(userId, buildRoleQuestions(role));
+    // Attempts that never produced a transcript must not use up the limit.
+    await deps.store.abandonStaleAttempts(
+      userId,
+      new Date(Date.now() - STALE_ATTEMPT_MINUTES * 60_000),
+    );
+    if ((await deps.store.countAttempts(userId, role.id)) >= MAX_ATTEMPTS_PER_ROLE) {
+      return fail(
+        429,
+        "attempt_limit",
+        "You have used all of your attempts for this role. Contact DataSea if you need another.",
+      );
+    }
+    const { sessionId } = await deps.store.createAttempt(userId, buildRoleQuestions(role), {
+      roleId: role.id,
+      version: consentVersion,
+    });
     return jsonResponse(201, { success: true, attempt: { sessionId, roleId: role.id } });
   } catch {
     return fail(500, "storage_failed", "Could not start the interview.");

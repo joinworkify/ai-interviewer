@@ -9,14 +9,26 @@ const createClient = vi.fn(async () => ({ auth: { getClaims }, from: vi.fn(() =>
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
 
 const inserts: { table: string; row: Record<string, unknown> }[] = [];
+let existingAttempts = 0;
 const createAdminClient = vi.fn(() => ({
   from(table: string) {
+    // Reads/updates used by the attempt limit: update().eq()..., select(.., {head}).eq()...
+    const query: Record<string, unknown> = {};
+    for (const m of ["update", "eq", "neq", "is", "lt"]) query[m] = () => query;
+    query.then = (resolve: (v: { count: number; error: null }) => void) =>
+      resolve({ count: existingAttempts, error: null });
     const chain = {
       insert(row: Record<string, unknown>) {
         inserts.push({ table, row });
         return chain;
       },
-      select: () => chain,
+      // `await from("candidate_consents").insert(row)` has no .select().single().
+      then(resolve: (v: { error: null }) => void) {
+        resolve({ error: null });
+      },
+      update: query.update,
+      // A select with `head: true` is the attempt count; otherwise it follows an insert.
+      select: (_cols?: string, opts?: { head?: boolean }) => (opts?.head ? query : chain),
       single: async () => ({
         data: { id: table === "interviews" ? "iv-1" : "22222222-2222-4222-8222-222222222222" },
         error: null,
@@ -27,6 +39,7 @@ const createAdminClient = vi.fn(() => ({
 }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient }));
 
+const { CONSENT_VERSION } = await import("@/lib/candidate/consent");
 const { POST } = await import("@/app/api/candidate/attempts/route");
 const { GET } = await import("@/app/api/candidate/attempts/[id]/route");
 
@@ -34,7 +47,7 @@ const USER = "11111111-2222-4333-8444-555555555555";
 const SESSION = "22222222-2222-4222-8222-222222222222";
 const SECRET = "sb_secret_DO-NOT-LEAK-123";
 
-function post(headers: Record<string, string> = {}, body: unknown = { roleId: "software-engineer" }) {
+function post(headers: Record<string, string> = {}, body: unknown = { roleId: "software-engineer", consentVersion: CONSENT_VERSION }) {
   return POST(
     new Request("http://localhost:3000/api/candidate/attempts", {
       method: "POST",
@@ -56,6 +69,7 @@ function configure() {
 
 beforeEach(() => {
   inserts.length = 0;
+  existingAttempts = 0;
   createClient.mockClear();
   createAdminClient.mockClear();
   getClaims.mockReset();
@@ -83,7 +97,7 @@ describe("POST /api/candidate/attempts", () => {
       new Request("http://localhost:3000/api/candidate/attempts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ roleId: "software-engineer" }),
+        body: JSON.stringify({ roleId: "software-engineer", consentVersion: CONSENT_VERSION }),
       }),
     );
     expect(res.status).toBe(403);
@@ -113,6 +127,16 @@ describe("POST /api/candidate/attempts", () => {
     expect(inserts).toEqual([]);
   });
 
+  it("answers 429 and writes nothing when the user has used all attempts for the role", async () => {
+    configure();
+    getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });
+    existingAttempts = 3;
+    const res = await post();
+    expect(res.status).toBe(429);
+    expect((await res.json()).error).toBe("attempt_limit");
+    expect(inserts).toEqual([]);
+  });
+
   it("answers 401 when getClaims reports an error", async () => {
     configure();
     getClaims.mockResolvedValue({ data: null, error: { message: "jwt expired" } });
@@ -129,15 +153,21 @@ describe("POST /api/candidate/attempts", () => {
       success: true,
       attempt: { sessionId: SESSION, roleId: "software-engineer" },
     });
-    expect(inserts.map((i) => i.table)).toEqual(["interviews", "interview_sessions"]);
+    expect(inserts.map((i) => i.table)).toEqual(["interviews", "interview_sessions", "candidate_consents"]);
     expect(inserts[0].row.user_id).toBe(USER);
     expect(inserts[1].row).toEqual({ user_id: USER, interview_id: "iv-1" });
+    expect(inserts[2].row).toEqual({
+      user_id: USER,
+      session_id: SESSION,
+      role_id: "software-engineer",
+      consent_version: CONSENT_VERSION,
+    });
   });
 
   it("ignores a user id sent in the body", async () => {
     configure();
     getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });
-    const res = await post({}, { roleId: "software-engineer", userId: "99999999-2222-4333-8444-555555555555" });
+    const res = await post({}, { roleId: "software-engineer", consentVersion: CONSENT_VERSION, userId: "99999999-2222-4333-8444-555555555555" });
     expect(res.status).toBe(400);
     expect(inserts).toEqual([]);
   });
