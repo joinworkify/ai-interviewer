@@ -13,7 +13,9 @@ export function CandidateHeader() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    supabase.auth
+      .getUser()
+      .then(({ data }) => setEmail(data.user?.email ?? null));
     const { data } = supabase.auth.onAuthStateChange((_event, session) =>
       setEmail(session?.user.email ?? null),
     );
@@ -28,7 +30,10 @@ export function CandidateHeader() {
   return (
     <header className="border-b bg-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <Link href="/candidate/roles" className="flex items-center gap-2 font-semibold tracking-tight">
+        <Link
+          href="/candidate/roles"
+          className="flex items-center gap-2 font-semibold tracking-tight"
+        >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
             D
           </span>
@@ -52,11 +57,17 @@ export function CandidateHeader() {
           <span className="text-border">|</span>
 
           {email ? (
-            <button className="font-medium text-primary hover:underline" onClick={logOut}>
+            <button
+              className="font-medium text-primary hover:underline"
+              onClick={logOut}
+            >
               Log out
             </button>
           ) : (
-            <Link href="/auth/login" className="font-medium text-primary hover:underline">
+            <Link
+              href="/auth/login"
+              className="font-medium text-primary hover:underline"
+            >
               Log in
             </Link>
           )}
