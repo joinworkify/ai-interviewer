@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SocialAuthButtons } from "@/components/social-auth-buttons";
 
 export function SignUpForm({
   className,
@@ -65,6 +66,14 @@ export function SignUpForm({
           <CardDescription className="text-center">Create your candidate account</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-5 space-y-4">
+            <SocialAuthButtons />
+            <div className="flex items-center gap-3" aria-hidden="true">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Or sign up with email</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </div>
           <form onSubmit={handleSignUp}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">

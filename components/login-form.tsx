@@ -7,9 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { SocialAuthButtons } from "@/components/social-auth-buttons";
+import { safeNext } from "@/lib/auth/safe-next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+
+const OAUTH_ERRORS: Record<string, string> = {
+  oauth_cancelled: "Google sign-in was cancelled. You can try again or use your email.",
+  oauth_failed: "Google sign-in could not be completed. Please try again or use your email.",
+};
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("");
@@ -17,7 +24,10 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const expired = useSearchParams().get("expired") === "1";
+  const params = useSearchParams();
+  const expired = params.get("expired") === "1";
+  const next = safeNext(params.get("next"));
+  const oauthError = OAUTH_ERRORS[params.get("error") ?? ""];
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,7 +44,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       setIsLoading(false);
       return;
     }
-    router.push("/candidate/roles");
+    router.push(next);
   };
 
   return (
@@ -49,6 +59,19 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               Your session expired. Please log in again.
             </p>
           )}
+          {oauthError && (
+            <p role="alert" className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {oauthError}
+            </p>
+          )}
+          <div className="mb-5 space-y-4">
+            <SocialAuthButtons next={next} />
+            <div className="flex items-center gap-3" aria-hidden="true">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Or continue with email</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </div>
           <form onSubmit={handleLogin} className="flex flex-col gap-5">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
