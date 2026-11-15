@@ -142,6 +142,9 @@ export async function giveConsentAndCreateAttempt(
   if (res.status === 409 && (json as { error?: unknown } | null)?.error === "consent_outdated") {
     throw new ApiError("CONSENT_OUTDATED", "The consent text has changed. Reload the page and agree again.");
   }
+  if (res.status === 429 && (json as { error?: unknown } | null)?.error === "attempt_limit") {
+    throw new ApiError("ATTEMPT_LIMIT", "You have used all of your attempts for this role. Contact DataSea if you need another.");
+  }
   const sessionId = (json as { attempt?: { sessionId?: unknown } } | null)?.attempt?.sessionId;
   if (!res.ok || typeof sessionId !== "string" || sessionId.length === 0) {
     throw new ApiError("ATTEMPT_FAILED", "Could not start the interview.");
