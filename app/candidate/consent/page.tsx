@@ -64,30 +64,30 @@ function ConsentStep() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5 rounded-xl border bg-card p-6 shadow-sm">
+    <div className="mx-auto flex max-w-2xl flex-col gap-8 rounded-xl border bg-card p-8 shadow-sm">
       <h1 className="text-center text-3xl font-bold tracking-tight">Before we start</h1>
       {instructions === null ? (
         <div className="h-40 animate-pulse rounded-lg bg-muted" aria-busy="true" />
       ) : (
-        <div className="min-h-40 rounded-lg border bg-muted/40 p-4 text-sm">{instructions}</div>
+        <div className="rounded-lg border bg-muted/40 p-5 text-[15px] leading-7">{instructions}</div>
       )}
-      <ul className="list-disc space-y-1 pl-5 text-sm">
+      <ul className="list-disc space-y-3 pl-5 text-[15px] leading-7 marker:text-muted-foreground">
         {CONSENT_POINTS.map((point) => (
-          <li key={point}>{point}</li>
+          <li key={point} className="pl-1">{point}</li>
         ))}
       </ul>
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3 rounded-lg border p-4">
         <Checkbox
           id="consent"
           checked={agreed}
           disabled={instructions === null}
           onCheckedChange={(v) => setAgreed(v === true)}
         />
-        <Label htmlFor="consent" className="leading-snug">
+        <Label htmlFor="consent" className="text-[15px] font-medium leading-6">
           {CONSENT_LABEL}
         </Label>
       </div>
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-4">
         <Button className="w-40" disabled={!agreed || saving} onClick={onContinue}>
           {saving && <Loader2 className="animate-spin" />}
           Continue
@@ -97,19 +97,19 @@ function ConsentStep() {
             {saveError}
           </p>
         )}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-5 text-xs text-muted-foreground/80">
           <Link
             href={`/candidate/resume?role=${encodeURIComponent(roleId)}`}
-            className="hover:underline"
+            className="hover:text-foreground hover:underline"
           >
             Back
           </Link>
-          <Link href="/candidate/roles" className="hover:underline">
+          <Link href="/candidate/roles" className="hover:text-foreground hover:underline">
             I don&apos;t agree, back to roles
           </Link>
         </div>
       </div>
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs leading-5 text-muted-foreground">
         No microphone or recording before consent. Continue is enabled only after the checkbox is ticked.
       </p>
     </div>
