@@ -260,7 +260,7 @@ describe("S3 storage", () => {
 
 describe("candidate_resumes migration", () => {
   const sql = readFileSync(
-    fileURLToPath(new URL("../supabase/migrations/20261114000001_candidate_resumes.sql", import.meta.url)),
+    fileURLToPath(new URL("../supabase/migrations/20261114000000_candidate_resumes.sql", import.meta.url)),
     "utf8",
   )
     .split(/\r?\n/)

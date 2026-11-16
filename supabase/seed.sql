@@ -17,10 +17,10 @@
 -- column without a default, tests/db/seed.test.ts fails; update the matching
 -- insert here.
 --
--- The dev user has one session of every kind the app produces today: a call
--- that has not started, a Vapi call waiting for feedback, finished Vapi and
--- Gemini Live sessions (one of them still without feedback), and an abandoned
--- one.
+-- Two rows per table (the roles catalogue excepted: it is generated from
+-- lib/candidate/roles.json). Each user has one interview with a completed
+-- Gemini Live session, its feedback and one AI usage row, so the dev user can
+-- be checked against the other user's rows.
 --
 -- Ids use a d0..dd prefix for the dev user and e0..e4 for the second user, so
 -- they never collide with the fixed ids in tests/helpers/psql.ts.
@@ -94,33 +94,6 @@ on conflict (provider_id, provider) do update set
 -- ---------------------------------------------------------------------------
 insert into public.interviews (id, user_id, questions, duration_minutes, created_at) values
   (
-    'd1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    array[
-      'Tell me about a React project you are proud of. What was your role and what did you learn?',
-      'How do you decide whether state belongs in a component, in context, or in a store such as Redux or Zustand?',
-      'A list page renders five thousand rows and scrolling stutters. How would you find the cause and fix it?',
-      'What is the difference between useEffect and useLayoutEffect, and when would you reach for the second one?',
-      'How do you decide what to test in a front-end codebase, and what not to test?',
-      'Describe a production bug you debugged. What was the root cause and how did you stop it from coming back?'
-    ],
-    20,
-    now() - interval '6 days'
-  ),
-  (
-    'd2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    array[
-      'What is the difference between a process and a thread?',
-      'How would you design a rate limiter for a public API?',
-      'You need to change the type of a column on a table with 200 million rows without downtime. How do you approach it?',
-      'How do you make a payment endpoint safe to retry? Explain idempotency keys.',
-      'Your p99 latency doubled after a deploy. Walk me through how you would investigate.'
-    ],
-    25,
-    now() - interval '5 days'
-  ),
-  (
     'd3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3',
     'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
     array[
@@ -131,19 +104,6 @@ insert into public.interviews (id, user_id, questions, duration_minutes, created
     ],
     15,
     now() - interval '4 days'
-  ),
-  (
-    'd9d9d9d9-d9d9-4d9d-8d9d-d9d9d9d9d9d9',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    array[
-      'What is the difference between an INNER JOIN and a LEFT JOIN? Give an example where picking the wrong one silently loses rows.',
-      'A query that used to take 200 milliseconds now takes 20 seconds. Walk me through how you would investigate.',
-      'How would you model a many-to-many relationship between users and teams, including the date each user joined a team?',
-      'What is an index, and when can adding one make writes noticeably slower?',
-      'How do you make a nightly data pipeline safe to re-run after a partial failure?'
-    ],
-    20,
-    now() - interval '1 day'
   ),
   (
     'e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1',
@@ -160,59 +120,14 @@ insert into public.interviews (id, user_id, questions, duration_minutes, created
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------------
--- Sessions of the dev user, one of every kind:
---   d4  not started: open, no transcript (the target of a new call)
---   d5  Vapi call with a transcript, waiting for feedback
---   d6  Vapi call, completed, with feedback
---   da  Gemini Live session, completed, with feedback
---   db  Gemini Live session, completed, feedback not requested yet
---   dc  abandoned: the page was closed seconds after starting
--- Vapi transcripts use Vapi's shape ({role, message}). Gemini Live sessions use
--- the stored canonical shape ({role, text}), plus transcript_source,
+-- One completed Gemini Live session per user. Gemini Live sessions use the
+-- stored canonical shape ({role, text}), plus transcript_source,
 -- duration_seconds and ended_reason.
 -- ---------------------------------------------------------------------------
 insert into public.interview_sessions (
   id, interview_id, user_id, status, vapi_call_id, started_at, ended_at,
   transcript, recording_url, transcript_source, duration_seconds, ended_reason
 ) values
-  (
-    'd4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d4d4',
-    'd1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    'in_progress', null, now() - interval '2 hours', null,
-    null, null, null, null, null
-  ),
-  (
-    'd5d5d5d5-d5d5-4d5d-8d5d-d5d5d5d5d5d5',
-    'd1d1d1d1-d1d1-4d1d-8d1d-d1d1d1d1d1d1',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    'in_progress', 'seed-call-2', now() - interval '1 hour', null,
-    $t$[
-      {"role":"assistant","message":"Hi, thanks for joining. I will ask you a few questions about front-end work. First, tell me about a React project you are proud of. What was your role and what did you learn?"},
-      {"role":"user","message":"Sure. Last year I led the rebuild of our internal reporting dashboard in React and TypeScript. I was the main developer for about four months. The big win was moving the heavy filtering to the server and caching with React Query, which cut report prep from two hours to around ten minutes. What I learned is to sit with the real users early, because half of my first design was wrong."},
-      {"role":"assistant","message":"Thanks. How do you decide whether state belongs in a component, in context, or in a store such as Redux or Zustand?"},
-      {"role":"user","message":"I start local and only lift state when two components really need it. Context is fine for values that rarely change, like the theme or the current user. For shared data that changes often I prefer a small store so only the subscribed components re-render. I stopped putting server data in Redux because React Query already handles caching and refetching."},
-      {"role":"assistant","message":"A list page renders five thousand rows and scrolling stutters. How would you find the cause and fix it?"},
-      {"role":"user","message":"First I would profile with the React DevTools profiler and the browser performance tab to see if it is rendering or layout. The usual fix is virtualization, with something like react-window, so only the visible rows are in the DOM. After that I would memoize the row component and make sure its props are stable."}
-    ]$t$::jsonb,
-    null, null, null, null
-  ),
-  (
-    'd6d6d6d6-d6d6-4d6d-8d6d-d6d6d6d6d6d6',
-    'd2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    'completed', 'seed-call-3', now() - interval '1 day 2 hours',
-    now() - interval '1 day 2 hours' + interval '9 minutes',
-    $t$[
-      {"role":"assistant","message":"What is the difference between a process and a thread?"},
-      {"role":"user","message":"A process has its own memory space and resources. Threads live inside a process and share its memory, so they are cheaper to start and to switch between, but you need locks or other synchronization to avoid races. A crash in one thread can also take down the whole process, while processes are isolated from each other."},
-      {"role":"assistant","message":"Good. Next, how would you design a rate limiter for a public API?"},
-      {"role":"user","message":"I would use a token bucket per API key. Each key gets a bucket that refills at a steady rate, and every request takes a token. For several servers I would keep the counters in Redis with an atomic script so the check and the decrement happen together. When the bucket is empty I return a 429 with a Retry-After header."},
-      {"role":"assistant","message":"Now, you need to change the type of a column on a table with two hundred million rows without downtime. How do you approach it?"},
-      {"role":"user","message":"I would avoid a direct type change because it rewrites the table and locks it. Instead I add a new nullable column with the new type, deploy code that writes to both columns, backfill the old rows in small batches, then switch reads to the new column and finally remove the old one in a later release."}
-    ]$t$::jsonb,
-    null, null, null, null
-  ),
   (
     'dadadada-dada-4dad-8dad-dadadadadada',
     'd3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3',
@@ -230,32 +145,6 @@ insert into public.interview_sessions (
     null, 'client_gemini_live', 300, 'time_limit'
   ),
   (
-    'dbdbdbdb-dbdb-4dbd-8dbd-dbdbdbdbdbdb',
-    'd9d9d9d9-d9d9-4d9d-8d9d-d9d9d9d9d9d9',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    'completed', null, now() - interval '3 hours',
-    now() - interval '3 hours' + interval '297 seconds',
-    $t$[
-      {"role":"interviewer","text":"Hi, thanks for joining. Let us talk about SQL. What is the difference between an INNER JOIN and a LEFT JOIN? Give an example where picking the wrong one silently loses rows."},
-      {"role":"candidate","text":"An inner join returns only rows that match on both sides. A left join keeps every row from the left table and fills the right side with nulls when there is no match. If I join customers to orders with an inner join, customers with no orders disappear from the report, so a list of all customers and their order counts has to use a left join."},
-      {"role":"interviewer","text":"A query that used to take 200 milliseconds now takes 20 seconds. Walk me through how you would investigate."},
-      {"role":"candidate","text":"I would run EXPLAIN ANALYZE to see the actual plan and compare it with an older plan if I have one. I look for a sequential scan where there used to be an index scan, stale statistics, or a changed join order. Then I check whether the data volume grew, run ANALYZE on the table, and add or fix an index if the plan shows one is missing."},
-      {"role":"interviewer","text":"How would you model a many-to-many relationship between users and teams, including the date each user joined a team?"},
-      {"role":"candidate","text":"I would use a join table, team members, with a user id and a team id as a composite primary key, plus a joined at column. Both ids are foreign keys, and I would add an index on the team id for the reverse lookup."},
-      {"role":"interviewer","text":"Thank you for your answers. That is all the time we have. Goodbye."}
-    ]$t$::jsonb,
-    null, 'client_gemini_live', 297, 'interviewer_ended'
-  ),
-  (
-    'dcdcdcdc-dcdc-4dcd-8dcd-dcdcdcdcdcdc',
-    'd2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    'abandoned', null, now() - interval '2 days 5 hours',
-    now() - interval '2 days 5 hours' + interval '9 seconds',
-    '[]'::jsonb,
-    null, 'client_gemini_live', 9, 'page_closed'
-  ),
-  (
     'e2e2e2e2-e2e2-4e2e-8e2e-e2e2e2e2e2e2',
     'e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1',
     'e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0',
@@ -268,40 +157,16 @@ insert into public.interview_sessions (
       {"role":"candidate","text":"I first check the sample ratio to confirm users were split as planned. Then I confirm the test ran for full weeks, that I did not stop early when the number looked good, and that the metric and the sample size were decided before the test started. If the effect is small I report the confidence interval, not only the p value."}
     ]$t$::jsonb,
     null, 'client_gemini_live', 360, 'interviewer_ended'
-  )
-on conflict (id) do nothing;
+  )on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- Feedback. Sources are "transcript": each answer is a short summary of what
--- the candidate said, as the evaluator writes it. Session db has none yet.
+-- the candidate said, as the evaluator writes it.
 -- ---------------------------------------------------------------------------
 insert into public.feedback (
   id, session_id, user_id, total_score, strengths, areas_for_improvement,
   final_assessment, per_answer, created_at
 ) values
-  (
-    'd7d7d7d7-d7d7-4d7d-8d7d-d7d7d7d7d7d7',
-    'd6d6d6d6-d6d6-4d6d-8d6d-d6d6d6d6d6d6',
-    'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0',
-    75,
-    array[
-      'Accurate explanation of the process and thread trade-offs',
-      'Practical token bucket design with an atomic Redis check',
-      'Safe, step by step column migration plan'
-    ],
-    array[
-      'Mention fairness between customers when rate limiting',
-      'Say how you would verify the backfill before switching reads',
-      'Add an example from your own experience'
-    ],
-    'Accurate, well organised answers that show real systems experience. Adding concrete numbers and failure cases would make them stronger.',
-    $t$[
-      {"questionIndex":0,"question":"What is the difference between a process and a thread?","answer":"Processes have separate memory; threads share their process memory, which makes them cheaper but needs synchronization, and a thread crash can end the whole process.","source":"transcript","score":80,"feedback":"Accurate and complete. A short example of a race condition would make it memorable."},
-      {"questionIndex":1,"question":"How would you design a rate limiter for a public API?","answer":"A token bucket per API key, with counters in Redis updated by an atomic script, returning 429 with Retry-After when empty.","source":"transcript","score":72,"feedback":"Good core design. Discuss limits per plan and what happens if Redis is unavailable."},
-      {"questionIndex":2,"question":"You need to change the type of a column on a table with 200 million rows without downtime. How do you approach it?","answer":"Add a new column, write to both, backfill in batches, move reads over, then remove the old column in a later release.","source":"transcript","score":73,"feedback":"The expand and contract pattern is the right answer. Add how you would check the data matches before switching."}
-    ]$t$::jsonb,
-    now() - interval '1 day 1 hour'
-  ),
   (
     'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
     'dadadada-dada-4dad-8dad-dadadadadada',
@@ -342,13 +207,10 @@ insert into public.feedback (
 on conflict (id) do nothing;
 
 -- ---------------------------------------------------------------------------
--- AI usage: one row per model call, including a call whose output was
--- rejected and retried. All older than 24 hours, so they do not use up the
+-- AI usage: one row per model call. All older than 24 hours, so they do not use up the
 -- rolling daily quota of a fresh local database.
 -- ---------------------------------------------------------------------------
 insert into public.ai_usage (id, user_id, feature, model, prompt_tokens, completion_tokens, created_at) values
-  ('d8d8d8d8-d8d8-4d8d-8d8d-d8d8d8d8d8d1', 'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0', 'session-feedback', 'gemini-2.5-flash', 1180, 420, now() - interval '1 day 1 hour'),
-  ('d8d8d8d8-d8d8-4d8d-8d8d-d8d8d8d8d8d2', 'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0', 'session-feedback', 'gemini-2.5-flash', 1790, 380, now() - interval '2 days 2 hours 1 minute'),
   ('d8d8d8d8-d8d8-4d8d-8d8d-d8d8d8d8d8d3', 'd0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0', 'session-feedback', 'gemini-2.5-flash', 1790, 510, now() - interval '2 days 2 hours'),
   ('e4e4e4e4-e4e4-4e4e-8e4e-e4e4e4e4e4e4', 'e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0', 'session-feedback', 'gemini-2.5-flash', 980, 330, now() - interval '4 days')
 on conflict (id) do nothing;
