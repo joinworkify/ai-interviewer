@@ -96,3 +96,19 @@
     background-color: hsl(var(--background));
   }
 }
+
+/*
+ * Browser autofill paints inputs a grey-blue and, on a dark OS theme, keeps
+ * the text white, which is unreadable on the light themed pages. Cover the
+ * autofill background with the page background and force the text colour.
+ */
+.theme-datasea input:-webkit-autofill,
+.theme-datasea input:-webkit-autofill:hover,
+.theme-datasea input:-webkit-autofill:focus,
+.theme-datasea textarea:-webkit-autofill,
+.theme-datasea select:-webkit-autofill {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  caret-color: hsl(var(--foreground));
+  box-shadow: 0 0 0 1000px hsl(var(--background)) inset;
+  transition: background-color 600000s 0s;
+}
