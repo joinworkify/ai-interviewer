@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -5,20 +6,52 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-/** Top bar from the wireframe: "Candidate Interview" left, Help | Log in/out right. */
 export function CandidateHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth
-      .getUser()
-      .then(({ data }) => setEmail(data.user?.email ?? null));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) =>
-      setEmail(session?.user.email ?? null),
+
+    async function loadProfile() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      setEmail(user?.email ?? null);
+
+      if (!user) {
+        setName(null);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      setName(
+        profile?.name?.trim() ||
+          user.user_metadata?.name?.trim() ||
+          null,
+      );
+    }
+
+    void loadProfile();
+
+    const { data } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setEmail(session?.user.email ?? null);
+
+        if (!session) {
+          setName(null);
+        }
+      },
     );
+
     return () => data.subscription.unsubscribe();
   }, [pathname]);
 
@@ -29,49 +62,61 @@ export function CandidateHeader() {
 
   return (
     <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto grid max-w-6xl grid-cols-3 items-center gap-2 px-4 py-3">
+        {/* Left: Logo */}
         <Link
           href="/candidate/roles"
           className="flex items-center gap-2 font-semibold tracking-tight"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
             D
           </span>
-          Candidate Interview
+          <span className="hidden sm:inline">Candidate Interview</span>
         </Link>
 
-        <nav className="flex items-center gap-3 text-sm">
+        {/* Center: Application Status */}
+        <div className="flex justify-center">
           {email && (
             <Link
-              href="/candidate/resume"
-              className="hidden text-muted-foreground hover:text-primary hover:underline sm:inline"
+              href="/candidate/applications"
+              className={`whitespace-nowrap text-sm font-semibold hover:underline ${
+                pathname.startsWith("/candidate/applications")
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-primary"
+              }`}
             >
-              {email}
+              Application Status
             </Link>
           )}
+        </div>
 
-          <span className="text-muted-foreground" title="Help page coming soon">
-            Help
-          </span>
-
-          <span className="text-border">|</span>
-
+        {/* Right: Profile and Logout */}
+        <div className="flex items-center justify-end gap-2 sm:gap-4">
           {email ? (
-            <button
-              className="font-medium text-primary hover:underline"
-              onClick={logOut}
-            >
-              Log out
-            </button>
+            <>
+              <Link
+                href="/candidate/resume"
+                className="max-w-24 truncate text-sm font-medium text-muted-foreground hover:text-primary hover:underline sm:max-w-none"
+              >
+                {name || "My Profile"}
+              </Link>
+
+              <button
+                className="whitespace-nowrap text-sm font-medium text-primary hover:underline"
+                onClick={logOut}
+              >
+                Log out
+              </button>
+            </>
           ) : (
             <Link
               href="/auth/login"
-              className="font-medium text-primary hover:underline"
+              className="text-sm font-medium text-primary hover:underline"
             >
               Log in
             </Link>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );
