@@ -43,7 +43,7 @@ export function CandidateHeader() {
         <nav className="flex items-center gap-3 text-sm">
           {email && (
             <Link
-              href="/candidate/resume"
+              href="/candidate/profile"
               className="hidden text-muted-foreground hover:text-primary hover:underline sm:inline"
             >
               {email}

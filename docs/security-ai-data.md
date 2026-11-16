@@ -19,7 +19,7 @@ Every table holding user data, and what happens when it is deleted.
 | Table | Personal data | Link to the user | Removed by |
 | --- | --- | --- | --- |
 | `auth.users` | email, auth metadata | is the user | `deleteUser` (admin API) |
-| `profiles` | name, email | `id` -> `auth.users` **cascade** | account deletion |
+| `profiles` | name, email, phone, LinkedIn and portfolio links (written by `POST /api/candidate/profile`; links are http(s) only, enforced by CHECK constraints) | `id` -> `auth.users` **cascade** | account deletion |
 | `interviews` | generated questions | `user_id` -> `profiles` **cascade** | account deletion |
 | `interview_sessions` | transcript, recording URL, call id | `user_id` -> `profiles` **cascade**; `interview_id` -> `interviews` **cascade** | session delete, account deletion |
 | `feedback` | scores, assessment, per-answer text | `user_id` -> `profiles` **cascade**; `session_id` -> `interview_sessions` **cascade** | session delete, account deletion |
