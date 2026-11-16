@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { StepGate } from "@/components/candidate/step-gate";
 import {
   COUNTRY_PHONE_CONFIGS,
   formatFileSize,
@@ -24,6 +25,14 @@ import {
 } from "@/lib/candidate/resume-client";
 
 export default function CandidateResumePage() {
+  return (
+    <StepGate step="resume">
+      <ResumeStep />
+    </StepGate>
+  );
+}
+
+function ResumeStep() {
   const router = useRouter();
   const roleId = useSearchParams().get("role") ?? "";
   const [fullName, setFullName] = useState("");
@@ -87,6 +96,9 @@ export default function CandidateResumePage() {
       <h1 className="mb-6 text-center text-3xl font-bold text-slate-900">
         Add your resume
       </h1>
+      <p className="-mt-3 mb-6 text-center text-sm text-slate-600">
+        This step is optional. You can skip it and continue to consent.
+      </p>
 
       <form
         className="space-y-6"
@@ -310,6 +322,16 @@ export default function CandidateResumePage() {
           >
             {submitting ? "Uploading..." : "Continue"}
           </button>
+          <button
+            type="button"
+            disabled={submitting || !roleId}
+            onClick={() =>
+              router.push(`/candidate/consent?role=${encodeURIComponent(roleId)}`)
+            }
+            className="text-sm font-medium text-[#7a1c2e] hover:underline disabled:opacity-50"
+          >
+            Skip this step
+          </button>
           {submitError && (
             <p role="alert" className="text-xs text-red-600">
               {submitError}
@@ -326,7 +348,7 @@ export default function CandidateResumePage() {
             Back to role
           </Link>
           <p className="text-[11px] text-slate-500">
-            Fields marked * are required.
+            Fields marked * are required to save your details.
           </p>
         </div>
       </form>

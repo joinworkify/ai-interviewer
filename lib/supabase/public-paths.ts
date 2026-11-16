@@ -1,6 +1,11 @@
 /**
  * Paths a signed-out visitor may reach without being redirected to the login
  * page. Everything else needs a Supabase session (see lib/supabase/proxy.ts).
+ * /candidate/roles is public on purpose: it lists active roles straight from
+ * Supabase as `anon`, and the RLS policy `roles_select_active` (migration
+ * 20261111000000_candidate_roles.sql) is what limits that to active rows.
+ * Loosening that policy would expose more here. Opening a role
+ * (/candidate/roles/<id>) still needs a session.
  *
  * A path is listed here only when it either is part of the sign-in flow or
  * authenticates itself and answers a structured JSON 401 / 403:
@@ -15,6 +20,7 @@
  *   /api/candidate/resume[/upload-url|/confirm]   same
  *   /api/candidate/profile          same
  *   /api/admin/sessions/<id>/review checks for a signed-in admin (JSON 401 / 403)
+ *   /api/candidate/progress         same
  *
  * Exact paths and anchored patterns only: no `startsWith` prefixes, so a new
  * route such as /api/sessionsX or /api/dograh/other stays behind the login
@@ -25,6 +31,7 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 const EXACT_PATHS: ReadonlySet<string> = new Set([
   "/",
+  "/candidate/roles",
   "/api/vapi/generate-interview",
   "/api/gemini-live/token",
   "/api/account/data",
@@ -35,6 +42,7 @@ const EXACT_PATHS: ReadonlySet<string> = new Set([
   "/api/candidate/resume/upload-url",
   "/api/candidate/resume/confirm",
   "/api/candidate/profile",
+  "/api/candidate/progress",
   "/api/sessions",
 ]);
 

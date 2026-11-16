@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
 import { getRole, isValidEmail, type Role } from "@/lib/candidate/api";
+import { APPLICATION_STEPS } from "@/lib/candidate/steps";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RoleDetailPage() {
@@ -89,6 +90,27 @@ export default function RoleDetailPage() {
       </article>
 
       <aside className="h-fit rounded-xl border bg-card p-5 shadow-sm lg:sticky lg:top-6">
+        <section aria-labelledby="how-it-works" className="mb-5 border-b pb-5">
+          <h2 id="how-it-works" className="mb-3 font-semibold">
+            How applying works
+          </h2>
+          <ol className="flex flex-col gap-3">
+            {APPLICATION_STEPS.map((step, i) => (
+              <li key={step.id} className="flex gap-3 text-sm">
+                <span
+                  aria-hidden="true"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary text-xs font-semibold text-primary"
+                >
+                  {i + 1}
+                </span>
+                <span>
+                  <span className="font-medium">{step.label}</span>
+                  <span className="block text-muted-foreground">{step.description}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
         <h2 className="mb-3 font-semibold">Apply now</h2>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
@@ -116,7 +138,7 @@ export default function RoleDetailPage() {
           </Button>
           <p className="text-center text-xs text-muted-foreground">Or</p>
           <SocialAuthButtons
-            next={`/candidate/consent?role=${encodeURIComponent(role.id)}`}
+            next={`/candidate/resume?role=${encodeURIComponent(role.id)}`}
           />
         </div>
       </aside>

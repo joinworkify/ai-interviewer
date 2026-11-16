@@ -105,6 +105,7 @@ describe("the admin (service-role) client stays server-only", () => {
       "lib/data-deletion/route-deps.ts", // 503 when the key is missing
       "lib/transcripts/route-deps.ts", // 503 when the key is missing; transcript writes use the admin client
       "lib/candidate/route-deps.ts", // 503 when the key is missing; attempts create interviews and sessions with the admin client
+      "lib/candidate/progress-route-deps.ts", // 503 when the key is missing; reads the user's own attempt and resume state with the admin client
       "lib/candidate/profile-route-deps.ts", // 503 when the key is missing; contact details are written with the admin client
       "lib/candidate/resume-route-deps.ts", // 503 when the key is missing; resume rows are written with the admin client
       "lib/admin/server.ts", // 503 when the key is missing; admin reads and review writes use the admin client after an admin check

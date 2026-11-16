@@ -12,6 +12,9 @@ export interface ProfileUpdate {
 
 export class ProfileSaveError extends Error {}
 
+/** Fired on `window` after a save so other parts of the page (the header name) can refresh. */
+export const PROFILE_UPDATED_EVENT = "candidate-profile-updated";
+
 /** Saves the given fields. Throws ProfileSaveError with a message fit to show. */
 export async function saveProfile(
   update: ProfileUpdate,
@@ -29,7 +32,10 @@ export async function saveProfile(
       "Could not save your details. Check your connection and try again.",
     );
   }
-  if (res.ok) return;
+  if (res.ok) {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(PROFILE_UPDATED_EVENT));
+    return;
+  }
   let message = "Could not save your details. Please try again.";
   try {
     const body = (await res.json()) as { message?: unknown };
