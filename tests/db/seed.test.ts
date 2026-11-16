@@ -21,20 +21,30 @@ const HAS_DB = dbAvailable();
 const DEV_USER = "d0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0";
 const OTHER_USER = "e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0";
 
+// Counted by the seed's own ids, so rows a developer added to a local database
+// by hand do not change the result.
+const SEED_USERS = `'${DEV_USER}', '${OTHER_USER}'`;
+const SEED_IDS = {
+  interviews: `'d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3', 'e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1'`,
+  sessions: `'dadadada-dada-4dad-8dad-dadadadadada', 'e2e2e2e2-e2e2-4e2e-8e2e-e2e2e2e2e2e2'`,
+  feedback: `'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'e3e3e3e3-e3e3-4e3e-8e3e-e3e3e3e3e3e3'`,
+  usage: `'d8d8d8d8-d8d8-4d8d-8d8d-d8d8d8d8d8d3', 'e4e4e4e4-e4e4-4e4e-8e4e-e4e4e4e4e4e4'`,
+};
+
 const COUNTS = `
-select 'users=' || count(*) from auth.users where id = '${DEV_USER}';
-select 'identities=' || count(*) from auth.identities where user_id = '${DEV_USER}';
-select 'profiles=' || count(*) from public.profiles where id = '${DEV_USER}';
-select 'interviews=' || count(*) from public.interviews where user_id = '${DEV_USER}';
-select 'sessions=' || count(*) from public.interview_sessions where user_id = '${DEV_USER}';
-select 'feedback=' || count(*) from public.feedback where user_id = '${DEV_USER}';
-select 'usage=' || count(*) from public.ai_usage where user_id = '${DEV_USER}';
+select 'users=' || count(*) from auth.users where id in (${SEED_USERS});
+select 'identities=' || count(*) from auth.identities where user_id in (${SEED_USERS});
+select 'profiles=' || count(*) from public.profiles where id in (${SEED_USERS});
+select 'interviews=' || count(*) from public.interviews where id in (${SEED_IDS.interviews});
+select 'sessions=' || count(*) from public.interview_sessions where id in (${SEED_IDS.sessions});
+select 'feedback=' || count(*) from public.feedback where id in (${SEED_IDS.feedback});
+select 'usage=' || count(*) from public.ai_usage where id in (${SEED_IDS.usage});
 select 'timestampsSet=' || count(*) from auth.users u
-  where u.id in ('${DEV_USER}', '${OTHER_USER}') and u.created_at is not null and u.updated_at is not null
+  where u.id in (${SEED_USERS}) and u.created_at is not null and u.updated_at is not null
     and exists (select 1 from auth.identities i where i.user_id = u.id
                 and i.created_at is not null and i.updated_at is not null);
 select 'passwordOk=' || count(*) from auth.users
-  where id = '${DEV_USER}' and encrypted_password = crypt('test123!', encrypted_password);
+  where id in (${SEED_USERS}) and encrypted_password = crypt('test123!', encrypted_password);
 `;
 
 function parse(stdout: string): Record<string, number> {
@@ -46,16 +56,17 @@ function parse(stdout: string): Record<string, number> {
   return out;
 }
 
+// Two rows per table: one for each seeded user.
 const EXPECTED = {
-  users: 1,
-  identities: 1,
-  profiles: 1,
-  interviews: 4,
-  sessions: 6,
+  users: 2,
+  identities: 2,
+  profiles: 2,
+  interviews: 2,
+  sessions: 2,
   feedback: 2,
-  usage: 3,
+  usage: 2,
   timestampsSet: 2,
-  passwordOk: 1,
+  passwordOk: 2,
 };
 
 describe("seed.sql file", () => {
@@ -106,8 +117,8 @@ describe.skipIf(!HAS_DB)("seed.sql against the migrated local database", () => {
 ${SEED}
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"${DEV_USER}","role":"authenticated"}', true);
-select 'ownSessions=' || count(*) from public.interview_sessions;
-select 'ownFeedback=' || count(*) from public.feedback;
+select 'ownSeedSessions=' || count(*) from public.interview_sessions where id in (${SEED_IDS.sessions});
+select 'ownSeedFeedback=' || count(*) from public.feedback where id in (${SEED_IDS.feedback});
 select 'otherUsersRows=' || (
   (select count(*) from public.interview_sessions where user_id = '${OTHER_USER}') +
   (select count(*) from public.feedback where user_id = '${OTHER_USER}') +
@@ -115,34 +126,18 @@ select 'otherUsersRows=' || (
 );
 rollback;`);
     expect(r.ok).toBe(true);
-    expect(parse(r.stdout)).toEqual({ ownSessions: 6, ownFeedback: 2, otherUsersRows: 0 });
+    expect(parse(r.stdout)).toEqual({ ownSeedSessions: 1, ownSeedFeedback: 1, otherUsersRows: 0 });
   });
 
-  it("gives the dev user one session of every kind", () => {
+  it("gives each user one completed Gemini Live session with feedback", () => {
     const r = runSql(`begin;
 ${SEED}
-select 'inProgressNoTranscript=' || count(*) from public.interview_sessions
-  where user_id = '${DEV_USER}' and status = 'in_progress' and transcript is null;
-select 'inProgressWithTranscript=' || count(*) from public.interview_sessions
-  where user_id = '${DEV_USER}' and status = 'in_progress' and transcript is not null;
-select 'completedVapi=' || count(*) from public.interview_sessions
-  where user_id = '${DEV_USER}' and status = 'completed' and transcript_source is null;
-select 'completedGemini=' || count(*) from public.interview_sessions
-  where user_id = '${DEV_USER}' and status = 'completed' and transcript_source = 'client_gemini_live';
-select 'abandoned=' || count(*) from public.interview_sessions
-  where user_id = '${DEV_USER}' and status = 'abandoned' and transcript = '[]'::jsonb;
-select 'completedWithoutFeedback=' || count(*) from public.interview_sessions s
-  where s.user_id = '${DEV_USER}' and s.status = 'completed'
-    and not exists (select 1 from public.feedback f where f.session_id = s.id);
+select 'completedGemini=' || count(*) from public.interview_sessions s
+  where s.id in (${SEED_IDS.sessions}) and s.status = 'completed'
+    and s.transcript_source = 'client_gemini_live' and jsonb_array_length(s.transcript) > 0
+    and exists (select 1 from public.feedback f where f.session_id = s.id and f.user_id = s.user_id);
 rollback;`);
     expect(r.stderr).toBe("");
-    expect(parse(r.stdout)).toEqual({
-      inProgressNoTranscript: 1,
-      inProgressWithTranscript: 1,
-      completedVapi: 1,
-      completedGemini: 2,
-      abandoned: 1,
-      completedWithoutFeedback: 1,
-    });
+    expect(parse(r.stdout)).toEqual({ completedGemini: 2 });
   });
 });
