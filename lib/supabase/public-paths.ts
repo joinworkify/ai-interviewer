@@ -1,8 +1,11 @@
 /**
  * Paths a signed-out visitor may reach without being redirected to the login
  * page. Everything else needs a Supabase session (see lib/supabase/proxy.ts).
- * The public role chooser reads only active roles; selecting one proceeds to
- * the authenticated application flow.
+ * /candidate/roles is public on purpose: it lists active roles straight from
+ * Supabase as `anon`, and the RLS policy `roles_select_active` (migration
+ * 20261111000000_candidate_roles.sql) is what limits that to active rows.
+ * Loosening that policy would expose more here. Opening a role
+ * (/candidate/roles/<id>) still needs a session.
  *
  * A path is listed here only when it either is part of the sign-in flow or
  * authenticates itself and answers a structured JSON 401 / 403:

@@ -71,6 +71,7 @@ describe("isPublicPath", () => {
     "/api/candidate/progress/extra",
     // The product pages, staff and cron routes always need a session.
     "/candidate/roles/software-engineer",
+    "/candidate/roles/",
     "/protected",
     "/staff",
     "/api/staff/settings",
