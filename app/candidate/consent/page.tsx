@@ -71,14 +71,15 @@ function ConsentStep() {
       ) : (
         <div className="rounded-lg border bg-muted/40 p-5 text-[15px] leading-7">{instructions}</div>
       )}
-      <ul className="list-disc space-y-3 pl-5 text-[15px] leading-7 marker:text-muted-foreground">
+      <ul className="ml-5 list-disc space-y-3 pl-5 text-[15px] leading-7 marker:text-muted-foreground">
         {CONSENT_POINTS.map((point) => (
           <li key={point} className="pl-1">{point}</li>
         ))}
       </ul>
-      <div className="flex items-start gap-3 rounded-lg border p-4">
+      <div className="flex items-start gap-3 rounded-lg border p-5">
         <Checkbox
           id="consent"
+          className="mt-1"
           checked={agreed}
           disabled={instructions === null}
           onCheckedChange={(v) => setAgreed(v === true)}
