@@ -1,14 +1,14 @@
 import Link from "next/link";
 
+import { LogoMark } from "@/components/brand/logo-mark";
+
 /** Footer for every candidate page. Kept static (no year lookup) so it works with Cache Components. */
 export function CandidateFooter() {
   return (
     <footer className="border-t bg-white">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row">
         <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-            D
-          </span>
+          <LogoMark size={24} />
           <span>&copy; DataSea. All rights reserved.</span>
         </div>
         <nav aria-label="Footer" className="flex items-center gap-5">

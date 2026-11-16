@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { LogoMark } from "@/components/brand/logo-mark";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { requireAdmin } from "@/lib/admin/server";
 
@@ -24,9 +25,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/admin" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-              D
-            </span>
+            <LogoMark size={32} />
             Admin dashboard
           </Link>
           <nav className="text-sm">
