@@ -318,6 +318,35 @@ export type Database = {
           },
         ];
       };
+      interview_reviews: {
+        Row: {
+          session_id: string;
+          status: "pending" | "in_progress" | "completed" | "rejected";
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          session_id: string;
+          status?: "pending" | "in_progress" | "completed" | "rejected";
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          session_id?: string;
+          status?: "pending" | "in_progress" | "completed" | "rejected";
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_reviews_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: true;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       candidate_resumes: {
         Row: {
           id: string;

@@ -108,6 +108,7 @@ describe("the admin (service-role) client stays server-only", () => {
       "lib/candidate/progress-route-deps.ts", // 503 when the key is missing; reads the user's own attempt and resume state with the admin client
       "lib/candidate/profile-route-deps.ts", // 503 when the key is missing; contact details are written with the admin client
       "lib/candidate/resume-route-deps.ts", // 503 when the key is missing; resume rows are written with the admin client
+      "lib/admin/server.ts", // 503 when the key is missing; admin reads and review writes use the admin client after an admin check
       "lib/dograh/route-deps.ts", // 503 when the key is missing; the webhook writes the transcript with the admin client
       "app/protected/interview/page.tsx", // server component: shows whether the key is set (never its value)
     ]);
@@ -126,7 +127,8 @@ describe("mutating routes check the request origin", () => {
       f === "app/api/sessions/route.ts" ||
       f === "app/api/dograh/session/route.ts" ||
       f === "app/api/candidate/attempts/route.ts" ||
-      f === "app/api/candidate/profile/route.ts",
+      f === "app/api/candidate/profile/route.ts" ||
+      f === "app/api/admin/sessions/[id]/review/route.ts",
   );
 
   it("finds the session, account and Dograh session routes", () => {
@@ -134,6 +136,7 @@ describe("mutating routes check the request origin", () => {
     expect(routes).toContain("app/api/dograh/session/route.ts");
     expect(routes).toContain("app/api/candidate/attempts/route.ts");
     expect(routes).toContain("app/api/candidate/profile/route.ts");
+    expect(routes).toContain("app/api/admin/sessions/[id]/review/route.ts");
   });
 
   /** Each mutating handler's own text: from its `export` to the next `export`. */
@@ -153,7 +156,7 @@ describe("mutating routes check the request origin", () => {
       for (const { method, body } of mutating) {
         const guard = body.indexOf("guardSameOrigin(request");
         expect(guard, `${file} ${method} must call guardSameOrigin(request, ...)`).toBeGreaterThan(-1);
-        const work = body.search(/(?:run(?:Session|Deletion|Transcript|Attempt|Profile)Route|handleDograhSession)\(/);
+        const work = body.search(/(?:run(?:Session|Deletion|Transcript|Attempt|Profile|Review)Route|handleDograhSession)\(/);
         expect(guard, `${file} ${method} must guard before running`).toBeLessThan(work);
       }
     },

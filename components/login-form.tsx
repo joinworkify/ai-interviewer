@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
-import { safeNext } from "@/lib/auth/safe-next";
+import { DEFAULT_NEXT, safeNext } from "@/lib/auth/safe-next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -33,7 +33,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    const { error } = await createClient().auth.signInWithPassword({ email, password });
+    const { data, error } = await createClient().auth.signInWithPassword({ email, password });
     if (error) {
       // Supabase says "Invalid login credentials"; show the wireframe wording.
       setError(
@@ -44,7 +44,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       setIsLoading(false);
       return;
     }
-    router.push(next);
+    // Admins land on their dashboard unless the login was for a specific page.
+    const isAdmin = data.user?.app_metadata?.role === "admin";
+    router.push(isAdmin && next === DEFAULT_NEXT ? "/admin" : next);
   };
 
   return (
