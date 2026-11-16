@@ -31,12 +31,12 @@ export default function RolesPage() {
             {roles.length} {roles.length === 1 ? "role" : "roles"} open for interviews
           </p>
         )}
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full max-w-xl">
+          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
           <Input
             aria-label="Search jobs"
             placeholder="Search jobs"
-            className="pl-9"
+            className="h-11 rounded-lg pl-11 text-base"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
