@@ -1,0 +1,98 @@
+import { describe, expect, it } from "vitest";
+import {
+  APPLICATION_STEPS,
+  redirectFor,
+  setupPath,
+  stepFromPathname,
+  type Progress,
+} from "@/lib/candidate/steps";
+
+const ROLE = "software-engineer";
+const OPEN = "22222222-2222-4222-8222-222222222222";
+const OTHER = "33333333-3333-4333-8333-333333333333";
+
+const none: Progress = { roleId: ROLE, resume: { uploaded: false }, attempt: null };
+const open: Progress = { roleId: ROLE, resume: { uploaded: true }, attempt: { id: OPEN } };
+
+describe("APPLICATION_STEPS", () => {
+  it("lists the five steps in order with unique ids", () => {
+    expect(APPLICATION_STEPS.map((s) => s.id)).toEqual(["role", "resume", "consent", "setup", "interview"]);
+    expect(new Set(APPLICATION_STEPS.map((s) => s.id)).size).toBe(5);
+    for (const s of APPLICATION_STEPS) expect(s.description.length).toBeGreaterThan(0);
+  });
+
+  it("says the resume is optional", () => {
+    expect(APPLICATION_STEPS.find((s) => s.id === "resume")?.label).toMatch(/optional/i);
+  });
+});
+
+describe("stepFromPathname", () => {
+  it.each([
+    ["/candidate/roles/software-engineer", "role"],
+    ["/candidate/roles/software-engineer/", "role"],
+    ["/candidate/resume", "resume"],
+    ["/candidate/consent", "consent"],
+    ["/candidate/setup", "setup"],
+    ["/candidate/live", "interview"],
+    ["/candidate/result", "done"],
+    ["/candidate/result/", "done"],
+  ])("%s is %s", (path, step) => {
+    expect(stepFromPathname(path)).toBe(step);
+  });
+
+  it.each([
+    "/candidate",
+    "/candidate/roles",
+    "/candidate/roles/",
+    "/candidate/roles/a/b",
+    "/candidate/profile",
+    "/candidate/resumes",
+    "/auth/login",
+    "/",
+  ])("%s is not part of an application", (path) => {
+    expect(stepFromPathname(path)).toBeNull();
+  });
+});
+
+describe("redirectFor", () => {
+  describe("resume and consent", () => {
+    it.each(["resume", "consent"] as const)("%s opens when no attempt is open", (step) => {
+      expect(redirectFor(step, none, null)).toBeNull();
+    });
+
+    it.each(["resume", "consent"] as const)("%s sends the candidate on to setup once an attempt is open", (step) => {
+      expect(redirectFor(step, open, null)).toBe(setupPath(OPEN, ROLE));
+    });
+
+    it.each(["resume", "consent"] as const)("%s opens when the URL has no role (the page explains it)", (step) => {
+      expect(redirectFor(step, null, null)).toBeNull();
+    });
+  });
+
+  describe("setup and interview", () => {
+    it.each(["setup", "interview"] as const)("%s opens for the open attempt", (step) => {
+      expect(redirectFor(step, open, OPEN)).toBeNull();
+    });
+
+    it.each(["setup", "interview"] as const)("%s redirects another attempt id to the open one", (step) => {
+      expect(redirectFor(step, open, OTHER)).toBe(setupPath(OPEN, ROLE));
+      expect(redirectFor(step, open, null)).toBe(setupPath(OPEN, ROLE));
+    });
+
+    it.each(["setup", "interview"] as const)("%s sends a closed or unknown attempt to its result", (step) => {
+      expect(redirectFor(step, none, OTHER)).toBe(`/candidate/result?attempt=${OTHER}`);
+    });
+
+    it.each(["setup", "interview"] as const)("%s without an attempt goes back to the role", (step) => {
+      expect(redirectFor(step, none, null)).toBe(`/candidate/roles/${ROLE}`);
+    });
+
+    it.each(["setup", "interview"] as const)("%s without a role goes to the role list", (step) => {
+      expect(redirectFor(step, null, OPEN)).toBe("/candidate/roles");
+    });
+  });
+
+  it("encodes ids placed in redirect URLs", () => {
+    expect(redirectFor("setup", none, "a&b=c")).toBe("/candidate/result?attempt=a%26b%3Dc");
+  });
+});

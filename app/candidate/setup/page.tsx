@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { StepGate } from "@/components/candidate/step-gate";
 import { Button } from "@/components/ui/button";
 import { MicLevel } from "@/components/candidate/mic-level";
 import { listAudioDevices, playTestSound, useMic } from "@/components/candidate/use-mic";
@@ -12,6 +13,14 @@ const SELECT =
   "h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 export default function SetupPage() {
+  return (
+    <StepGate step="setup">
+      <SetupStep />
+    </StepGate>
+  );
+}
+
+function SetupStep() {
   const params = useSearchParams();
   const attemptId = params.get("attempt");
   const roleId = params.get("role");
