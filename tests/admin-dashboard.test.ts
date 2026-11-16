@@ -107,12 +107,11 @@ describe("admin paths", () => {
     expect(read("app/admin/sessions/[id]/page.tsx")).toContain("await requireAdmin()");
   });
 
-  it("shows the recording, not the transcript or AI feedback, and only plays http(s) links", () => {
+  it("shows the transcript, not AI feedback or a recording", () => {
     const page = read("app/admin/sessions/[id]/page.tsx");
-    expect(page).toContain("Interview recording");
+    expect(page).toContain('title="Transcript"');
     expect(page).not.toContain("AI feedback");
-    expect(page).not.toContain('title="Transcript"');
-    expect(read("lib/admin/data.ts")).toMatch(/recording_url && \/\^https\?:/);
+    expect(page).not.toMatch(/<audio|recording/i);
   });
 });
 
@@ -132,5 +131,33 @@ describe("interview_reviews migration", () => {
     expect(sql).toContain("revoke all on table public.interview_reviews from anon, authenticated");
     expect(sql).not.toMatch(/grant [a-z, ]* on table public\.interview_reviews to (authenticated|anon)/);
     expect(sql).toContain("check (status in ('pending', 'in_progress', 'completed', 'rejected'))");
+  });
+});
+
+describe("transcriptTurns", async () => {
+  vi.mock("server-only", () => ({}));
+  const { transcriptTurns } = await import("@/lib/admin/data");
+
+  it("turns a saved transcript into ordered AI / candidate turns", () => {
+    expect(
+      transcriptTurns([
+        { role: "assistant", message: "Tell me about yourself." },
+        { role: "user", message: "I am a backend developer." },
+        { role: "interviewer", text: "Why this role?" },
+        { role: "candidate", text: "I like data work." },
+      ]),
+    ).toEqual([
+      { role: "interviewer", text: "Tell me about yourself." },
+      { role: "candidate", text: "I am a backend developer." },
+      { role: "interviewer", text: "Why this role?" },
+      { role: "candidate", text: "I like data work." },
+    ]);
+  });
+
+  it("gives no turns for a missing, empty or malformed transcript", () => {
+    expect(transcriptTurns(null)).toEqual([]);
+    expect(transcriptTurns([])).toEqual([]);
+    expect(transcriptTurns({ nope: 1 })).toEqual([]);
+    expect(transcriptTurns([{ role: "assistant", message: "Only the AI spoke." }])).toEqual([]);
   });
 });

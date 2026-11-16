@@ -119,27 +119,33 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
           </dl>
         </Section>
 
-        <Section title="Interview recording">
-          {!a.recordingUrl ? (
-            <p className="text-sm text-muted-foreground">No recording yet.</p>
-          ) : (
-            <div className="grid gap-3">
-              {/* The interview is voice only (no camera), so this is audio. */}
-              <audio controls preload="none" src={a.recordingUrl} className="w-full">
-                Your browser cannot play this recording.
-              </audio>
-              <a
-                href={a.recordingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-              >
-                Download recording
-              </a>
-            </div>
-          )}
-        </Section>
       </div>
+
+      <Section title="Transcript">
+        {a.transcript.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No transcript yet.</p>
+        ) : (
+          <ol className="grid gap-3">
+            {a.transcript.map((t, i) => {
+              const ai = t.role === "interviewer";
+              return (
+                <li key={i} className={`flex ${ai ? "justify-start" : "justify-end"}`}>
+                  <div
+                    className={`max-w-[85%] rounded-xl px-4 py-3 text-sm ${
+                      ai ? "border-l-4 border-primary bg-muted/40" : "bg-primary/10"
+                    }`}
+                  >
+                    <div className={`mb-1 text-xs font-semibold uppercase ${ai ? "text-primary" : "text-foreground"}`}>
+                      {ai ? "AI interviewer" : t.role === "candidate" ? "Candidate" : "Speaker"}
+                    </div>
+                    <p className="whitespace-pre-wrap">{t.text}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </Section>
     </>
   );
 }

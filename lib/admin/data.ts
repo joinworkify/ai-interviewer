@@ -2,6 +2,7 @@ import "server-only";
 
 import { findRole } from "@/lib/candidate/attempts";
 import { createS3Client, createS3ResumeStorage, readResumeS3Config } from "@/lib/candidate/resume-s3";
+import { normalizeTranscript, type TranscriptTurn } from "@/lib/sessions/transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import type { ReviewStatus } from "./access";
@@ -98,15 +99,22 @@ export interface AttemptDetail {
   resume:
     | { fileName: string; size: number; uploadedAt: string | null; downloadUrl: string | null }
     | null;
-  /** http(s) link to the call recording, when the voice provider stored one. */
-  recordingUrl: string | null;
+  /** The saved interview conversation in order; empty when there is none or it is unreadable. */
+  transcript: TranscriptTurn[];
+}
+
+/** Saved transcript (any shape normalizeTranscript accepts) as ordered turns; [] if missing or unreadable. */
+export function transcriptTurns(value: unknown): TranscriptTurn[] {
+  if (value == null) return [];
+  const result = normalizeTranscript(value);
+  return result.ok ? result.turns : [];
 }
 
 export async function getAttempt(sessionId: string): Promise<AttemptDetail | null> {
   const db = createAdminClient();
   const session = await db
     .from("interview_sessions")
-    .select("id, user_id, status, started_at, ended_at, duration_seconds, ended_reason, recording_url")
+    .select("id, user_id, status, started_at, ended_at, duration_seconds, ended_reason, transcript")
     .eq("id", sessionId)
     .maybeSingle();
   if (session.error) fail("get session", session.error);
@@ -167,7 +175,6 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
           downloadUrl,
         }
       : null,
-    // Only http(s): the URL goes into an <audio> src on the admin page.
-    recordingUrl: s.recording_url && /^https?:\/\//i.test(s.recording_url) ? s.recording_url : null,
+    transcript: transcriptTurns(s.transcript),
   };
 }
