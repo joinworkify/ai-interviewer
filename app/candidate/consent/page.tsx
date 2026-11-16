@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ApiError, getInstructions, giveConsentAndCreateAttempt } from "@/lib/candidate/api";
 import { CONSENT_LABEL, CONSENT_POINTS } from "@/lib/candidate/consent";
+import { setupPath, stepHref } from "@/lib/candidate/steps";
 
 export default function ConsentPage() {
   return (
@@ -20,11 +21,18 @@ export default function ConsentPage() {
 }
 
 function ConsentStep() {
-  const roleId = useSearchParams().get("role") ?? "";
+  const params = useSearchParams();
+  const roleId = params.get("role") ?? "";
+  // Set when the candidate came back here after consenting: the gate only lets
+  // this page open with the attempt that is still open.
+  const acceptedAttempt = params.get("attempt");
   const router = useRouter();
   const [instructions, setInstructions] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [agreed, setAgreed] = useState(false);
+  const [agreedNow, setAgreed] = useState(false);
+  // Derived, not stored: Next can keep this page mounted between visits, so
+  // state from an earlier visit (e.g. "saving") must not leak into this one.
+  const agreed = acceptedAttempt !== null || agreedNow;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -33,6 +41,11 @@ function ConsentStep() {
   }, [roleId]);
 
   async function onContinue() {
+    // Already agreed: carry on with that attempt; never create a second one.
+    if (acceptedAttempt) {
+      router.push(setupPath(acceptedAttempt, roleId));
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -81,16 +94,19 @@ function ConsentStep() {
           id="consent"
           className="mt-1"
           checked={agreed}
-          disabled={instructions === null}
+          disabled={instructions === null || acceptedAttempt !== null}
           onCheckedChange={(v) => setAgreed(v === true)}
         />
         <Label htmlFor="consent" className="text-[15px] font-medium leading-6">
           {CONSENT_LABEL}
+          {acceptedAttempt && (
+            <span className="mt-1 block text-sm font-normal text-green-700">Already accepted ✓</span>
+          )}
         </Label>
       </div>
       <div className="flex flex-col items-center gap-4">
-        <Button className="w-40" disabled={!agreed || saving} onClick={onContinue}>
-          {saving && <Loader2 className="animate-spin" />}
+        <Button className="w-40" disabled={!agreed || (saving && !acceptedAttempt)} onClick={onContinue}>
+          {saving && !acceptedAttempt && <Loader2 className="animate-spin" />}
           Continue
         </Button>
         {saveError && (
@@ -100,7 +116,7 @@ function ConsentStep() {
         )}
         <div className="flex items-center gap-5 text-xs text-muted-foreground/80">
           <Link
-            href={`/candidate/resume?role=${encodeURIComponent(roleId)}`}
+            href={stepHref("resume", roleId, acceptedAttempt) ?? "/candidate/roles"}
             className="hover:text-foreground hover:underline"
           >
             Back

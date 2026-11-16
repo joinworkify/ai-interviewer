@@ -54,12 +54,38 @@ export function setupPath(attemptId: string, roleId: string): string {
 }
 
 /**
+ * Link back to an earlier step, keeping the open attempt in the URL so the
+ * step opens again instead of skipping forward. Null when the step cannot be
+ * revisited (the interview itself) or there is not enough to build the link.
+ */
+export function stepHref(step: StepId, roleId: string | null, attemptId: string | null): string | null {
+  if (!roleId) return null;
+  const role = encodeURIComponent(roleId);
+  const attempt = attemptId ? `&attempt=${encodeURIComponent(attemptId)}` : "";
+  switch (step) {
+    case "role":
+      return `/candidate/roles/${role}`;
+    case "resume":
+      return `/candidate/resume?role=${role}${attempt}`;
+    case "consent":
+      return `/candidate/consent?role=${role}${attempt}`;
+    case "setup":
+      return attemptId ? setupPath(attemptId, roleId) : null;
+    case "interview":
+      return null;
+  }
+}
+
+/**
  * Where to send a candidate who opened `step` out of order, or null when the
  * step may open. `progress` is null when the URL has no role, so there is
  * nothing to look up.
  *
  *  - resume and consent are done once an attempt is open (consent created it),
- *    and must not run again: consent would create a second attempt.
+ *    and must not run again: consent would create a second attempt. Opened
+ *    without an attempt in the URL they skip forward to setup. Opened with
+ *    the open attempt in the URL (a deliberate "go back", see stepHref) they
+ *    stay open, and the pages continue that attempt instead of making one.
  *  - setup and interview need the open attempt named in the URL.
  */
 export function redirectFor(
@@ -71,7 +97,11 @@ export function redirectFor(
   if (progress === null) return needsAttempt ? "/candidate/roles" : null;
 
   const open = progress.attempt;
-  if (!needsAttempt) return open ? setupPath(open.id, progress.roleId) : null;
+  if (!needsAttempt) {
+    if (open) return open.id === attemptId ? null : setupPath(open.id, progress.roleId);
+    // The attempt in the URL is over: open the step fresh, without it.
+    return attemptId ? stepHref(step, progress.roleId, null) : null;
+  }
 
   if (open && open.id === attemptId) return null;
   if (open) return setupPath(open.id, progress.roleId);

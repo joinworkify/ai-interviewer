@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { CountrySelect } from "@/components/candidate/country-select";
 import { StepGate } from "@/components/candidate/step-gate";
+import { setupPath } from "@/lib/candidate/steps";
 import {
   DEFAULT_DIAL_CODE,
   formatFileSize,
@@ -35,7 +36,15 @@ export default function CandidateResumePage() {
 
 function ResumeStep() {
   const router = useRouter();
-  const roleId = useSearchParams().get("role") ?? "";
+  const params = useSearchParams();
+  const roleId = params.get("role") ?? "";
+  // Set when the candidate came back after consenting: carry on with that
+  // attempt instead of going through consent (which would start another).
+  const openAttempt = params.get("attempt");
+  const nextStep = () =>
+    openAttempt
+      ? setupPath(openAttempt, roleId)
+      : `/candidate/consent?role=${encodeURIComponent(roleId)}`;
   const [fullName, setFullName] = useState("");
   const [dialCode, setDialCode] = useState(DEFAULT_DIAL_CODE);
   const [phone, setPhone] = useState("");
@@ -138,8 +147,9 @@ function ResumeStep() {
             setSubmitting(false);
             return;
           }
-          // Next: consent, which creates the interview attempt for this role.
-          router.push(`/candidate/consent?role=${encodeURIComponent(roleId)}`);
+          // Next: consent, which creates the interview attempt for this role
+          // (or straight back to the mic check when one is already open).
+          router.push(nextStep());
         }}
       >
         {/* Full Name */}
@@ -341,9 +351,7 @@ function ResumeStep() {
           <button
             type="button"
             disabled={submitting || !roleId}
-            onClick={() =>
-              router.push(`/candidate/consent?role=${encodeURIComponent(roleId)}`)
-            }
+            onClick={() => router.push(nextStep())}
             className="text-xs text-slate-500 hover:text-slate-700 hover:underline disabled:opacity-50"
           >
             Skip this step
