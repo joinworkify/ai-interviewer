@@ -19,8 +19,10 @@ import {
   type ProfileUpdate,
 } from "@/lib/candidate/profile-client";
 import {
-  fetchSavedResume,
+  deleteResume,
+  fetchSavedResumes,
   ResumeUploadError,
+  selectResume,
   uploadResume,
   type SavedResume,
 } from "@/lib/candidate/resume-client";
@@ -42,9 +44,11 @@ function ResumeStep() {
   const [resumeOption, setResumeOption] = useState<"upload" | "saved">(
     "upload",
   );
-  const [savedResume, setSavedResume] = useState<SavedResume | null>(null);
-  const savedResumeName = savedResume?.fileName ?? null;
-  const [file, setFile] = useState<File | null>(null);
+  // Every resume the candidate has saved; the chosen one is used for this application.
+  const [resumes, setResumes] = useState<SavedResume[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
@@ -55,12 +59,13 @@ function ResumeStep() {
   const touch = (field: keyof typeof touched) =>
     setTouched((t) => ({ ...t, [field]: true }));
 
-  // A resume uploaded earlier can be reused; pick it by default when there is one.
+  // Resumes uploaded earlier can be reused; the one in use comes first and is picked by default.
   useEffect(() => {
     let cancelled = false;
-    void fetchSavedResume().then((resume) => {
-      if (cancelled || !resume) return;
-      setSavedResume(resume);
+    void fetchSavedResumes().then((saved) => {
+      if (cancelled || saved.length === 0) return;
+      setResumes(saved);
+      setSelectedId(saved[0].id);
       setResumeOption("saved");
     });
     return () => {
@@ -79,12 +84,45 @@ function ResumeStep() {
     setPhone(digitsOnly);
   };
 
-  // One place for the PDF/DOCX and 5 MB rules, used by the picker and by drop.
-  const acceptFile = (candidate: File | null | undefined) => {
-    if (!candidate) return;
+  // Checks the PDF/DOCX and 5 MB rules, then uploads straight away: the new
+  // resume joins the saved list and is selected. Used by the picker and by drop.
+  const acceptFile = async (candidate: File | null | undefined) => {
+    if (!candidate || uploading) return;
     const problem = resumeFileError(candidate);
-    setFile(problem ? null : candidate);
     setFileError(problem);
+    if (problem) return;
+    setUploading(true);
+    try {
+      const saved = await uploadResume(candidate);
+      setResumes((list) => [saved, ...list.filter((r) => r.id !== saved.id)]);
+      setSelectedId(saved.id);
+      setResumeOption("saved");
+    } catch (err) {
+      setFileError(
+        err instanceof ResumeUploadError ? err.message : "Could not upload the resume. Please try again.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeResume = async (resume: SavedResume) => {
+    if (!window.confirm(`Delete "${resume.fileName}"? This cannot be undone.`)) return;
+    setDeletingId(resume.id);
+    setFileError(null);
+    try {
+      await deleteResume(resume.id);
+      const rest = resumes.filter((r) => r.id !== resume.id);
+      setResumes(rest);
+      if (selectedId === resume.id) setSelectedId(rest[0]?.id ?? null);
+      if (rest.length === 0) setResumeOption("upload");
+    } catch (err) {
+      setFileError(
+        err instanceof ResumeUploadError ? err.message : "Could not delete the resume. Please try again.",
+      );
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const portfolioProblem = linkError(portfolioUrl);
@@ -99,6 +137,7 @@ function ResumeStep() {
     }`;
   const canContinue =
     !submitting &&
+    !uploading &&
     !nameProblem &&
     phoneValidation.valid &&
     !portfolioProblem;
@@ -127,7 +166,8 @@ function ResumeStep() {
             if (phone) details.phone = `${dialCode}${phone}`;
             if (portfolioUrl.trim()) details.portfolioUrl = portfolioUrl;
             await saveProfile(details);
-            if (resumeOption === "upload" && file) await uploadResume(file);
+            // The chosen saved resume is the one this application uses.
+            if (resumeOption === "saved" && selectedId) await selectResume(selectedId);
           } catch (err) {
             setSubmitError(
               err instanceof ProfileSaveError ||
@@ -203,29 +243,60 @@ function ResumeStep() {
             Resume (optional)
           </label>
 
-          {/* Saved resume option: always shown, disabled until one exists */}
-          <div
-            onClick={() => savedResumeName && setResumeOption("saved")}
-            className={`rounded-2xl border p-4 transition ${
-              resumeOption === "saved" ? "border-[#7a1c2e]" : "border-slate-200"
-            } ${!savedResumeName ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-          >
-            <label className="flex items-center gap-3 text-sm font-medium text-slate-900">
-              <input
-                type="radio"
-                name="resumeOption"
-                checked={resumeOption === "saved"}
-                disabled={!savedResumeName}
-                onChange={() => setResumeOption("saved")}
-                className="h-4 w-4 accent-[#7a1c2e]"
-              />
-              <span>
-                {savedResumeName
-                  ? `Use saved resume (${savedResumeName})`
-                  : "Use saved resume (none saved yet)"}
-              </span>
-            </label>
-          </div>
+          {/* Saved resumes: one row each, pick one or delete it */}
+          {resumes.length === 0 ? (
+            <div className="cursor-not-allowed rounded-2xl border border-slate-200 p-4 opacity-60">
+              <label className="flex items-center gap-3 text-sm font-medium text-slate-900">
+                <input type="radio" name="resumeOption" disabled className="h-4 w-4 accent-[#7a1c2e]" />
+                <span>Use saved resume (none saved yet)</span>
+              </label>
+            </div>
+          ) : (
+            resumes.map((resume) => {
+              const chosen = resumeOption === "saved" && selectedId === resume.id;
+              return (
+                <div
+                  key={resume.id}
+                  onClick={() => {
+                    setSelectedId(resume.id);
+                    setResumeOption("saved");
+                  }}
+                  className={`flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition ${
+                    chosen ? "border-[#7a1c2e]" : "border-slate-200"
+                  }`}
+                >
+                  <label className="flex min-w-0 cursor-pointer items-center gap-3 text-sm font-medium text-slate-900">
+                    <input
+                      type="radio"
+                      name="resumeOption"
+                      checked={chosen}
+                      onChange={() => {
+                        setSelectedId(resume.id);
+                        setResumeOption("saved");
+                      }}
+                      className="h-4 w-4 shrink-0 accent-[#7a1c2e]"
+                    />
+                    <span className="truncate">Use saved resume ({resume.fileName})</span>
+                    <span className="shrink-0 text-xs font-normal text-slate-500">
+                      {formatFileSize(resume.size)}
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    disabled={deletingId !== null}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void removeResume(resume);
+                    }}
+                    aria-label={`Delete ${resume.fileName}`}
+                    className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    {deletingId === resume.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              );
+            })
+          )}
 
           {/* Upload Resume Option */}
           <div
@@ -249,8 +320,8 @@ function ResumeStep() {
                   Upload a resume
                 </div>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  PDF or DOCX, one file, max 5 MB. The drop box opens when this
-                  is selected.
+                  PDF or DOCX, one file, max 5 MB. It is saved to your profile as
+                  soon as it uploads.
                 </p>
               </div>
             </label>
@@ -266,21 +337,22 @@ function ResumeStep() {
                   onDrop={(e) => {
                     e.preventDefault();
                     setDragging(false);
-                    acceptFile(e.dataTransfer.files?.[0]);
+                    void acceptFile(e.dataTransfer.files?.[0]);
                   }}
-                  className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center hover:bg-slate-50 ${
+                  aria-busy={uploading}
+                  className={`flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center ${
+                    uploading ? "cursor-wait opacity-70" : "cursor-pointer hover:bg-slate-50"
+                  } ${
                     dragging
                       ? "border-[#7a1c2e] bg-rose-50"
                       : "border-slate-300"
                   }`}
                 >
                   <span className="rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-[#7a1c2e]">
-                    Upload file
+                    {uploading ? "Uploading..." : "Upload file"}
                   </span>
                   <span className="mt-2 text-xs text-slate-600">
-                    {file
-                      ? `${file.name} (${formatFileSize(file.size)})`
-                      : "or drag and drop a file here"}
+                    or drag and drop a file here
                   </span>
                   <span className="mt-1 text-xs text-slate-500">
                     PDF or DOCX, one file, max 5 MB
@@ -288,9 +360,10 @@ function ResumeStep() {
                   <input
                     type="file"
                     accept=".pdf,.docx"
+                    disabled={uploading}
                     className="hidden"
                     onChange={(e) => {
-                      acceptFile(e.target.files?.[0]);
+                      void acceptFile(e.target.files?.[0]);
                       // Allow choosing the same file again after an error.
                       e.target.value = "";
                     }}
