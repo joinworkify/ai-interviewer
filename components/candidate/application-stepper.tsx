@@ -1,13 +1,23 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
-import { APPLICATION_STEPS, stepFromPathname } from "@/lib/candidate/steps";
+import { APPLICATION_STEPS, stepFromPathname, stepHref } from "@/lib/candidate/steps";
 
-/** Progress through the application, shown above every step page. Renders nothing elsewhere. */
+/**
+ * Progress through the application, shown above every step page. Renders
+ * nothing elsewhere. Completed steps are links back to that step.
+ */
 export function ApplicationStepper() {
-  const position = stepFromPathname(usePathname());
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const position = stepFromPathname(pathname);
   if (position === null) return null;
+
+  // The role page has its id in the path; the step pages have it in ?role=.
+  const roleId = params.get("role") ?? (position === "role" ? decodeURIComponent(pathname.split("/").pop() ?? "") : null);
+  const attemptId = params.get("attempt");
 
   const total = APPLICATION_STEPS.length;
   const currentIndex = position === "done" ? total : APPLICATION_STEPS.findIndex((s) => s.id === position);
@@ -40,6 +50,33 @@ export function ApplicationStepper() {
         {APPLICATION_STEPS.map((step, i) => {
           const complete = i < currentIndex;
           const isCurrent = i === currentIndex;
+          // Only finished steps link back, and never once the interview is over.
+          const href = complete && position !== "done" ? stepHref(step.id, roleId, attemptId) : null;
+          const content = (
+            <>
+              <span
+                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-semibold ${
+                  complete
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : isCurrent
+                      ? "border-primary bg-background text-primary"
+                      : "border-border bg-background text-muted-foreground"
+                } ${href ? "group-hover:opacity-80" : ""}`}
+              >
+                {complete ? <Check className="h-4 w-4" aria-hidden="true" /> : i + 1}
+              </span>
+              <span
+                className={`text-xs ${isCurrent ? "font-semibold" : "text-muted-foreground"} ${
+                  href ? "group-hover:text-foreground group-hover:underline" : ""
+                }`}
+              >
+                {step.label}
+                <span className="sr-only">
+                  {complete ? (href ? " (completed, go back to this step)" : " (completed)") : isCurrent ? " (current step)" : ""}
+                </span>
+              </span>
+            </>
+          );
           return (
             <li
               key={step.id}
@@ -52,21 +89,16 @@ export function ApplicationStepper() {
                   className={`absolute left-[-50%] top-4 -z-0 h-0.5 w-full ${i <= currentIndex ? "bg-primary" : "bg-border"}`}
                 />
               )}
-              <span
-                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-semibold ${
-                  complete
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : isCurrent
-                      ? "border-primary bg-background text-primary"
-                      : "border-border bg-background text-muted-foreground"
-                }`}
-              >
-                {complete ? <Check className="h-4 w-4" aria-hidden="true" /> : i + 1}
-              </span>
-              <span className={`text-xs ${isCurrent ? "font-semibold" : "text-muted-foreground"}`}>
-                {step.label}
-                <span className="sr-only">{complete ? " (completed)" : isCurrent ? " (current step)" : ""}</span>
-              </span>
+              {href ? (
+                <Link
+                  href={href}
+                  className="group flex flex-col items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {content}
+                </Link>
+              ) : (
+                content
+              )}
             </li>
           );
         })}
