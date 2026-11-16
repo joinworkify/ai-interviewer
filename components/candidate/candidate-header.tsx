@@ -1,9 +1,9 @@
-
 "use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { PROFILE_UPDATED_EVENT } from "@/lib/candidate/profile-client";
 import { createClient } from "@/lib/supabase/client";
 
 export function CandidateHeader() {
@@ -34,25 +34,28 @@ export function CandidateHeader() {
         .maybeSingle();
 
       setName(
-        profile?.name?.trim() ||
-          user.user_metadata?.name?.trim() ||
-          null,
+        profile?.name?.trim() || user.user_metadata?.name?.trim() || null,
       );
     }
 
     void loadProfile();
 
-    const { data } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setEmail(session?.user.email ?? null);
+    // The profile form saves without changing the page, so it tells the header
+    // to show the new name instead of waiting for the next navigation.
+    window.addEventListener(PROFILE_UPDATED_EVENT, loadProfile);
 
-        if (!session) {
-          setName(null);
-        }
-      },
-    );
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setEmail(session?.user.email ?? null);
 
-    return () => data.subscription.unsubscribe();
+      if (!session) {
+        setName(null);
+      }
+    });
+
+    return () => {
+      window.removeEventListener(PROFILE_UPDATED_EVENT, loadProfile);
+      data.subscription.unsubscribe();
+    };
   }, [pathname]);
 
   async function logOut() {
@@ -95,8 +98,12 @@ export function CandidateHeader() {
           {email ? (
             <>
               <Link
-                href="/candidate/resume"
-                className="max-w-24 truncate text-sm font-medium text-muted-foreground hover:text-primary hover:underline sm:max-w-none"
+                href="/candidate/profile"
+                className={`max-w-24 truncate text-sm font-medium hover:underline sm:max-w-none ${
+                  pathname.startsWith("/candidate/profile")
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-primary"
+                }`}
               >
                 {name || "My Profile"}
               </Link>
