@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   COUNTRY_PHONE_CONFIGS,
   formatFileSize,
@@ -10,7 +10,18 @@ import {
   linkError,
   resumeFileError,
   validatePhoneNumber,
-} from "@/lib/candidate/resume";
+} from "@/lib/candidate/resume-form";
+import {
+  ProfileSaveError,
+  saveProfile,
+  type ProfileUpdate,
+} from "@/lib/candidate/profile-client";
+import {
+  fetchSavedResume,
+  ResumeUploadError,
+  uploadResume,
+  type SavedResume,
+} from "@/lib/candidate/resume-client";
 
 export default function CandidateResumePage() {
   const router = useRouter();
@@ -18,25 +29,43 @@ export default function CandidateResumePage() {
   const [fullName, setFullName] = useState("");
   const [dialCode, setDialCode] = useState("+95");
   const [phone, setPhone] = useState("");
-  const [resumeOption, setResumeOption] = useState<"upload" | "saved">("upload");
-  const [savedResumeName] = useState<string | null>(null); // null when no saved resume exists
+  const [resumeOption, setResumeOption] = useState<"upload" | "saved">(
+    "upload",
+  );
+  const [savedResume, setSavedResume] = useState<SavedResume | null>(null);
+  const savedResumeName = savedResume?.fileName ?? null;
   const [file, setFile] = useState<File | null>(null);
-  const [saveForFuture, setSaveForFuture] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [dragging, setDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+
+  // A resume uploaded earlier can be reused; pick it by default when there is one.
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSavedResume().then((resume) => {
+      if (cancelled || !resume) return;
+      setSavedResume(resume);
+      setResumeOption("saved");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const currentCountry = getCountryConfig(dialCode);
   const phoneValidation = validatePhoneNumber(phone, dialCode);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Allow digits and spaces only, capped at the selected country's maxDigits
-    const digitsOnly = e.target.value.replace(/[^\d]/g, "").slice(0, currentCountry.maxDigits);
+    const digitsOnly = e.target.value
+      .replace(/[^\d]/g, "")
+      .slice(0, currentCountry.maxDigits);
     setPhone(digitsOnly);
   };
 
   // One place for the PDF/DOCX and 5 MB rules, used by the picker and by drop.
-  // One place for the file rules, used by the picker and by drop.
   const acceptFile = (candidate: File | null | undefined) => {
     if (!candidate) return;
     const problem = resumeFileError(candidate);
@@ -46,12 +75,12 @@ export default function CandidateResumePage() {
 
   const portfolioProblem = linkError(portfolioUrl);
 
+  // The resume is optional: an upload with no file chosen just skips it.
   const canContinue =
+    !submitting &&
     fullName.trim().length > 0 &&
     phoneValidation.valid &&
-    !portfolioProblem &&
-    ((resumeOption === "upload" && file !== null) ||
-      (resumeOption === "saved" && Boolean(savedResumeName)));
+    !portfolioProblem;
 
   return (
     <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -61,9 +90,29 @@ export default function CandidateResumePage() {
 
       <form
         className="space-y-6"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
           if (!canContinue || !roleId) return;
+          setSubmitError(null);
+          setSubmitting(true);
+          try {
+            // Only what was filled in: this page never clears details that are
+            // already on the profile (the profile page does that).
+            const details: ProfileUpdate = { name: fullName };
+            if (phone) details.phone = `${dialCode}${phone}`;
+            if (portfolioUrl.trim()) details.portfolioUrl = portfolioUrl;
+            await saveProfile(details);
+            if (resumeOption === "upload" && file) await uploadResume(file);
+          } catch (err) {
+            setSubmitError(
+              err instanceof ProfileSaveError ||
+                err instanceof ResumeUploadError
+                ? err.message
+                : "Something went wrong. Please try again.",
+            );
+            setSubmitting(false);
+            return;
+          }
           // Next: consent, which creates the interview attempt for this role.
           router.push(`/candidate/consent?role=${encodeURIComponent(roleId)}`);
         }}
@@ -117,43 +166,41 @@ export default function CandidateResumePage() {
           </div>
 
           {!phoneValidation.valid && (
-            <p className="mt-1.5 text-xs text-red-600">{phoneValidation.error}</p>
+            <p className="mt-1.5 text-xs text-red-600">
+              {phoneValidation.error}
+            </p>
           )}
         </div>
 
-        {/* Resume * */}
+        {/* Resume (optional) */}
         <div className="space-y-3">
           <label className="block text-sm font-medium text-slate-900">
-            Resume *
+            Resume (optional)
           </label>
 
-          {/* Saved Resume Option - stays rendered even if placeholder/saved resume is removed */}
-          {savedResumeName !== undefined && (
-            <div
-              onClick={() => savedResumeName && setResumeOption("saved")}
-              className={`rounded-2xl border p-4 transition ${
-                resumeOption === "saved"
-                  ? "border-[#7a1c2e]"
-                  : "border-slate-200"
-              } ${!savedResumeName ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-            >
-              <label className="flex items-center gap-3 text-sm font-medium text-slate-900">
-                <input
-                  type="radio"
-                  name="resumeOption"
-                  checked={resumeOption === "saved"}
-                  disabled={!savedResumeName}
-                  onChange={() => setResumeOption("saved")}
-                  className="h-4 w-4 accent-[#7a1c2e]"
-                />
-                <span>
-                  {savedResumeName
-                    ? `Use saved resume (${savedResumeName})`
-                    : "Use saved resume (none saved yet)"}
-                </span>
-              </label>
-            </div>
-          )}
+          {/* Saved resume option: always shown, disabled until one exists */}
+          <div
+            onClick={() => savedResumeName && setResumeOption("saved")}
+            className={`rounded-2xl border p-4 transition ${
+              resumeOption === "saved" ? "border-[#7a1c2e]" : "border-slate-200"
+            } ${!savedResumeName ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+          >
+            <label className="flex items-center gap-3 text-sm font-medium text-slate-900">
+              <input
+                type="radio"
+                name="resumeOption"
+                checked={resumeOption === "saved"}
+                disabled={!savedResumeName}
+                onChange={() => setResumeOption("saved")}
+                className="h-4 w-4 accent-[#7a1c2e]"
+              />
+              <span>
+                {savedResumeName
+                  ? `Use saved resume (${savedResumeName})`
+                  : "Use saved resume (none saved yet)"}
+              </span>
+            </label>
+          </div>
 
           {/* Upload Resume Option */}
           <div
@@ -177,7 +224,8 @@ export default function CandidateResumePage() {
                   Upload a resume
                 </div>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  PDF or DOCX, one file, max 5 MB. The drop box opens when this is selected.
+                  PDF or DOCX, one file, max 5 MB. The drop box opens when this
+                  is selected.
                 </p>
               </div>
             </label>
@@ -196,14 +244,18 @@ export default function CandidateResumePage() {
                     acceptFile(e.dataTransfer.files?.[0]);
                   }}
                   className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center hover:bg-slate-50 ${
-                    dragging ? "border-[#7a1c2e] bg-rose-50" : "border-slate-300"
+                    dragging
+                      ? "border-[#7a1c2e] bg-rose-50"
+                      : "border-slate-300"
                   }`}
                 >
                   <span className="rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-[#7a1c2e]">
                     Upload file
                   </span>
                   <span className="mt-2 text-xs text-slate-600">
-                    {file ? `${file.name} (${formatFileSize(file.size)})` : "or drag and drop a file here"}
+                    {file
+                      ? `${file.name} (${formatFileSize(file.size)})`
+                      : "or drag and drop a file here"}
                   </span>
                   <span className="mt-1 text-xs text-slate-500">
                     PDF or DOCX, one file, max 5 MB
@@ -219,17 +271,14 @@ export default function CandidateResumePage() {
                     }}
                   />
                 </label>
-                {fileError && <p className="mt-2 text-xs text-red-600">{fileError}</p>}
+                {fileError && (
+                  <p className="mt-2 text-xs text-red-600">{fileError}</p>
+                )}
 
-                <label className="mt-4 flex cursor-pointer items-center gap-2 text-xs text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={saveForFuture}
-                    onChange={(e) => setSaveForFuture(e.target.checked)}
-                    className="h-4 w-4 rounded-full accent-[#7a1c2e]"
-                  />
-                  <span>Save this resume for future applications.</span>
-                </label>
+                <p className="mt-4 text-xs text-slate-600">
+                  Your resume is kept on your profile and can be reused for
+                  future applications.
+                </p>
               </div>
             )}
           </div>
@@ -247,7 +296,9 @@ export default function CandidateResumePage() {
             placeholder="https://"
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7a1c2e] focus:outline-none"
           />
-          {portfolioProblem && <p className="mt-1.5 text-xs text-red-600">{portfolioProblem}</p>}
+          {portfolioProblem && (
+            <p className="mt-1.5 text-xs text-red-600">{portfolioProblem}</p>
+          )}
         </div>
 
         {/* Actions */}
@@ -257,17 +308,28 @@ export default function CandidateResumePage() {
             disabled={!canContinue || !roleId}
             className="rounded-xl bg-[#7a1c2e] px-10 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            Continue
+            {submitting ? "Uploading..." : "Continue"}
           </button>
+          {submitError && (
+            <p role="alert" className="text-xs text-red-600">
+              {submitError}
+            </p>
+          )}
           <Link
-            href={roleId ? `/candidate/roles/${encodeURIComponent(roleId)}` : "/candidate/roles"}
+            href={
+              roleId
+                ? `/candidate/roles/${encodeURIComponent(roleId)}`
+                : "/candidate/roles"
+            }
             className="text-xs text-slate-600 hover:underline"
           >
             Back to role
           </Link>
-          <p className="text-[11px] text-slate-500">Fields marked * are required.</p>
+          <p className="text-[11px] text-slate-500">
+            Fields marked * are required.
+          </p>
         </div>
       </form>
     </div>
   );
-} 
+}

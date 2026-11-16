@@ -61,6 +61,10 @@ describe("Supabase proxy login redirect", () => {
     "/api/dograh/webhook",
     "/api/candidate/attempts",
     "/api/candidate/attempts/22222222-2222-4222-8222-222222222222",
+    "/api/candidate/resume",
+    "/api/candidate/resume/upload-url",
+    "/api/candidate/resume/confirm",
+    "/api/candidate/profile",
   ])(
     "lets signed-out POST %s through so the route can answer for itself",
     async (path) => {
@@ -82,7 +86,11 @@ describe("Supabase proxy login redirect", () => {
     "/api/candidate/attempts/extra",
     "/api/candidate/attempts/22222222-2222-4222-8222-222222222222/more",
     "/api/candidate/attempts/22222222-2222-4222-8222-22222222222",
+    "/api/candidate/resume/",
+    "/api/candidate/resume/other",
     "/api/candidate/other",
+    "/api/candidate/profile/",
+    "/api/candidate/profile/extra",
     "/protected/interview/dograh",
   ])("still redirects signed-out %s to /auth/login", async (path) => {
     const res = await updateSession(post(path));

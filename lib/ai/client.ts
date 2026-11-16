@@ -26,6 +26,45 @@ export type LlmConfigResult =
   | { ok: true; config: LlmConfig }
   | { ok: false; missing: string[]; invalid: string[] };
 
+const GEMINI_HOST = "generativelanguage.googleapis.com";
+const GEMINI_OPENAI_PATH = "/v1beta/openai";
+
+/**
+ * Settings that pass validation but are known to fail at the provider (each of
+ * these produced `llm_failed` in practice). Advice only: they never reject a
+ * config, because a provider may change what it accepts. Names and values of
+ * the model and URL only; the API key is never looked at.
+ */
+export function llmConfigWarnings(config: Pick<LlmConfig, "model" | "baseUrl">): string[] {
+  const warnings: string[] = [];
+  if (/(^|[-_.])live([-_.]|$)/i.test(config.model)) {
+    warnings.push(
+      `LLM_MODEL "${config.model}" looks like a live (realtime audio) model. Chat completions need a text model; the live model belongs in GEMINI_LIVE_MODEL.`,
+    );
+  }
+  try {
+    const url = new URL(config.baseUrl);
+    if (url.hostname === GEMINI_HOST && url.pathname.replace(/\/+$/, "") !== GEMINI_OPENAI_PATH) {
+      warnings.push(
+        `LLM_BASE_URL points at Gemini but does not end in ${GEMINI_OPENAI_PATH}, so /chat/completions will 404. Use https://${GEMINI_HOST}${GEMINI_OPENAI_PATH}.`,
+      );
+    }
+  } catch {
+    // Already reported as invalid by readLlmConfig.
+  }
+  return warnings;
+}
+
+const warned = new Set<string>();
+
+function warnOnce(config: LlmConfig) {
+  for (const warning of llmConfigWarnings(config)) {
+    if (warned.has(warning)) continue;
+    warned.add(warning);
+    console.warn(`[llm-config] ${warning}`);
+  }
+}
+
 export function readLlmConfig(
   env: Record<string, string | undefined>,
 ): LlmConfigResult {
@@ -63,7 +102,9 @@ export function readLlmConfig(
   if (missing.length || invalid.length || !apiKey || !model) {
     return { ok: false, missing, invalid };
   }
-  return { ok: true, config: { apiKey, model, baseUrl, timeoutMs } };
+  const config = { apiKey, model, baseUrl, timeoutMs };
+  warnOnce(config);
+  return { ok: true, config };
 }
 
 export type LlmErrorKind =

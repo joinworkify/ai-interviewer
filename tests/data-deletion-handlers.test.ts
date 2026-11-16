@@ -171,4 +171,26 @@ describe("handleDeleteAccount", () => {
     const res = await handleDeleteAccount(del(confirm), deps());
     expect(res.status).toBe(200);
   });
+
+  it("deletes the user's files (resumes in S3) before the account", async () => {
+    const order: string[] = [];
+    const deleteUserFiles = vi.fn(async (id: string) => {
+      order.push(`files:${id}`, ...store.calls);
+    });
+    const res = await handleDeleteAccount(del(confirm), deps({ deleteUserFiles }));
+    expect(res.status).toBe(200);
+    expect(order).toEqual([`files:${ME}`]);
+    expect(store.calls).toEqual([`account:${ME}`]);
+  });
+
+  it("keeps the account when the files cannot be deleted, so it can be retried", async () => {
+    const deleteUserFiles = vi.fn(async () => {
+      throw new Error("s3 down secret-detail");
+    });
+    const res = await handleDeleteAccount(del(confirm), deps({ deleteUserFiles }));
+    expect(res.status).toBe(500);
+    expect(JSON.stringify(await res.json())).not.toContain("secret-detail");
+    expect(store.calls).toEqual([]);
+    expect(after).not.toHaveBeenCalled();
+  });
 });
