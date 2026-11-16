@@ -88,7 +88,7 @@ export function CandidateHeader() {
                   : "text-muted-foreground hover:text-primary"
               }`}
             >
-              Application Status
+              My Applications
             </Link>
           )}
         </div>
