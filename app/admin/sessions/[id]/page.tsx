@@ -110,7 +110,7 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                 </p>
                 {a.resume.previewUrl && (
                   <iframe
-                    src={a.resume.previewUrl}
+                    src={`${a.resume.previewUrl}#toolbar=0&navpanes=0&view=FitH`}
                     title={`Resume: ${a.resume.fileName}`}
                     className="h-[75vh] min-h-[480px] w-full rounded-lg border bg-muted/20"
                   />
