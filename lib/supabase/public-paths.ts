@@ -14,6 +14,7 @@
  *   /api/candidate/attempts[/<id>]  same
  *   /api/candidate/resume[/upload-url|/confirm]   same
  *   /api/candidate/profile          same
+ *   /api/admin/sessions/<id>/review checks for a signed-in admin (JSON 401 / 403)
  *
  * Exact paths and anchored patterns only: no `startsWith` prefixes, so a new
  * route such as /api/sessionsX or /api/dograh/other stays behind the login
@@ -42,6 +43,8 @@ const PATTERNS: readonly RegExp[] = [
   /^\/auth(\/|$)/,
   new RegExp(`^/api/candidate/attempts/${UUID}$`, "i"),
   new RegExp(`^/api/sessions/${UUID}(/(transcript|feedback))?$`, "i"),
+  // Checks the caller is a signed-in admin itself (JSON 401 / 403).
+  new RegExp(`^/api/admin/sessions/${UUID}/review$`, "i"),
 ];
 
 export function isPublicPath(pathname: string): boolean {
