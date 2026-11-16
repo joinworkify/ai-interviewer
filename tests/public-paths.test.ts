@@ -22,6 +22,7 @@ describe("isPublicPath", () => {
     "/api/candidate/resume/upload-url",
     "/api/candidate/resume/confirm",
     "/api/candidate/profile",
+    "/api/candidate/progress",
     "/api/sessions",
     `/api/sessions/${ID}`,
     `/api/sessions/${ID}/transcript`,
@@ -65,6 +66,8 @@ describe("isPublicPath", () => {
     "/api/candidate/resume/other",
     "/api/candidate/profile/",
     "/api/candidate/profile/extra",
+    "/api/candidate/progress/",
+    "/api/candidate/progress/extra",
     // The product pages, staff and cron routes always need a session.
     "/candidate/roles",
     "/protected",
