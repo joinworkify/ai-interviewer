@@ -251,5 +251,3 @@ export default function ApplicationsPage() {
     </div>
   );
 }
-
-export const metadata = { title: "My applications" };
