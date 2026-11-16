@@ -15,7 +15,9 @@ function slug(value: unknown): string | null {
 }
 
 export function describeError(err: unknown): string {
-  if (err === null || typeof err !== "object") return typeof err;
+  // typeof null is "object", which reads like a real error object in logs.
+  if (err === null) return "null";
+  if (typeof err !== "object") return typeof err;
   const record = err as Record<string, unknown>;
   const name = slug(record.name) ?? "Error";
   const parts = [slug(record.kind), slug(record.code)].filter(

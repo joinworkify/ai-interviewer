@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { StepGate } from "@/components/candidate/step-gate";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,14 @@ import { ApiError, getInstructions, giveConsentAndCreateAttempt } from "@/lib/ca
 import { CONSENT_LABEL, CONSENT_POINTS } from "@/lib/candidate/consent";
 
 export default function ConsentPage() {
+  return (
+    <StepGate step="consent">
+      <ConsentStep />
+    </StepGate>
+  );
+}
+
+function ConsentStep() {
   const roleId = useSearchParams().get("role") ?? "";
   const router = useRouter();
   const [instructions, setInstructions] = useState<string | null>(null);
@@ -88,9 +97,17 @@ export default function ConsentPage() {
             {saveError}
           </p>
         )}
-        <Link href="/candidate/roles" className="text-sm text-muted-foreground hover:underline">
-          I don&apos;t agree, back to roles
-        </Link>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <Link
+            href={`/candidate/resume?role=${encodeURIComponent(roleId)}`}
+            className="hover:underline"
+          >
+            Back
+          </Link>
+          <Link href="/candidate/roles" className="hover:underline">
+            I don&apos;t agree, back to roles
+          </Link>
+        </div>
       </div>
       <p className="text-center text-xs text-muted-foreground">
         No microphone or recording before consent. Continue is enabled only after the checkbox is ticked.

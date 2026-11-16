@@ -74,7 +74,7 @@ describe("describeError", () => {
 
   it("handles non-objects", () => {
     expect(describeError(CANARY)).toBe("string");
-    expect(describeError(null)).toBe("object");
+    expect(describeError(null)).toBe("null");
     expect(describeError(undefined)).toBe("undefined");
   });
 });

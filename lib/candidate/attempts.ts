@@ -36,7 +36,7 @@ export const MAX_ATTEMPTS_PER_ROLE = 3;
  */
 export const STALE_ATTEMPT_MINUTES = 30;
 
-const ROLE_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+export const ROLE_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 interface RoleData {
   id: string;
