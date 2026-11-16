@@ -2,6 +2,7 @@
 import { jsonResponse } from "@/lib/http/json";
 import { attemptProgress } from "@/lib/candidate/attempts";
 import roles from "@/lib/candidate/roles.json";
+import { describeError } from "@/lib/log/safe-error";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -115,7 +116,7 @@ export async function GET(request: Request) {
       applications,
     });
   } catch (error) {
-    console.error("[candidate-applications] failed", error);
+    console.error("[candidate-applications] failed", describeError(error));
 
     return jsonResponse(500, {
       success: false,
