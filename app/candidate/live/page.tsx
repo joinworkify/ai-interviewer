@@ -1,3 +1,4 @@
+import { StepGate } from "@/components/candidate/step-gate";
 import { LiveInterview } from "@/components/candidate/live-interview";
 import { readDograhWidgetConfig } from "@/lib/dograh/config";
 
@@ -8,5 +9,9 @@ import { readDograhWidgetConfig } from "@/lib/dograh/config";
  */
 export default function LivePage() {
   const widget = readDograhWidgetConfig(process.env);
-  return <LiveInterview widgetSrc={widget.ok ? widget.src : null} />;
+  return (
+    <StepGate step="interview">
+      <LiveInterview widgetSrc={widget.ok ? widget.src : null} />
+    </StepGate>
+  );
 }
