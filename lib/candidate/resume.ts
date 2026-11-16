@@ -28,7 +28,8 @@ const MAX_BODY_BYTES = 1024;
 /** Allowed types and the file extension each one is stored under. */
 export const RESUME_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "docx",
 };
 
 export interface ResumeRow {
@@ -59,8 +60,17 @@ export interface ResumeStore {
 }
 
 export interface ResumeStorage {
-  presignPut(key: string, contentType: string, size: number, ttlSeconds: number): Promise<string>;
-  presignGet(key: string, fileName: string, ttlSeconds: number): Promise<string>;
+  presignPut(
+    key: string,
+    contentType: string,
+    size: number,
+    ttlSeconds: number,
+  ): Promise<string>;
+  presignGet(
+    key: string,
+    fileName: string,
+    ttlSeconds: number,
+  ): Promise<string>;
   /** Size and type of a stored object, or null when it does not exist. */
   head(key: string): Promise<{ size: number; contentType: string } | null>;
   deleteObject(key: string): Promise<void>;
@@ -93,8 +103,10 @@ function fail(
   return jsonResponse(status, { success: false, error, message, ...extra });
 }
 
-const unauthorized = () => fail(401, "unauthorized", "Sign in to upload a resume.");
-const storageFailed = () => fail(500, "storage_failed", "Could not store the resume.");
+const unauthorized = () =>
+  fail(401, "unauthorized", "Sign in to upload a resume.");
+const storageFailed = () =>
+  fail(500, "storage_failed", "Could not store the resume.");
 
 export function resumeKey(userId: string, contentType: string): string {
   return `resumes/${userId}/${randomUUID()}.${RESUME_TYPES[contentType]}`;
@@ -102,12 +114,16 @@ export function resumeKey(userId: string, contentType: string): string {
 
 /** Keeps only the base name and drops control characters. */
 export function cleanFileName(name: string): string {
-  return (name.split(/[\\/]/).pop() ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  return (name.split(/[\\/]/).pop() ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .trim();
 }
 
 export function validateUploadRequest(
   value: unknown,
-): { ok: true; fileName: string; contentType: string; size: number } | { ok: false; message: string } {
+):
+  | { ok: true; fileName: string; contentType: string; size: number }
+  | { ok: false; message: string } {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return { ok: false, message: "Send fileName, contentType and size." };
   }
@@ -117,9 +133,17 @@ export function validateUploadRequest(
     return { ok: false, message: "fileName must be 1 to 255 characters." };
   }
   if (typeof contentType !== "string" || !(contentType in RESUME_TYPES)) {
-    return { ok: false, message: "Only PDF or Word (.docx) files are allowed." };
+    return {
+      ok: false,
+      message: "Only PDF or Word (.docx) files are allowed.",
+    };
   }
-  if (typeof size !== "number" || !Number.isInteger(size) || size < 1 || size > MAX_RESUME_BYTES) {
+  if (
+    typeof size !== "number" ||
+    !Number.isInteger(size) ||
+    size < 1 ||
+    size > MAX_RESUME_BYTES
+  ) {
     return { ok: false, message: "The file must be between 1 byte and 5 MB." };
   }
   return { ok: true, fileName: name, contentType, size };
@@ -189,7 +213,12 @@ export async function handleConfirmUpload(
   const body = await readJsonBody(request, MAX_BODY_BYTES);
   if (!body.ok) return fail(body.status, body.error, body.message);
   const resumeId = (body.value as Record<string, unknown> | null)?.resumeId;
-  if (!isUuid(resumeId)) return fail(400, "invalid_request", "Send the resumeId from the upload step.");
+  if (!isUuid(resumeId))
+    return fail(
+      400,
+      "invalid_request",
+      "Send the resumeId from the upload step.",
+    );
 
   try {
     const row = await deps.store.get(userId, resumeId);
@@ -202,9 +231,16 @@ export async function handleConfirmUpload(
     if (!object) {
       return fail(409, "upload_missing", "The file has not been uploaded yet.");
     }
-    if (object.size !== row.size_bytes || object.contentType !== row.content_type) {
+    if (
+      object.size !== row.size_bytes ||
+      object.contentType !== row.content_type
+    ) {
       await deps.storage.deleteObject(row.s3_key);
-      return fail(422, "upload_mismatch", "The uploaded file does not match. Please upload it again.");
+      return fail(
+        422,
+        "upload_mismatch",
+        "The uploaded file does not match. Please upload it again.",
+      );
     }
 
     const uploaded = await deps.store.markUploaded(userId, resumeId);
@@ -219,7 +255,9 @@ export async function handleConfirmUpload(
  * TODO(team): reviewer access to other candidates' resumes needs an admin or
  * reviewer role, which does not exist yet.
  */
-export async function handleGetResume(deps: ResumeHandlerDeps): Promise<Response> {
+export async function handleGetResume(
+  deps: ResumeHandlerDeps,
+): Promise<Response> {
   const userId = await deps.getUserId();
   if (!userId) return unauthorized();
 

@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { ProfileSaveError, saveProfile } from "@/lib/candidate/profile-client";
 
 type Props = {
-  userId: string;
   initialProfile: {
     name: string;
     email: string;
@@ -15,9 +14,7 @@ type Props = {
   };
 };
 
-export function ResumeProfileForm({ userId, initialProfile }: Props) {
-  const supabase = createClient();
-
+export function ResumeProfileForm({ initialProfile }: Props) {
   const [name, setName] = useState(initialProfile.name);
   const [phone, setPhone] = useState(initialProfile.phone);
   const [linkedinUrl, setLinkedinUrl] = useState(initialProfile.linkedinUrl);
@@ -72,23 +69,22 @@ export function ResumeProfileForm({ userId, initialProfile }: Props) {
     setMessage("");
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        name: name.trim(),
-        phone: phone.trim() || null,
-        linkedin_url: linkedinUrl.trim() || null,
-        portfolio_url: portfolioUrl.trim() || null,
-      })
-      .eq("id", userId);
-
-    setIsSaving(false);
-
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      await saveProfile({
+        name,
+        phone,
+        linkedinUrl,
+        portfolioUrl,
+      });
+    } catch (err) {
+      setIsSaving(false);
+      setErrorMessage(
+        err instanceof ProfileSaveError ? err.message : "Could not save your profile.",
+      );
       return;
     }
 
+    setIsSaving(false);
     setMessage("Profile saved successfully.");
   }
 
