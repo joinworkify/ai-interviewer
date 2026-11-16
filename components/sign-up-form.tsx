@@ -62,7 +62,9 @@ export function SignUpForm({
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-center text-2xl">Sign up</CardTitle>
-          <CardDescription className="text-center">Create your candidate account</CardDescription>
+          <CardDescription className="text-center">
+            Create your candidate account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp}>
@@ -102,14 +104,21 @@ export function SignUpForm({
                   onChange={(e) => setRepeatPassword(e.target.value)}
                 />
               </div>
-              {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+              {error && (
+                <p role="alert" className="text-sm text-destructive">
+                  {error}
+                </p>
+              )}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating an account..." : "Sign up"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}
-              <Link href="/auth/login" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link
+                href="/auth/login"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
                 Log in
               </Link>
             </div>
