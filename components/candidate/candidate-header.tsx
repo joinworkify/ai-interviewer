@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LogoMark } from "@/components/brand/logo-mark";
 import { PROFILE_UPDATED_EVENT } from "@/lib/candidate/profile-client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -71,9 +72,7 @@ export function CandidateHeader() {
           href="/candidate/roles"
           className="flex items-center gap-2 font-semibold tracking-tight"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-            D
-          </span>
+          <LogoMark size={32} />
           <span className="hidden sm:inline">Candidate Interview</span>
         </Link>
 

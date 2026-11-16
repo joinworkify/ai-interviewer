@@ -3,7 +3,7 @@ import { ApplicationStepper } from "@/components/candidate/application-stepper";
 import { CandidateFooter } from "@/components/candidate/candidate-footer";
 import { CandidateHeader } from "@/components/candidate/candidate-header";
 
-export const metadata = { title: "Candidate Interview | DataSea" };
+export const metadata = { title: "Candidate Interview" };
 
 export default function CandidateLayout({ children }: { children: React.ReactNode }) {
   return (

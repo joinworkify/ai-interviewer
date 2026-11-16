@@ -15,3 +15,5 @@ export default function LivePage() {
     </StepGate>
   );
 }
+
+export const metadata = { title: "Live interview" };

@@ -9,3 +9,5 @@ export default function Page() {
     </div>
   );
 }
+
+export const metadata = { title: "Reset password" };

@@ -97,7 +97,14 @@ export interface AttemptDetail {
     portfolioUrl: string | null;
   };
   resume:
-    | { fileName: string; size: number; uploadedAt: string | null; downloadUrl: string | null }
+    | {
+        fileName: string;
+        size: number;
+        uploadedAt: string | null;
+        downloadUrl: string | null;
+        /** Short-lived inline link for an iframe; only set for PDFs. */
+        previewUrl: string | null;
+      }
     | null;
   /** The saved interview conversation in order; empty when there is none or it is unreadable. */
   transcript: TranscriptTurn[];
@@ -139,10 +146,14 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
   }
 
   let downloadUrl: string | null = null;
+  let previewUrl: string | null = null;
   const s3 = readResumeS3Config(process.env);
   if (resume.data && s3.ok) {
     const storage = createS3ResumeStorage(createS3Client(s3.config), s3.config.bucket);
     downloadUrl = await storage.presignGet(resume.data.s3_key, resume.data.file_name, 300);
+    if (/\.pdf$/i.test(resume.data.file_name)) {
+      previewUrl = await storage.presignGet(resume.data.s3_key, resume.data.file_name, 300, "inline");
+    }
   }
 
   return {
@@ -173,6 +184,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
           size: resume.data.size_bytes,
           uploadedAt: resume.data.uploaded_at,
           downloadUrl,
+          previewUrl,
         }
       : null,
     transcript: transcriptTurns(s.transcript),

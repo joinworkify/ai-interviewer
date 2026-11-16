@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { CandidateHeader } from "@/components/candidate/candidate-header";
 
-export const metadata = { title: "Candidate Interview | DataSea" };
+export const metadata = { title: "Sign in" };
 
 /** Same top bar and burgundy theme as the candidate pages. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
