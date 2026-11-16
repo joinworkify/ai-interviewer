@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { ResumeViewer } from "@/components/admin/resume-viewer-lazy";
 import { ReviewStatusForm } from "@/components/admin/review-status-form";
 import { REVIEW_STATUS_LABELS } from "@/lib/admin/access";
 import { getAttempt } from "@/lib/admin/data";
@@ -109,11 +110,7 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                   </span>
                 </p>
                 {a.resume.previewUrl && (
-                  <iframe
-                    src={`${a.resume.previewUrl}#toolbar=0&navpanes=0&view=FitH`}
-                    title={`Resume: ${a.resume.fileName}`}
-                    className="h-[75vh] min-h-[480px] w-full rounded-lg border bg-muted/20"
-                  />
+                  <ResumeViewer url={a.resume.previewUrl} fileName={a.resume.fileName} />
                 )}
                 {a.resume.downloadUrl ? (
                   <a
