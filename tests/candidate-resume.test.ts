@@ -7,7 +7,9 @@ import {
   cleanFileName,
   handleConfirmUpload,
   handleCreateUploadUrl,
+  handleDeleteResume,
   handleGetResume,
+  handleSelectResume,
   validateUploadRequest,
   type ResumeHandlerDeps,
   type ResumeRow,
@@ -44,6 +46,7 @@ function row(over: Partial<ResumeRow> = {}): ResumeRow {
     status: "pending",
     created_at: "2026-11-14T00:00:00Z",
     uploaded_at: null,
+    selected_at: null,
     ...over,
   };
 }
@@ -55,7 +58,9 @@ function deps(
     createPending: vi.fn(async () => ({ id: RESUME })),
     get: vi.fn(async () => row()),
     markUploaded: vi.fn(async () => row({ status: "uploaded", uploaded_at: "2026-11-14T00:01:00Z" })),
-    latestUploaded: vi.fn(async () => row({ status: "uploaded", uploaded_at: "2026-11-14T00:01:00Z" })),
+    listUploaded: vi.fn(async () => [row({ status: "uploaded", uploaded_at: "2026-11-14T00:01:00Z" })]),
+    select: vi.fn(async () => {}),
+    remove: vi.fn(async () => {}),
     ...over.store,
   };
   const storage: ResumeStorage = {
@@ -187,19 +192,20 @@ describe("handleConfirmUpload", () => {
 });
 
 describe("handleGetResume", () => {
-  it("returns the latest uploaded resume with a download URL", async () => {
+  it("returns the resume in use with a download URL, plus the whole list", async () => {
     const { d, storage } = deps();
     const res = await handleGetResume(d);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
       resume: { id: RESUME, fileName: "cv.pdf" },
+      resumes: [{ id: RESUME, fileName: "cv.pdf" }],
       download: { url: "https://s3.example/get", expiresIn: 300 },
     });
     expect(storage.presignGet).toHaveBeenCalledWith(`resumes/${USER}/abc.pdf`, "cv.pdf", 300);
   });
 
   it("is 404 with no resume and 401 when signed out", async () => {
-    expect((await handleGetResume(deps({ store: { latestUploaded: vi.fn(async () => null) } }).d)).status).toBe(404);
+    expect((await handleGetResume(deps({ store: { listUploaded: vi.fn(async () => []) } }).d)).status).toBe(404);
     expect((await handleGetResume(deps({ userId: null }).d)).status).toBe(401);
   });
 });
@@ -277,5 +283,58 @@ describe("candidate_resumes migration", () => {
     expect(sql).toContain("grant select on table public.candidate_resumes to authenticated");
     expect(sql).toContain("using (user_id = (select auth.uid()))");
     expect(sql).not.toMatch(/grant [a-z, ]*(insert|update|delete)[a-z, ]* on table public\.candidate_resumes to (authenticated|anon)/);
+  });
+});
+
+describe("handleSelectResume", () => {
+  it("makes the caller's own uploaded resume the one in use", async () => {
+    const { d, store } = deps({ store: { get: vi.fn(async () => row({ status: "uploaded" })) } });
+    expect((await handleSelectResume(RESUME, d)).status).toBe(200);
+    expect(store.get).toHaveBeenCalledWith(USER, RESUME);
+    expect(store.select).toHaveBeenCalledWith(USER, RESUME);
+  });
+
+  it("is 404 for someone else's or a pending resume, 401 signed out, 400 for a bad id", async () => {
+    const other = deps({ store: { get: vi.fn(async () => null) } });
+    expect((await handleSelectResume(RESUME, other.d)).status).toBe(404);
+    expect(other.store.select).not.toHaveBeenCalled();
+    const pending = deps();
+    expect((await handleSelectResume(RESUME, pending.d)).status).toBe(404);
+    expect((await handleSelectResume(RESUME, deps({ userId: null }).d)).status).toBe(401);
+    expect((await handleSelectResume("nope", deps().d)).status).toBe(400);
+  });
+});
+
+describe("handleDeleteResume", () => {
+  it("deletes the caller's own resume: the file first, then the row", async () => {
+    const order: string[] = [];
+    const { d } = deps({
+      store: { remove: vi.fn(async () => void order.push("row")) },
+      storage: { deleteObject: vi.fn(async (key: string) => void order.push(`file:${key}`)) },
+    });
+    const res = await handleDeleteResume(RESUME, d);
+    expect(res.status).toBe(200);
+    expect(order).toEqual([`file:resumes/${USER}/abc.pdf`, "row"]);
+  });
+
+  it("is 404 for someone else's resume and 401 signed out, touching nothing", async () => {
+    const other = deps({ store: { get: vi.fn(async () => null) } });
+    expect((await handleDeleteResume(RESUME, other.d)).status).toBe(404);
+    expect(other.storage.deleteObject).not.toHaveBeenCalled();
+    expect(other.store.remove).not.toHaveBeenCalled();
+    const out = deps({ userId: null });
+    expect((await handleDeleteResume(RESUME, out.d)).status).toBe(401);
+    expect(out.storage.deleteObject).not.toHaveBeenCalled();
+    expect((await handleDeleteResume("nope", deps().d)).status).toBe(400);
+  });
+
+  it("keeps the row when the file cannot be deleted, so it can be retried", async () => {
+    const { d, store } = deps({
+      storage: { deleteObject: vi.fn(async () => { throw new Error("s3 down secret-detail"); }) },
+    });
+    const res = await handleDeleteResume(RESUME, d);
+    expect(res.status).toBe(500);
+    expect(JSON.stringify(await res.json())).not.toContain("secret-detail");
+    expect(store.remove).not.toHaveBeenCalled();
   });
 });

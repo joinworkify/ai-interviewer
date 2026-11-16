@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   ResumeUploadError,
-  fetchSavedResume,
+  deleteResume,
+  fetchSavedResumes,
   resumeContentType,
+  selectResume,
   uploadResume,
 } from "@/lib/candidate/resume-client";
 
@@ -82,19 +84,39 @@ describe("uploadResume", () => {
   });
 });
 
-describe("fetchSavedResume", () => {
-  it("returns the saved resume", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(json(200, { success: true, resume: RESUME }));
-    await expect(fetchSavedResume(fetchImpl as unknown as typeof fetch)).resolves.toEqual(RESUME);
+describe("fetchSavedResumes", () => {
+  it("returns every saved resume, the one in use first", async () => {
+    const other = { id: "r2", fileName: "old.pdf", size: 9 };
+    const fetchImpl = vi.fn().mockResolvedValue(json(200, { success: true, resume: RESUME, resumes: [RESUME, other] }));
+    await expect(fetchSavedResumes(fetchImpl as unknown as typeof fetch)).resolves.toEqual([RESUME, other]);
   });
 
-  it("returns null when there is none, when signed out, or when the request fails", async () => {
+  it("returns an empty list when there is none, when signed out, or when the request fails", async () => {
     for (const impl of [
       vi.fn().mockResolvedValue(json(404, { message: "No resume uploaded yet." })),
       vi.fn().mockResolvedValue(json(401, {})),
       vi.fn().mockRejectedValue(new Error("offline")),
     ]) {
-      await expect(fetchSavedResume(impl as unknown as typeof fetch)).resolves.toBeNull();
+      await expect(fetchSavedResumes(impl as unknown as typeof fetch)).resolves.toEqual([]);
     }
+  });
+});
+
+describe("selectResume and deleteResume", () => {
+  it("call the resume's own URL with POST and DELETE", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(json(200, { success: true }));
+    await selectResume("r 1", fetchImpl as unknown as typeof fetch);
+    await deleteResume("r 1", fetchImpl as unknown as typeof fetch);
+    expect(fetchImpl.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
+      ["/api/candidate/resume/r%201", "POST"],
+      ["/api/candidate/resume/r%201", "DELETE"],
+    ]);
+  });
+
+  it("throw the server's message, or a friendly one when offline", async () => {
+    const notFound = vi.fn().mockResolvedValue(json(404, { message: "Resume not found." }));
+    await expect(deleteResume("r1", notFound as unknown as typeof fetch)).rejects.toThrow("Resume not found.");
+    const offline = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(selectResume("r1", offline as unknown as typeof fetch)).rejects.toThrow(/connection/);
   });
 });

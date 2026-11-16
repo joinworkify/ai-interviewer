@@ -42,6 +42,8 @@ export interface ResumeRow {
   status: string;
   created_at: string;
   uploaded_at: string | null;
+  /** When the candidate last chose this resume (uploading also chooses it). */
+  selected_at: string | null;
 }
 
 export interface ResumeStore {
@@ -54,9 +56,14 @@ export interface ResumeStore {
   }): Promise<{ id: string }>;
   /** The user's own row, or null. */
   get(userId: string, id: string): Promise<ResumeRow | null>;
+  /** Marks the row uploaded and selects it. */
   markUploaded(userId: string, id: string): Promise<ResumeRow>;
-  /** The user's most recently uploaded resume, or null. */
-  latestUploaded(userId: string): Promise<ResumeRow | null>;
+  /** All the user's uploaded resumes, the one in use first. */
+  listUploaded(userId: string): Promise<ResumeRow[]>;
+  /** Makes this (the user's own, uploaded) resume the one in use. */
+  select(userId: string, id: string): Promise<void>;
+  /** Deletes the user's own row. */
+  remove(userId: string, id: string): Promise<void>;
 }
 
 export interface ResumeStorage {
@@ -251,9 +258,8 @@ export async function handleConfirmUpload(
 }
 
 /**
- * GET /api/candidate/resume: the caller's own latest resume.
- * TODO(team): reviewer access to other candidates' resumes needs an admin or
- * reviewer role, which does not exist yet.
+ * GET /api/candidate/resume: the caller's own resumes. `resume` is the one in
+ * use (with a download link); `resumes` lists all of them, that one first.
  */
 export async function handleGetResume(
   deps: ResumeHandlerDeps,
@@ -262,7 +268,8 @@ export async function handleGetResume(
   if (!userId) return unauthorized();
 
   try {
-    const row = await deps.store.latestUploaded(userId);
+    const rows = await deps.store.listUploaded(userId);
+    const row = rows[0];
     if (!row) return fail(404, "not_found", "No resume uploaded yet.");
     const downloadUrl = await deps.storage.presignGet(
       row.s3_key,
@@ -272,9 +279,53 @@ export async function handleGetResume(
     return jsonResponse(200, {
       success: true,
       resume: publicResume(row),
+      resumes: rows.map(publicResume),
       download: { url: downloadUrl, expiresIn: RESUME_URL_TTL_SECONDS },
     });
   } catch {
     return storageFailed();
+  }
+}
+
+/** POST /api/candidate/resume/<id>: use this saved resume for applications. */
+export async function handleSelectResume(
+  resumeId: string,
+  deps: ResumeHandlerDeps,
+): Promise<Response> {
+  const userId = await deps.getUserId();
+  if (!userId) return unauthorized();
+  if (!isUuid(resumeId)) return fail(400, "invalid_request", "Invalid resume id.");
+
+  try {
+    const row = await deps.store.get(userId, resumeId);
+    if (!row || row.status !== "uploaded") return fail(404, "not_found", "Resume not found.");
+    await deps.store.select(userId, resumeId);
+    return jsonResponse(200, { success: true });
+  } catch {
+    return storageFailed();
+  }
+}
+
+/**
+ * DELETE /api/candidate/resume/<id>: deletes one of the caller's own resumes,
+ * the file first and then the row, so a failure never leaves a file with no
+ * row pointing at it. Allowed even if an earlier application used it.
+ */
+export async function handleDeleteResume(
+  resumeId: string,
+  deps: ResumeHandlerDeps,
+): Promise<Response> {
+  const userId = await deps.getUserId();
+  if (!userId) return unauthorized();
+  if (!isUuid(resumeId)) return fail(400, "invalid_request", "Invalid resume id.");
+
+  try {
+    const row = await deps.store.get(userId, resumeId);
+    if (!row) return fail(404, "not_found", "Resume not found.");
+    await deps.storage.deleteObject(row.s3_key);
+    await deps.store.remove(userId, resumeId);
+    return jsonResponse(200, { success: true, deleted: resumeId });
+  } catch {
+    return fail(500, "storage_failed", "Could not delete the resume. Please try again.");
   }
 }

@@ -130,6 +130,8 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       .select("s3_key, file_name, size_bytes, uploaded_at")
       .eq("user_id", s.user_id)
       .eq("status", "uploaded")
+      // The resume in use: last selected by the candidate, then last uploaded.
+      .order("selected_at", { ascending: false, nullsFirst: false })
       .order("uploaded_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
