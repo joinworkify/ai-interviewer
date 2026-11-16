@@ -17,6 +17,8 @@ export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null);
   const router = useRouter();
   const [email, setEmail] = useState("");
+  // null until we know; avoids flashing the sign-in form at signed-in users.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,9 +26,10 @@ export default function RoleDetailPage() {
     // Prefill with the signed-in candidate's email.
     createClient()
       .auth.getUser()
-      .then(({ data }) =>
-        setEmail((current) => current || data.user?.email || ""),
-      );
+      .then(({ data }) => {
+        setSignedIn(Boolean(data.user));
+        setEmail((current) => current || data.user?.email || "");
+      });
   }, [id]);
 
   if (error) {
@@ -112,35 +115,53 @@ export default function RoleDetailPage() {
           </ol>
         </section>
         <h2 className="mb-3 font-semibold">Apply now</h2>
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="apply-email">Email</Label>
-            <Input
-              id="apply-email"
-              type="email"
-              autoComplete="email"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              By clicking any of the &quot;Confirm&quot; buttons below, you
-              acknowledge and agree to our Terms and Privacy Policy for
-              candidates.
-            </p>
+        {signedIn === null ? (
+          <div className="h-24 animate-pulse rounded-lg bg-muted" aria-busy="true" />
+        ) : signedIn ? (
+          <div className="flex flex-col gap-3">
+            {email && (
+              <p className="text-sm text-muted-foreground">
+                Applying as <span className="font-medium text-foreground">{email}</span>
+              </p>
+            )}
+            <Button
+              className="w-full"
+              onClick={() => router.push(`/candidate/resume?role=${role.id}`)}
+            >
+              Continue
+            </Button>
           </div>
-          <Button
-            className="w-full"
-            disabled={!isValidEmail(email)}
-            onClick={() => router.push(`/candidate/resume?role=${role.id}`)}
-          >
-            Confirm
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">Or</p>
-          <SocialAuthButtons
-            next={`/candidate/resume?role=${encodeURIComponent(role.id)}`}
-          />
-        </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="apply-email">Email</Label>
+              <Input
+                id="apply-email"
+                type="email"
+                autoComplete="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                By clicking any of the &quot;Confirm&quot; buttons below, you
+                acknowledge and agree to our Terms and Privacy Policy for
+                candidates.
+              </p>
+            </div>
+            <Button
+              className="w-full"
+              disabled={!isValidEmail(email)}
+              onClick={() => router.push(`/candidate/resume?role=${role.id}`)}
+            >
+              Confirm
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">Or</p>
+            <SocialAuthButtons
+              next={`/candidate/resume?role=${encodeURIComponent(role.id)}`}
+            />
+          </div>
+        )}
       </aside>
     </div>
   );
