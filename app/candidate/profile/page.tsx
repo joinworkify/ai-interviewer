@@ -4,7 +4,7 @@ import { ResumeProfileForm } from "@/components/candidate/resume-profile-form";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "Profile Detail | DataSea",
+  title: "Your profile",
 };
 
 export const instant = false;

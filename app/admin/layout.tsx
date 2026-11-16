@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
 import { LogoutButton } from "@/components/admin/logout-button";
 import { requireAdmin } from "@/lib/admin/server";
+
+export const metadata: Metadata = {
+  title: { default: "Admin | DataSea", template: "%s | Admin | DataSea" },
+  robots: { index: false, follow: false },
+};
 
 /**
  * Admins only. Signed-out visitors are sent to the login page by the proxy;

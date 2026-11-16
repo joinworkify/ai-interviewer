@@ -167,3 +167,5 @@ export default function AdminSessionPage(props: { params: Promise<{ id: string }
     </Suspense>
   );
 }
+
+export const metadata = { title: "Review interview" };

@@ -187,3 +187,5 @@ export default function AdminPage(props: {
     </Suspense>
   );
 }
+
+export const metadata = { title: "Interviews" };
