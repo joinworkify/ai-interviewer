@@ -1,8 +1,10 @@
 # Gemini Live voice interviewer (prototype)
 
 A browser voice **interviewer** that talks to Google Gemini Live directly.
-It does **not** use Vapi or Dograh. The existing Vapi interview generator
-(`/protected/interview`, `VAPI_SETUP.md`) is unchanged and independent.
+It does **not** use Vapi or Dograh, and it is a practice tool: the candidate
+screening flow (`/candidate/*`) runs on Dograh (`DOGRAH_SETUP.md`). The
+existing Vapi interview generator (`/protected/interview`, `VAPI_SETUP.md`) is
+unchanged and independent.
 
 - Page: **`/protected/interview/gemini`** (signed-in users only; linked from
   `/protected` and `/protected/interview`)
@@ -26,8 +28,11 @@ hosting provider's settings). Placeholders are in `.env.example`.
 | `GEMINI_LIVE_APP_ORIGIN` | Optional. The public origin users load the app from, e.g. `https://interviews.example.com` | **Server-only.** Format is `scheme://host[:port]` with no path. Set it behind a reverse proxy, CDN or container where the app server sees an internal Host (e.g. `10.0.0.5:3000`). An invalid value fails closed: the token API returns 403 and the page lists it as invalid. |
 
 Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
-must already be set for sign-in. No Supabase secret/service-role key, Vapi
-key, database table or migration is needed for this feature.
+must already be set for sign-in. Running a session needs no Supabase
+secret/service-role key, Vapi key, table or migration. Saving its transcript
+to a linked interview session (`?sessionId=`) does: the server needs
+`SUPABASE_SECRET_KEY`, and the migration
+`20261111000003_ai_transcript_persistence.sql` must be applied (section 5).
 
 Restart `npm run dev` (or redeploy) after changing env vars. If something is
 missing, the page shows a "Setup incomplete" panel that lists the variable
@@ -232,9 +237,6 @@ Automated checks (no live Google calls; Google and Supabase are mocked):
 ```bash
 npm run test && npm run typecheck && npm run lint && npm run build
 ```
-
-`npm run lint` has one pre-existing error in `tailwind.config.ts:62`
-(`require()` import), which is unrelated to this feature.
 
 ## 7. Current limitations
 

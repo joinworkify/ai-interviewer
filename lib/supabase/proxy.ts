@@ -1,15 +1,24 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
+import { isPublicPath } from "./public-paths";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
-  // If the env vars are not set, skip proxy check. You can remove this
-  // once you setup the project.
+  // Without the Supabase env vars there is no way to tell who is signed in.
+  // In local development the proxy steps aside so the setup screens still
+  // load. In production it fails closed: a deploy missing its env must not
+  // serve every page to everyone.
   if (!hasEnvVars) {
+    if (process.env.NODE_ENV === "production") {
+      return new NextResponse("Service unavailable", {
+        status: 503,
+        headers: { "cache-control": "no-store" },
+      });
+    }
     return supabaseResponse;
   }
 
@@ -47,35 +56,9 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    // Server-to-server webhook from Vapi (no browser session). It authorizes
-    // requests itself with a signed capability token; see VAPI_SETUP.md.
-    request.nextUrl.pathname !== "/api/vapi/generate-interview" &&
-    // JSON APIs that verify the session themselves and answer a structured
-    // 401 instead of an HTML login redirect.
-    !request.nextUrl.pathname.startsWith("/api/sessions") &&
-    // Exact path only; see GEMINI_LIVE_SETUP.md.
-    request.nextUrl.pathname !== "/api/gemini-live/token" &&
-    // Account data deletion verifies the session itself and answers JSON 401.
-    request.nextUrl.pathname !== "/api/account/data" &&
-    // Dograh: the session route verifies the signed-in user itself (JSON 401);
-    // the webhook is server to server and checks its own Bearer secret.
-    // Exact paths only; see DOGRAH_SETUP.md.
-    request.nextUrl.pathname !== "/api/dograh/session" &&
-    request.nextUrl.pathname !== "/api/dograh/webhook" &&
-    // Starting an attempt, and reading its status (/<uuid>), verify the
-    // session themselves and answer JSON 401.
-    request.nextUrl.pathname !== "/api/candidate/attempts" &&
-    !/^\/api\/candidate\/attempts\/[0-9a-f-]{36}$/i.test(request.nextUrl.pathname) &&
-    // Resume routes verify the session themselves and answer JSON 401.
-    !/^\/api\/candidate\/resume(\/(upload-url|confirm))?$/.test(request.nextUrl.pathname) &&
-    // Same for saving profile details.
-    request.nextUrl.pathname !== "/api/candidate/profile"
-  ) {
+  // Which paths are reachable signed out, and why each is safe, is documented
+  // in lib/supabase/public-paths.ts (exact paths and anchored patterns only).
+  if (!user && !isPublicPath(request.nextUrl.pathname)) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     // Remember where the visitor was headed so login can return them there.

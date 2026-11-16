@@ -218,7 +218,15 @@ filename order:
 | `20261109000000_create_interviews.sql` | Creates `public.interviews`, enables RLS and adds a select-own policy. |
 | `20261109000001_diagram_schema.sql` | Adds `profiles`, `interview_sessions`, `feedback` and `vapi_events`; reshapes `interviews`. |
 | `20261109000002_ai_backend.sql` | Adds `capability_uses` (the token replay guard), `ai_usage` and `save_generated_interview`. |
+| `20261111000000_candidate_roles.sql` | Adds `public.roles`, readable by anyone for active rows. |
+| `20261111000003_ai_transcript_persistence.sql` | Adds `transcript_source`, `duration_seconds` and `ended_reason` to `interview_sessions`, and the set-once `store_session_transcript` function. |
 | `20261112000004_ai_security_hardening.sql` | Makes `interview_sessions` and `feedback` server-write-only and adds `purge_vapi_events`. |
+| `20261112000005_dograh_transcript_source.sql` | Allows `dograh_webhook` as a transcript source. |
+| `20261112100000_roles_sort_order.sql` | Adds `roles.sort_order`. |
+| `20261113000000_candidate_consents.sql` | Adds `candidate_consents`, one consent record per interview attempt. |
+
+New migrations are added to this table by the PR that creates them; the files
+in `supabase/migrations/` are the source of truth.
 
 Browsers get no insert/update/delete on `interviews` (see "Security
 properties" for why delete is excluded).
