@@ -22,6 +22,7 @@ const B = IDS.userB;
 const KNOWN_USER_TABLES = [
   "ai_usage", // cascade from profiles (see docs/security-ai-data.md)
   "candidate_consents", // cascade from profiles (and from its session)
+  "candidate_resumes", // cascade from profiles; the S3 files go first (deleteUserFiles)
   "capability_uses", // cascade from profiles
   "feedback", // cascade from profiles (and from its session)
   "interview_sessions", // cascade from profiles (and from its interview)
@@ -38,6 +39,9 @@ insert into public.ai_usage (user_id, feature, model) values
 insert into public.candidate_consents (user_id, session_id, role_id, consent_version) values
   ('${A}', '${IDS.sessionA}', 'generalist', 'v1'),
   ('${B}', '${IDS.sessionB}', 'generalist', 'v1');
+insert into public.candidate_resumes (user_id, s3_key, file_name, content_type, size_bytes, status) values
+  ('${A}', 'resumes/${A}/a.pdf', 'a.pdf', 'application/pdf', 10, 'uploaded'),
+  ('${B}', 'resumes/${B}/b.pdf', 'b.pdf', 'application/pdf', 10, 'uploaded');
 insert into public.vapi_events (vapi_call_id, type, payload) values
   ('call-a1', 'end-of-call-report', '{"transcript":"secret-a"}'),
   ('call-a1', 'status-update', '{}'),

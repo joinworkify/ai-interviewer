@@ -12,6 +12,8 @@
  *   /api/account/data               same
  *   /api/sessions[/<id>[/transcript|/feedback]]   same
  *   /api/candidate/attempts[/<id>]  same
+ *   /api/candidate/resume[/upload-url|/confirm]   same
+ *   /api/candidate/profile          same
  *
  * Exact paths and anchored patterns only: no `startsWith` prefixes, so a new
  * route such as /api/sessionsX or /api/dograh/other stays behind the login
@@ -28,6 +30,10 @@ const EXACT_PATHS: ReadonlySet<string> = new Set([
   "/api/dograh/session",
   "/api/dograh/webhook",
   "/api/candidate/attempts",
+  "/api/candidate/resume",
+  "/api/candidate/resume/upload-url",
+  "/api/candidate/resume/confirm",
+  "/api/candidate/profile",
   "/api/sessions",
 ]);
 

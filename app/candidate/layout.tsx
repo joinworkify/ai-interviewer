@@ -5,7 +5,7 @@ export const metadata = { title: "Candidate Interview | DataSea" };
 
 export default function CandidateLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="theme-datasea flex min-h-screen flex-col bg-background">
+    <div className="theme-datasea flex min-h-screen flex-col bg-background [color-scheme:light]">
       {/* Header and pages read the URL; Next needs Suspense boundaries above them. */}
       <Suspense fallback={<div className="h-[57px] border-b" />}>
         <CandidateHeader />
