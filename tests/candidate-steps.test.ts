@@ -4,6 +4,7 @@ import {
   redirectFor,
   setupPath,
   stepFromPathname,
+  stepHref,
   type Progress,
 } from "@/lib/candidate/steps";
 
@@ -67,6 +68,18 @@ describe("redirectFor", () => {
     it.each(["resume", "consent"] as const)("%s opens when the URL has no role (the page explains it)", (step) => {
       expect(redirectFor(step, null, null)).toBeNull();
     });
+
+    it.each(["resume", "consent"] as const)("%s opens again on a deliberate go-back with the open attempt", (step) => {
+      expect(redirectFor(step, open, OPEN)).toBeNull();
+    });
+
+    it.each(["resume", "consent"] as const)("%s still skips forward for any other attempt id", (step) => {
+      expect(redirectFor(step, open, OTHER)).toBe(setupPath(OPEN, ROLE));
+    });
+
+    it.each(["resume", "consent"] as const)("%s drops a finished attempt from the URL and opens fresh", (step) => {
+      expect(redirectFor(step, none, OTHER)).toBe(`/candidate/${step}?role=${ROLE}`);
+    });
   });
 
   describe("setup and interview", () => {
@@ -94,5 +107,25 @@ describe("redirectFor", () => {
 
   it("encodes ids placed in redirect URLs", () => {
     expect(redirectFor("setup", none, "a&b=c")).toBe("/candidate/result?attempt=a%26b%3Dc");
+  });
+});
+
+describe("stepHref", () => {
+  it("links back to earlier steps, keeping the open attempt so they do not skip forward", () => {
+    expect(stepHref("role", ROLE, OPEN)).toBe(`/candidate/roles/${ROLE}`);
+    expect(stepHref("resume", ROLE, OPEN)).toBe(`/candidate/resume?role=${ROLE}&attempt=${OPEN}`);
+    expect(stepHref("consent", ROLE, OPEN)).toBe(`/candidate/consent?role=${ROLE}&attempt=${OPEN}`);
+    expect(stepHref("setup", ROLE, OPEN)).toBe(setupPath(OPEN, ROLE));
+  });
+
+  it("has no link without an attempt for setup, for the interview, or without a role", () => {
+    expect(stepHref("resume", ROLE, null)).toBe(`/candidate/resume?role=${ROLE}`);
+    expect(stepHref("setup", ROLE, null)).toBeNull();
+    expect(stepHref("interview", ROLE, OPEN)).toBeNull();
+    expect(stepHref("resume", null, OPEN)).toBeNull();
+  });
+
+  it("encodes the ids", () => {
+    expect(stepHref("consent", "a&b", "c=d")).toBe("/candidate/consent?role=a%26b&attempt=c%3Dd");
   });
 });

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Loader2 } from "lucide-react";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
 import { DEFAULT_NEXT, safeNext } from "@/lib/auth/safe-next";
@@ -97,9 +98,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                   Forgot password?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 value={password}

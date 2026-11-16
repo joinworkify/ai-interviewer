@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MicLevel } from "@/components/candidate/mic-level";
 import { listAudioDevices, playTestSound, useMic } from "@/components/candidate/use-mic";
 import { setupGate } from "@/lib/candidate/setup";
+import { stepHref } from "@/lib/candidate/steps";
 
 const SELECT =
   "h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
@@ -120,6 +121,15 @@ function SetupStep() {
         <p className="text-xs leading-5 text-muted-foreground">
           Start is enabled only when the mic check passes. Leaving before Start doesn&apos;t use an attempt.
         </p>
+        {roleId && (
+          <Link
+            href={stepHref("consent", roleId, attemptId) ?? "/candidate/roles"}
+            onClick={() => mic.stop()}
+            className="text-xs text-muted-foreground/80 hover:text-foreground hover:underline"
+          >
+            Back
+          </Link>
+        )}
       </div>
     </div>
   );
