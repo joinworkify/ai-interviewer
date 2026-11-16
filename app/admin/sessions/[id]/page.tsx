@@ -68,57 +68,70 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Section title="Candidate">
-          <dl className="grid gap-3">
-            <Field label="Name">{a.candidate.name || "—"}</Field>
-            <Field label="Email">{a.candidate.email || "—"}</Field>
-            <Field label="Phone">{a.candidate.phone || "—"}</Field>
-            <Field label="LinkedIn"><ExternalLink href={a.candidate.linkedinUrl} /></Field>
-            <Field label="Portfolio"><ExternalLink href={a.candidate.portfolioUrl} /></Field>
-          </dl>
-        </Section>
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="grid gap-6">
+          <Section title="Candidate">
+            <dl className="grid gap-3">
+              <Field label="Name">{a.candidate.name || "—"}</Field>
+              <Field label="Email">{a.candidate.email || "—"}</Field>
+              <Field label="Phone">{a.candidate.phone || "—"}</Field>
+              <Field label="LinkedIn"><ExternalLink href={a.candidate.linkedinUrl} /></Field>
+              <Field label="Portfolio"><ExternalLink href={a.candidate.portfolioUrl} /></Field>
+            </dl>
+          </Section>
 
-        <Section title="Resume">
-          {!a.resume ? (
-            <p className="text-sm text-muted-foreground">No resume uploaded.</p>
-          ) : (
-            <div className="grid gap-3">
-              <p>
-                <span className="font-medium">{a.resume.fileName}</span>{" "}
-                <span className="text-sm text-muted-foreground">
-                  ({Math.max(1, Math.round(a.resume.size / 1024))} KB, uploaded {formatDate(a.resume.uploadedAt)})
-                </span>
-              </p>
-              {a.resume.downloadUrl ? (
-                <a
-                  href={a.resume.downloadUrl}
-                  className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-                >
-                  Download resume
-                </a>
-              ) : (
-                <p className="text-sm text-muted-foreground">Resume storage is not configured.</p>
-              )}
-            </div>
-          )}
-        </Section>
+          <Section title="Interview">
+            <dl className="grid grid-cols-2 gap-3">
+              <Field label="Interview status"><span className="capitalize">{a.interviewStatus.replace("_", " ")}</span></Field>
+              <Field label="Duration">
+                {a.durationSeconds != null ? `${Math.round(a.durationSeconds / 60)} min` : "—"}
+              </Field>
+              <Field label="Started">{formatDate(a.startedAt)}</Field>
+              <Field label="Ended">{formatDate(a.endedAt)}</Field>
+              <Field label="Consent">
+                {a.consent ? `Given ${formatDate(a.consent.acceptedAt)} (v${a.consent.version})` : "—"}
+              </Field>
+              <Field label="End reason">{a.endedReason || "—"}</Field>
+            </dl>
+          </Section>
+        </div>
 
-        <Section title="Interview">
-          <dl className="grid grid-cols-2 gap-3">
-            <Field label="Interview status"><span className="capitalize">{a.interviewStatus.replace("_", " ")}</span></Field>
-            <Field label="Duration">
-              {a.durationSeconds != null ? `${Math.round(a.durationSeconds / 60)} min` : "—"}
-            </Field>
-            <Field label="Started">{formatDate(a.startedAt)}</Field>
-            <Field label="Ended">{formatDate(a.endedAt)}</Field>
-            <Field label="Consent">
-              {a.consent ? `Given ${formatDate(a.consent.acceptedAt)} (v${a.consent.version})` : "—"}
-            </Field>
-            <Field label="End reason">{a.endedReason || "—"}</Field>
-          </dl>
-        </Section>
-
+        <div className="lg:sticky lg:top-4">
+          <Section title="Resume">
+            {!a.resume ? (
+              <p className="text-sm text-muted-foreground">No resume uploaded.</p>
+            ) : (
+              <div className="grid gap-3">
+                <p>
+                  <span className="font-medium">{a.resume.fileName}</span>{" "}
+                  <span className="text-sm text-muted-foreground">
+                    ({Math.max(1, Math.round(a.resume.size / 1024))} KB, uploaded {formatDate(a.resume.uploadedAt)})
+                  </span>
+                </p>
+                {a.resume.previewUrl && (
+                  <iframe
+                    src={a.resume.previewUrl}
+                    title={`Resume: ${a.resume.fileName}`}
+                    className="h-[75vh] min-h-[480px] w-full rounded-lg border bg-muted/20"
+                  />
+                )}
+                {a.resume.downloadUrl ? (
+                  <a
+                    href={a.resume.downloadUrl}
+                    className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                  >
+                    Download resume
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Resume storage is not configured.</p>
+                )}
+                {!a.resume.previewUrl && a.resume.downloadUrl && (
+                  <p className="text-xs text-muted-foreground">Preview is only available for PDF resumes.</p>
+                )}
+              </div>
+            )}
+          </Section>
+        </div>
       </div>
 
       <Section title="Transcript">

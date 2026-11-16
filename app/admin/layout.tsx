@@ -16,7 +16,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/admin" className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
               D
@@ -28,7 +28,13 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-5">{children}</main>
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-5">{children}</main>
+      <footer className="border-t bg-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-muted-foreground">
+          <span>© DataSea. All rights reserved.</span>
+          <span>Admin dashboard</span>
+        </div>
+      </footer>
     </>
   );
 }

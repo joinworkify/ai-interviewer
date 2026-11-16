@@ -6,6 +6,8 @@ import { listAttempts } from "@/lib/admin/data";
 import { requireAdmin } from "@/lib/admin/server";
 
 
+const PAGE_SIZE = 10;
+
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
   in_progress: "bg-blue-100 text-blue-800",
@@ -20,10 +22,10 @@ function formatDate(iso: string) {
 async function AdminPageContent({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   await requireAdmin();
-  const { status, q } = await searchParams;
+  const { status, q, page: pageParam } = await searchParams;
   const statusFilter = isReviewStatus(status) ? status : null;
   const query = (q ?? "").trim().toLowerCase();
 
@@ -35,6 +37,18 @@ async function AdminPageContent({
         (r.name ?? "").toLowerCase().includes(query) ||
         (r.email ?? "").toLowerCase().includes(query)),
   );
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const requested = Number.parseInt(pageParam ?? "1", 10);
+  const page = Math.min(Math.max(Number.isFinite(requested) ? requested : 1, 1), pageCount);
+  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageHref = (n: number) => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", q!.trim());
+    if (statusFilter) params.set("status", statusFilter);
+    if (n > 1) params.set("page", String(n));
+    const qs = params.toString();
+    return qs ? `/admin?${qs}` : "/admin";
+  };
   const counts = Object.fromEntries(
     REVIEW_STATUSES.map((s) => [s, all.filter((r) => r.reviewStatus === s).length]),
   );
@@ -108,7 +122,7 @@ async function AdminPageContent({
                 </td>
               </tr>
             )}
-            {rows.map((r) => (
+            {pageRows.map((r) => (
               <tr key={r.sessionId} className="border-b last:border-0 hover:bg-muted/30">
                 <td className="px-4 py-3">
                   <div className="font-medium">{r.name || "No name"}</div>
@@ -133,11 +147,40 @@ async function AdminPageContent({
           </tbody>
         </table>
       </div>
+
+      {rows.length > 0 && (
+        <nav aria-label="Pagination" className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <p className="text-muted-foreground">
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
+          </p>
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link href={pageHref(page - 1)} className="rounded-md border bg-white px-3 py-2 hover:border-primary">
+                Previous
+              </Link>
+            ) : (
+              <span className="rounded-md border bg-white px-3 py-2 opacity-50">Previous</span>
+            )}
+            <span className="px-1 text-muted-foreground">
+              Page {page} of {pageCount}
+            </span>
+            {page < pageCount ? (
+              <Link href={pageHref(page + 1)} className="rounded-md border bg-white px-3 py-2 hover:border-primary">
+                Next
+              </Link>
+            ) : (
+              <span className="rounded-md border bg-white px-3 py-2 opacity-50">Next</span>
+            )}
+          </div>
+        </nav>
+      )}
     </>
   );
 }
 
-export default function AdminPage(props: { searchParams: Promise<{ status?: string; q?: string }> }) {
+export default function AdminPage(props: {
+  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
+}) {
   return (
     <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
       <AdminPageContent {...props} />

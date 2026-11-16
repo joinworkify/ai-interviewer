@@ -75,13 +75,14 @@ export function createS3ResumeStorage(client: S3Client, bucket: string): ResumeS
       );
     },
 
-    presignGet(key, fileName, ttlSeconds) {
+    presignGet(key, fileName, ttlSeconds, disposition = "attachment") {
       return getSignedUrl(
         client,
         new GetObjectCommand({
           Bucket: bucket,
           Key: key,
-          ResponseContentDisposition: attachment(fileName),
+          ResponseContentDisposition: disposition === "inline" ? "inline" : attachment(fileName),
+          ...(disposition === "inline" ? { ResponseContentType: "application/pdf" } : {}),
         }),
         { expiresIn: ttlSeconds },
       );
