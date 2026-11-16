@@ -24,7 +24,7 @@ export default function RolesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Choose your interview role</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Explore open roles</h1>
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input

@@ -1,6 +1,8 @@
 /**
  * Paths a signed-out visitor may reach without being redirected to the login
  * page. Everything else needs a Supabase session (see lib/supabase/proxy.ts).
+ * The public role chooser reads only active roles; selecting one proceeds to
+ * the authenticated application flow.
  *
  * A path is listed here only when it either is part of the sign-in flow or
  * authenticates itself and answers a structured JSON 401 / 403:
@@ -25,6 +27,7 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 const EXACT_PATHS: ReadonlySet<string> = new Set([
   "/",
+  "/candidate/roles",
   "/api/vapi/generate-interview",
   "/api/gemini-live/token",
   "/api/account/data",

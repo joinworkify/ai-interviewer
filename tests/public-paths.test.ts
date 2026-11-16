@@ -7,6 +7,7 @@ const ID = "22222222-2222-4222-8222-222222222222";
 describe("isPublicPath", () => {
   it.each([
     "/",
+    "/candidate/roles",
     "/auth/login",
     "/auth/sign-up",
     "/auth/confirm",
@@ -69,7 +70,7 @@ describe("isPublicPath", () => {
     "/api/candidate/progress/",
     "/api/candidate/progress/extra",
     // The product pages, staff and cron routes always need a session.
-    "/candidate/roles",
+    "/candidate/roles/software-engineer",
     "/protected",
     "/staff",
     "/api/staff/settings",
