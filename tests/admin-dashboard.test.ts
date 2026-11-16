@@ -91,6 +91,8 @@ describe("handleSetReviewStatus", () => {
 });
 
 describe("admin paths", () => {
+  const read = (p: string) => readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), "utf8");
+
   it("keeps /admin pages behind the login and lets only the review API answer for itself", () => {
     expect(isPublicPath("/admin")).toBe(false);
     expect(isPublicPath(`/admin/sessions/${SESSION}`)).toBe(false);
@@ -100,10 +102,17 @@ describe("admin paths", () => {
   });
 
   it("checks for an admin in the layout and in every admin page", () => {
-    const read = (p: string) => readFileSync(fileURLToPath(new URL(`../${p}`, import.meta.url)), "utf8");
     expect(read("app/admin/layout.tsx")).toContain("await requireAdmin()");
     expect(read("app/admin/page.tsx")).toContain("await requireAdmin()");
     expect(read("app/admin/sessions/[id]/page.tsx")).toContain("await requireAdmin()");
+  });
+
+  it("shows the recording, not the transcript or AI feedback, and only plays http(s) links", () => {
+    const page = read("app/admin/sessions/[id]/page.tsx");
+    expect(page).toContain("Interview recording");
+    expect(page).not.toContain("AI feedback");
+    expect(page).not.toContain('title="Transcript"');
+    expect(read("lib/admin/data.ts")).toMatch(/recording_url && \/\^https\?:/);
   });
 });
 

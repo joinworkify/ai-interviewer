@@ -119,47 +119,27 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
           </dl>
         </Section>
 
-        <Section title="AI feedback">
-          {!a.feedback ? (
-            <p className="text-sm text-muted-foreground">No feedback yet.</p>
+        <Section title="Interview recording">
+          {!a.recordingUrl ? (
+            <p className="text-sm text-muted-foreground">No recording yet.</p>
           ) : (
-            <div className="grid gap-3 text-sm">
-              <p>
-                <span className="font-medium">Score:</span> {a.feedback.totalScore ?? "—"}
-              </p>
-              {a.feedback.finalAssessment && <p>{a.feedback.finalAssessment}</p>}
-              {a.feedback.strengths.length > 0 && (
-                <div>
-                  <div className="font-medium">Strengths</div>
-                  <ul className="list-disc pl-5">{a.feedback.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
-                </div>
-              )}
-              {a.feedback.areasForImprovement.length > 0 && (
-                <div>
-                  <div className="font-medium">Areas for improvement</div>
-                  <ul className="list-disc pl-5">
-                    {a.feedback.areasForImprovement.map((s, i) => <li key={i}>{s}</li>)}
-                  </ul>
-                </div>
-              )}
+            <div className="grid gap-3">
+              {/* The interview is voice only (no camera), so this is audio. */}
+              <audio controls preload="none" src={a.recordingUrl} className="w-full">
+                Your browser cannot play this recording.
+              </audio>
+              <a
+                href={a.recordingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              >
+                Download recording
+              </a>
             </div>
           )}
         </Section>
       </div>
-
-      <Section title="Transcript">
-        {a.transcript.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No transcript yet.</p>
-        ) : (
-          <ol className="grid gap-2 text-sm">
-            {a.transcript.map((t, i) => (
-              <li key={i} className={t.role === "candidate" ? "rounded-lg bg-muted/40 p-3" : "p-3"}>
-                <span className="font-medium capitalize">{t.role === "unknown" ? "Speaker" : t.role}:</span> {t.text}
-              </li>
-            ))}
-          </ol>
-        )}
-      </Section>
     </>
   );
 }

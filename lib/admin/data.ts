@@ -2,7 +2,6 @@ import "server-only";
 
 import { findRole } from "@/lib/candidate/attempts";
 import { createS3Client, createS3ResumeStorage, readResumeS3Config } from "@/lib/candidate/resume-s3";
-import { normalizeTranscript, type TranscriptTurn } from "@/lib/sessions/transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import type { ReviewStatus } from "./access";
@@ -99,27 +98,22 @@ export interface AttemptDetail {
   resume:
     | { fileName: string; size: number; uploadedAt: string | null; downloadUrl: string | null }
     | null;
-  transcript: TranscriptTurn[];
-  feedback: {
-    totalScore: number | null;
-    strengths: string[];
-    areasForImprovement: string[];
-    finalAssessment: string | null;
-  } | null;
+  /** http(s) link to the call recording, when the voice provider stored one. */
+  recordingUrl: string | null;
 }
 
 export async function getAttempt(sessionId: string): Promise<AttemptDetail | null> {
   const db = createAdminClient();
   const session = await db
     .from("interview_sessions")
-    .select("id, user_id, status, started_at, ended_at, duration_seconds, ended_reason, transcript")
+    .select("id, user_id, status, started_at, ended_at, duration_seconds, ended_reason, recording_url")
     .eq("id", sessionId)
     .maybeSingle();
   if (session.error) fail("get session", session.error);
   const s = session.data;
   if (!s) return null;
 
-  const [consent, review, profile, resume, feedback] = await Promise.all([
+  const [consent, review, profile, resume] = await Promise.all([
     db.from("candidate_consents").select("role_id, consent_version, accepted_at").eq("session_id", s.id).maybeSingle(),
     db.from("interview_reviews").select("status, updated_at").eq("session_id", s.id).maybeSingle(),
     db.from("profiles").select("name, email, phone, linkedin_url, portfolio_url").eq("id", s.user_id).maybeSingle(),
@@ -131,13 +125,8 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       .order("uploaded_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    db
-      .from("feedback")
-      .select("total_score, strengths, areas_for_improvement, final_assessment")
-      .eq("session_id", s.id)
-      .maybeSingle(),
   ]);
-  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["feedback", feedback]] as const) {
+  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -147,8 +136,6 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     const storage = createS3ResumeStorage(createS3Client(s3.config), s3.config.bucket);
     downloadUrl = await storage.presignGet(resume.data.s3_key, resume.data.file_name, 300);
   }
-
-  const transcript = s.transcript == null ? null : normalizeTranscript(s.transcript);
 
   return {
     sessionId: s.id,
@@ -180,14 +167,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
           downloadUrl,
         }
       : null,
-    transcript: transcript?.ok ? transcript.turns : [],
-    feedback: feedback.data
-      ? {
-          totalScore: feedback.data.total_score,
-          strengths: feedback.data.strengths,
-          areasForImprovement: feedback.data.areas_for_improvement,
-          finalAssessment: feedback.data.final_assessment,
-        }
-      : null,
+    // Only http(s): the URL goes into an <audio> src on the admin page.
+    recordingUrl: s.recording_url && /^https?:\/\//i.test(s.recording_url) ? s.recording_url : null,
   };
 }
