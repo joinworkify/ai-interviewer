@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { CountrySelect } from "@/components/candidate/country-select";
 import { StepGate } from "@/components/candidate/step-gate";
 import {
-  COUNTRY_PHONE_CONFIGS,
   formatFileSize,
   getCountryConfig,
   linkError,
@@ -49,6 +49,10 @@ function ResumeStep() {
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [dragging, setDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  // Errors show once a field was visited (or Continue was tried), not while the form is still empty.
+  const [touched, setTouched] = useState({ name: false, phone: false, link: false });
+  const touch = (field: keyof typeof touched) =>
+    setTouched((t) => ({ ...t, [field]: true }));
 
   // A resume uploaded earlier can be reused; pick it by default when there is one.
   useEffect(() => {
@@ -85,9 +89,16 @@ function ResumeStep() {
   const portfolioProblem = linkError(portfolioUrl);
 
   // The resume is optional: an upload with no file chosen just skips it.
+  const nameProblem = fullName.trim().length === 0 ? "Enter your full name." : null;
+  const fieldClass = (invalid: boolean) =>
+    `w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none ${
+      invalid
+        ? "border-red-500 focus:border-red-500"
+        : "border-slate-300 focus:border-[#7a1c2e]"
+    }`;
   const canContinue =
     !submitting &&
-    fullName.trim().length > 0 &&
+    !nameProblem &&
     phoneValidation.valid &&
     !portfolioProblem;
 
@@ -104,6 +115,7 @@ function ResumeStep() {
         className="space-y-6"
         onSubmit={async (e) => {
           e.preventDefault();
+          setTouched({ name: true, phone: true, link: true });
           if (!canContinue || !roleId) return;
           setSubmitError(null);
           setSubmitting(true);
@@ -138,9 +150,16 @@ function ResumeStep() {
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            onBlur={() => touch("name")}
+            aria-invalid={touched.name && !!nameProblem}
             placeholder="Full name"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7a1c2e] focus:outline-none"
+            className={fieldClass(touched.name && !!nameProblem)}
           />
+          {touched.name && nameProblem && (
+            <p role="alert" className="mt-1.5 text-xs text-red-600">
+              {nameProblem}
+            </p>
+          )}
         </div>
 
         {/* Phone (optional) with Flag + Dial Code Selector */}
@@ -149,36 +168,29 @@ function ResumeStep() {
             Phone (optional)
           </label>
           <div className="flex items-center gap-2">
-            <select
-              aria-label="Country calling code"
+            <CountrySelect
               value={dialCode}
-              onChange={(e) => {
-                const nextDial = e.target.value;
+              onChange={(nextDial) => {
                 const nextConfig = getCountryConfig(nextDial);
                 setDialCode(nextDial);
                 setPhone((prev) => prev.slice(0, nextConfig.maxDigits));
               }}
-              className="min-w-[150px] max-w-[50%] shrink-0 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-[#7a1c2e] focus:outline-none"
-            >
-              {COUNTRY_PHONE_CONFIGS.map((country) => (
-                <option key={country.iso} value={country.dialCode}>
-                  {country.name} ({country.dialCode})
-                </option>
-              ))}
-            </select>
+            />
 
             <input
               type="tel"
               inputMode="numeric"
               value={phone}
               onChange={handlePhoneChange}
+              onBlur={() => touch("phone")}
+              aria-invalid={touched.phone && !phoneValidation.valid}
               placeholder={`${currentCountry.example} (${currentCountry.minDigits === currentCountry.maxDigits ? `${currentCountry.minDigits}` : `${currentCountry.minDigits}-${currentCountry.maxDigits}`} digits)`}
-              className="w-full flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7a1c2e] focus:outline-none"
+              className={`${fieldClass(touched.phone && !phoneValidation.valid)} flex-1`}
             />
           </div>
 
-          {!phoneValidation.valid && (
-            <p className="mt-1.5 text-xs text-red-600">
+          {touched.phone && !phoneValidation.valid && (
+            <p role="alert" className="mt-1.5 text-xs text-red-600">
               {phoneValidation.error}
             </p>
           )}
@@ -305,11 +317,13 @@ function ResumeStep() {
             type="url"
             value={portfolioUrl}
             onChange={(e) => setPortfolioUrl(e.target.value)}
+            onBlur={() => touch("link")}
+            aria-invalid={touched.link && !!portfolioProblem}
             placeholder="https://"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7a1c2e] focus:outline-none"
+            className={fieldClass(touched.link && !!portfolioProblem)}
           />
-          {portfolioProblem && (
-            <p className="mt-1.5 text-xs text-red-600">{portfolioProblem}</p>
+          {touched.link && portfolioProblem && (
+            <p role="alert" className="mt-1.5 text-xs text-red-600">{portfolioProblem}</p>
           )}
         </div>
 
@@ -317,7 +331,8 @@ function ResumeStep() {
         <div className="flex flex-col items-center gap-3 pt-2">
           <button
             type="submit"
-            disabled={!canContinue || !roleId}
+            // Not disabled for invalid input: clicking it reveals what to fix.
+            disabled={submitting || !roleId}
             className="rounded-xl bg-[#7a1c2e] px-10 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
             {submitting ? "Uploading..." : "Continue"}
@@ -328,7 +343,7 @@ function ResumeStep() {
             onClick={() =>
               router.push(`/candidate/consent?role=${encodeURIComponent(roleId)}`)
             }
-            className="text-sm font-medium text-[#7a1c2e] hover:underline disabled:opacity-50"
+            className="text-xs text-slate-500 hover:text-slate-700 hover:underline disabled:opacity-50"
           >
             Skip this step
           </button>
@@ -343,7 +358,7 @@ function ResumeStep() {
                 ? `/candidate/roles/${encodeURIComponent(roleId)}`
                 : "/candidate/roles"
             }
-            className="text-xs text-slate-600 hover:underline"
+            className="text-xs text-slate-500 hover:text-slate-700 hover:underline"
           >
             Back to role
           </Link>

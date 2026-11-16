@@ -17,6 +17,7 @@ export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null);
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   // null until we know; avoids flashing the sign-in form at signed-in users.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +143,16 @@ export default function RoleDetailPage() {
                 placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                aria-invalid={emailTouched && !isValidEmail(email)}
+                aria-describedby={emailTouched && !isValidEmail(email) ? "apply-email-error" : undefined}
+                className={emailTouched && !isValidEmail(email) ? "border-destructive focus-visible:ring-destructive" : undefined}
               />
+              {emailTouched && !isValidEmail(email) && (
+                <p id="apply-email-error" role="alert" className="text-xs text-destructive">
+                  {email.trim() ? "Enter a valid email address." : "Enter your email address."}
+                </p>
+              )}
               <p className="text-xs leading-5 text-muted-foreground">
                 By clicking any of the &quot;Confirm&quot; buttons below, you
                 acknowledge and agree to our Terms and Privacy Policy for
