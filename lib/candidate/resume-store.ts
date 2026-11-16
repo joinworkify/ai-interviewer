@@ -47,7 +47,8 @@ export function createSupabaseResumeStore(client: SupabaseClient<Database>): Res
     async markUploaded(userId, id) {
       const { data, error } = await client
         .from("candidate_resumes")
-        .update({ status: "uploaded", uploaded_at: new Date().toISOString() })
+        // Uploading a resume also makes it the one in use.
+        .update({ status: "uploaded", uploaded_at: now(), selected_at: now() })
         .eq("id", id)
         .eq("user_id", userId)
         .select("*")
@@ -56,17 +57,42 @@ export function createSupabaseResumeStore(client: SupabaseClient<Database>): Res
       return data;
     },
 
-    async latestUploaded(userId) {
-      const { data, error } = await client
+    async listUploaded(userId) {
+      const { data, error } = await uploadedInUseOrder(userId);
+      if (error) return fail("listUploaded", error);
+      return data ?? [];
+    },
+
+    async select(userId, id) {
+      const { error } = await client
         .from("candidate_resumes")
-        .select("*")
+        .update({ selected_at: now() })
+        .eq("id", id)
         .eq("user_id", userId)
-        .eq("status", "uploaded")
-        .order("uploaded_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) return fail("latestUploaded", error);
-      return data;
+        .eq("status", "uploaded");
+      if (error) fail("select", error);
+    },
+
+    async remove(userId, id) {
+      const { error } = await client
+        .from("candidate_resumes")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", userId);
+      if (error) fail("remove", error);
     },
   };
+
+  /** Uploaded resumes, the one in use first (last selected, then last uploaded). */
+  function uploadedInUseOrder(userId: string) {
+    return client
+      .from("candidate_resumes")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "uploaded")
+      .order("selected_at", { ascending: false, nullsFirst: false })
+      .order("uploaded_at", { ascending: false });
+  }
 }
+
+const now = () => new Date().toISOString();

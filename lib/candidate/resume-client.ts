@@ -34,19 +34,44 @@ async function readMessage(res: Response, fallback: string): Promise<string> {
   }
 }
 
-/** The candidate's latest uploaded resume, or null when there is none. */
-export async function fetchSavedResume(
+/** The candidate's saved resumes, the one in use first; [] when there are none. */
+export async function fetchSavedResumes(
   fetchImpl: Fetch = fetch,
-): Promise<SavedResume | null> {
+): Promise<SavedResume[]> {
   try {
     const res = await fetchImpl("/api/candidate/resume", { cache: "no-store" });
-    if (!res.ok) return null;
-    const body = (await res.json()) as { resume?: SavedResume };
-    return body.resume ?? null;
+    if (!res.ok) return [];
+    const body = (await res.json()) as { resumes?: SavedResume[] };
+    return body.resumes ?? [];
   } catch {
     // Not having a saved resume is not an error for the page.
-    return null;
+    return [];
   }
+}
+
+async function resumeAction(
+  id: string,
+  method: "POST" | "DELETE",
+  fallback: string,
+  fetchImpl: Fetch,
+): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetchImpl(`/api/candidate/resume/${encodeURIComponent(id)}`, { method });
+  } catch {
+    throw new ResumeUploadError("Network error. Check your connection and try again.");
+  }
+  if (!res.ok) throw new ResumeUploadError(await readMessage(res, fallback));
+}
+
+/** Makes this saved resume the one used for applications. */
+export function selectResume(id: string, fetchImpl: Fetch = fetch): Promise<void> {
+  return resumeAction(id, "POST", "Could not choose that resume. Please try again.", fetchImpl);
+}
+
+/** Deletes a saved resume (the file and its record). */
+export function deleteResume(id: string, fetchImpl: Fetch = fetch): Promise<void> {
+  return resumeAction(id, "DELETE", "Could not delete the resume. Please try again.", fetchImpl);
 }
 
 /** Uploads `file` and returns the stored resume. Throws ResumeUploadError with a message fit to show. */

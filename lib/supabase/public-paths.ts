@@ -17,7 +17,7 @@
  *   /api/account/data               same
  *   /api/sessions[/<id>[/transcript|/feedback]]   same
  *   /api/candidate/attempts[/<id>]  same
- *   /api/candidate/resume[/upload-url|/confirm]   same
+ *   /api/candidate/resume[/upload-url|/confirm|/<id>]   same
  *   /api/candidate/profile          same
  *   /api/admin/sessions/<id>/review checks for a signed-in admin (JSON 401 / 403)
  *   /api/candidate/progress         same
@@ -50,6 +50,7 @@ const PATTERNS: readonly RegExp[] = [
   // The sign-in flow: /auth/login, /auth/sign-up, /auth/confirm, ...
   /^\/auth(\/|$)/,
   new RegExp(`^/api/candidate/attempts/${UUID}$`, "i"),
+  new RegExp(`^/api/candidate/resume/${UUID}$`, "i"),
   new RegExp(`^/api/sessions/${UUID}(/(transcript|feedback))?$`, "i"),
   // Checks the caller is a signed-in admin itself (JSON 401 / 403).
   new RegExp(`^/api/admin/sessions/${UUID}/review$`, "i"),

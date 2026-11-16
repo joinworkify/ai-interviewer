@@ -358,6 +358,7 @@ export type Database = {
           status: string;
           created_at: string;
           uploaded_at: string | null;
+          selected_at: string | null;
         };
         Insert: {
           id?: string;
@@ -369,6 +370,7 @@ export type Database = {
           status?: string;
           created_at?: string;
           uploaded_at?: string | null;
+          selected_at?: string | null;
         };
         Update: {
           id?: string;
@@ -380,6 +382,7 @@ export type Database = {
           status?: string;
           created_at?: string;
           uploaded_at?: string | null;
+          selected_at?: string | null;
         };
         Relationships: [
           {
