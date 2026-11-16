@@ -21,6 +21,9 @@ export const COUNTRY_PHONE_CONFIGS: CountryPhoneConfig[] = [
   { iso: "NL", name: "Netherlands", flag: "🇳🇱", dialCode: "+31", minDigits: 9, maxDigits: 9, example: "612345678" },
 ];
 
+/** Calling code preselected on the resume step. */
+export const DEFAULT_DIAL_CODE = "+1";
+
 export function getCountryConfig(dialCode: string): CountryPhoneConfig {
   return (
     COUNTRY_PHONE_CONFIGS.find((c) => c.dialCode === dialCode) ??
@@ -30,7 +33,7 @@ export function getCountryConfig(dialCode: string): CountryPhoneConfig {
 
 export function validatePhoneNumber(
   rawPhone: string,
-  dialCode: string = "+95"
+  dialCode: string = DEFAULT_DIAL_CODE
 ): { valid: boolean; error?: string } {
   const trimmed = rawPhone.trim();
   // Phone is optional: empty input is valid

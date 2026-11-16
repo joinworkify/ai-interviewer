@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { CountrySelect } from "@/components/candidate/country-select";
 import { StepGate } from "@/components/candidate/step-gate";
 import {
+  DEFAULT_DIAL_CODE,
   formatFileSize,
   getCountryConfig,
   linkError,
@@ -36,7 +37,7 @@ function ResumeStep() {
   const router = useRouter();
   const roleId = useSearchParams().get("role") ?? "";
   const [fullName, setFullName] = useState("");
-  const [dialCode, setDialCode] = useState("+95");
+  const [dialCode, setDialCode] = useState(DEFAULT_DIAL_CODE);
   const [phone, setPhone] = useState("");
   const [resumeOption, setResumeOption] = useState<"upload" | "saved">(
     "upload",
