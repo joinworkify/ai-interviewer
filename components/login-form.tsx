@@ -118,7 +118,10 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           </form>
           <p className="mt-5 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/sign-up" className="font-medium text-primary underline-offset-4 hover:underline">
+            <Link
+              href={next === DEFAULT_NEXT ? "/auth/sign-up" : `/auth/sign-up?next=${encodeURIComponent(next)}`}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
               Sign up
             </Link>
           </p>

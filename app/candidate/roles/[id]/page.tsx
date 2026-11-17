@@ -6,34 +6,29 @@ import { useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SocialAuthButtons } from "@/components/social-auth-buttons";
-import { getRole, isValidEmail, type Role } from "@/lib/candidate/api";
-import { APPLICATION_STEPS } from "@/lib/candidate/steps";
+import { getRole, type Role } from "@/lib/candidate/api";
+import { APPLICATION_STEPS, applyHref } from "@/lib/candidate/steps";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RoleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [role, setRole] = useState<Role | null>(null);
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [emailTouched, setEmailTouched] = useState(false);
-  // null until we know; avoids flashing the sign-in form at signed-in users.
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState("");
 
   useEffect(() => {
     getRole(id).then(setRole, (e: Error) => setError(e.message));
-    // Prefill with the signed-in candidate's email.
-    createClient()
-      .auth.getUser()
-      .then(({ data }) => {
-        setSignedIn(Boolean(data.user));
-        setEmail((current) => current || data.user?.email || "");
-      });
   }, [id]);
+
+  // This page is public: signed-out visitors log in first, then land on the resume step.
+  const apply = async () => {
+    if (!role) return;
+    setApplying(true);
+    const { data } = await createClient().auth.getUser();
+    router.push(applyHref(role.id, Boolean(data.user)));
+  };
 
   const handleShare = async () => {
     try {
@@ -144,63 +139,9 @@ export default function RoleDetailPage() {
             ))}
           </ol>
         </section>
-        <h2 className="mb-4 font-semibold">Apply now</h2>
-        {signedIn === null ? (
-          <div className="h-24 animate-pulse rounded-lg bg-muted" aria-busy="true" />
-        ) : signedIn ? (
-          <div className="flex flex-col gap-4">
-            {email && (
-              <p className="text-sm text-muted-foreground">
-                Applying as <span className="font-medium text-foreground">{email}</span>
-              </p>
-            )}
-            <Button
-              className="w-full"
-              onClick={() => router.push(`/candidate/resume?role=${role.id}`)}
-            >
-              Continue
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="apply-email">Email</Label>
-              <Input
-                id="apply-email"
-                type="email"
-                autoComplete="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={() => setEmailTouched(true)}
-                aria-invalid={emailTouched && !isValidEmail(email)}
-                aria-describedby={emailTouched && !isValidEmail(email) ? "apply-email-error" : undefined}
-                className={emailTouched && !isValidEmail(email) ? "border-destructive focus-visible:ring-destructive" : undefined}
-              />
-              {emailTouched && !isValidEmail(email) && (
-                <p id="apply-email-error" role="alert" className="text-xs text-destructive">
-                  {email.trim() ? "Enter a valid email address." : "Enter your email address."}
-                </p>
-              )}
-              <p className="text-xs leading-5 text-muted-foreground">
-                By clicking any of the &quot;Confirm&quot; buttons below, you
-                acknowledge and agree to our Terms and Privacy Policy for
-                candidates.
-              </p>
-            </div>
-            <Button
-              className="w-full"
-              disabled={!isValidEmail(email)}
-              onClick={() => router.push(`/candidate/resume?role=${role.id}`)}
-            >
-              Confirm
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">Or</p>
-            <SocialAuthButtons
-              next={`/candidate/resume?role=${encodeURIComponent(role.id)}`}
-            />
-          </div>
-        )}
+        <Button className="w-full" size="lg" disabled={applying} onClick={apply}>
+          {applying ? "Opening..." : "Apply"}
+        </Button>
       </aside>
     </div>
   );

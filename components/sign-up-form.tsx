@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { DEFAULT_NEXT, safeNext } from "@/lib/auth/safe-next";
 import { useState } from "react";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
 
@@ -28,6 +29,8 @@ export function SignUpForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  // Where to go after the account is ready, e.g. the resume step of a role.
+  const next = safeNext(useSearchParams().get("next"));
 
   const handleSignUp = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,12 +49,12 @@ export function SignUpForm({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/candidate/roles`,
+          emailRedirectTo: `${window.location.origin}${next}`,
         },
       });
       if (error) throw error;
       // No session means Supabase sent a confirmation email first.
-      router.push(data.session ? "/candidate/roles" : "/auth/sign-up-success");
+      router.push(data.session ? next : "/auth/sign-up-success");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -70,7 +73,7 @@ export function SignUpForm({
         </CardHeader>
         <CardContent>
           <div className="mb-5 space-y-4">
-            <SocialAuthButtons />
+            <SocialAuthButtons next={next} />
             <div className="flex items-center gap-3" aria-hidden="true">
               <div className="h-px flex-1 bg-border" />
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Or sign up with email</span>
@@ -124,7 +127,7 @@ export function SignUpForm({
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}
               <Link
-                href="/auth/login"
+                href={next === DEFAULT_NEXT ? "/auth/login" : `/auth/login?next=${encodeURIComponent(next)}`}
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
                 Log in

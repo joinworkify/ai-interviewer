@@ -49,6 +49,15 @@ export interface Progress {
 
 export type GuardedStep = "resume" | "consent" | "setup" | "interview";
 
+/**
+ * Where "Apply" on a role page goes: straight to the resume step when signed
+ * in, otherwise to login, which comes back to the resume step afterwards.
+ */
+export function applyHref(roleId: string, signedIn: boolean): string {
+  const resume = `/candidate/resume?role=${encodeURIComponent(roleId)}`;
+  return signedIn ? resume : `/auth/login?next=${encodeURIComponent(resume)}`;
+}
+
 export function setupPath(attemptId: string, roleId: string): string {
   return `/candidate/setup?attempt=${encodeURIComponent(attemptId)}&role=${encodeURIComponent(roleId)}`;
 }
