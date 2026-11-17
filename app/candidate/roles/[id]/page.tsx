@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export default function RoleDetailPage() {
   // null until we know; avoids flashing the sign-in form at signed-in users.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState("");
 
   useEffect(() => {
     getRole(id).then(setRole, (e: Error) => setError(e.message));
@@ -32,6 +34,19 @@ export default function RoleDetailPage() {
         setEmail((current) => current || data.user?.email || "");
       });
   }, [id]);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareStatus("Link copied!");
+    } catch {
+      setShareStatus("Unable to copy link.");
+    }
+
+    setTimeout(() => {
+      setShareStatus("");
+    }, 2000);
+  };
 
   if (error) {
     return (
@@ -91,7 +106,21 @@ export default function RoleDetailPage() {
           title="Required Skills & Qualifications"
           items={role.requirements}
         />
-      </article>
+
+        <div className="flex justify-end border-t pt-4">
+          <div className="flex flex-col items-end gap-1">
+            <Button variant="outline" onClick={handleShare}>
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+
+            {shareStatus && (
+              <span role="status" className="text-xs text-muted-foreground">
+                {shareStatus}
+              </span>
+            )}
+          </div>
+        </div></article>
 
       <aside className="h-fit rounded-xl border bg-card p-6 shadow-sm lg:sticky lg:top-6">
         <section aria-labelledby="how-it-works" className="mb-6 border-b pb-6">
