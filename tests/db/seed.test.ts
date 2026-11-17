@@ -20,10 +20,11 @@ const SEED = readFileSync(
 const HAS_DB = dbAvailable();
 const DEV_USER = "d0d0d0d0-d0d0-4d0d-8d0d-d0d0d0d0d0d0";
 const OTHER_USER = "e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0";
+const ADMIN_USER = "f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0";
 
 // Counted by the seed's own ids, so rows a developer added to a local database
 // by hand do not change the result.
-const SEED_USERS = `'${DEV_USER}', '${OTHER_USER}'`;
+const SEED_USERS = `'${DEV_USER}', '${OTHER_USER}', '${ADMIN_USER}'`;
 const SEED_IDS = {
   interviews: `'d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3', 'e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1'`,
   sessions: `'dadadada-dada-4dad-8dad-dadadadadada', 'e2e2e2e2-e2e2-4e2e-8e2e-e2e2e2e2e2e2'`,
@@ -45,6 +46,8 @@ select 'timestampsSet=' || count(*) from auth.users u
                 and i.created_at is not null and i.updated_at is not null);
 select 'passwordOk=' || count(*) from auth.users
   where id in (${SEED_USERS}) and encrypted_password = crypt('test123!', encrypted_password);
+select 'adminRole=' || count(*) from auth.users
+  where id = '${ADMIN_USER}' and raw_app_meta_data ->> 'role' = 'admin';
 `;
 
 function parse(stdout: string): Record<string, number> {
@@ -56,17 +59,18 @@ function parse(stdout: string): Record<string, number> {
   return out;
 }
 
-// Two rows per table: one for each seeded user.
+// Two candidate rows per table plus the admin auth user and profile.
 const EXPECTED = {
-  users: 2,
-  identities: 2,
-  profiles: 2,
+  users: 3,
+  identities: 3,
+  profiles: 3,
   interviews: 2,
   sessions: 2,
   feedback: 2,
   usage: 2,
-  timestampsSet: 2,
-  passwordOk: 2,
+  timestampsSet: 3,
+  passwordOk: 3,
+  adminRole: 1,
 };
 
 describe("seed.sql file", () => {
