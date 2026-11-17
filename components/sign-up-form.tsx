@@ -49,7 +49,9 @@ export function SignUpForm({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}${next}`,
+          // PKCE email confirmations must exchange their code for session
+          // cookies before visiting a protected application step.
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
       if (error) throw error;

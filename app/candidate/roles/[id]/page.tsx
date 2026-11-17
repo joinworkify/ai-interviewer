@@ -15,6 +15,7 @@ export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null);
   const router = useRouter();
   const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState("");
 
@@ -26,8 +27,15 @@ export default function RoleDetailPage() {
   const apply = async () => {
     if (!role) return;
     setApplying(true);
-    const { data } = await createClient().auth.getUser();
-    router.push(applyHref(role.id, Boolean(data.user)));
+    setApplyError(null);
+    try {
+      const { data } = await createClient().auth.getUser();
+      router.push(applyHref(role.id, Boolean(data.user)));
+    } catch {
+      setApplyError("Unable to open the application. Please try again.");
+    } finally {
+      setApplying(false);
+    }
   };
 
   const handleShare = async () => {
@@ -139,6 +147,7 @@ export default function RoleDetailPage() {
             ))}
           </ol>
         </section>
+        {applyError && <p role="alert" className="mb-3 text-sm text-destructive">{applyError}</p>}
         <Button className="w-full" size="lg" disabled={applying} onClick={apply}>
           {applying ? "Opening..." : "Apply"}
         </Button>
