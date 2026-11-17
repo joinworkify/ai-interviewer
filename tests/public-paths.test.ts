@@ -8,6 +8,8 @@ describe("isPublicPath", () => {
   it.each([
     "/",
     "/candidate/roles",
+    "/candidate/roles/software-engineer",
+    "/candidate/roles/data-annotation-generalist",
     "/auth/login",
     "/auth/sign-up",
     "/auth/confirm",
@@ -72,8 +74,12 @@ describe("isPublicPath", () => {
     "/api/candidate/progress/",
     "/api/candidate/progress/extra",
     // The product pages, staff and cron routes always need a session.
-    "/candidate/roles/software-engineer",
     "/candidate/roles/",
+    "/candidate/roles/Software-Engineer",
+    "/candidate/roles/software-engineer/extra",
+    "/candidate/roles/-bad",
+    "/candidate/resume",
+    "/candidate/consent",
     "/protected",
     "/staff",
     "/api/staff/settings",

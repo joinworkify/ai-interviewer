@@ -5,6 +5,7 @@ import {
   setupPath,
   stepFromPathname,
   stepHref,
+  applyHref,
   type Progress,
 } from "@/lib/candidate/steps";
 
@@ -127,5 +128,22 @@ describe("stepHref", () => {
 
   it("encodes the ids", () => {
     expect(stepHref("consent", "a&b", "c=d")).toBe("/candidate/consent?role=a%26b&attempt=c%3Dd");
+  });
+});
+
+describe("applyHref", () => {
+  it("goes straight to the resume step when signed in", () => {
+    expect(applyHref(ROLE, true)).toBe(`/candidate/resume?role=${ROLE}`);
+  });
+
+  it("goes to login first when signed out, coming back to the resume step", () => {
+    const href = applyHref(ROLE, false);
+    const url = new URL(href, "http://localhost");
+    expect(url.pathname).toBe("/auth/login");
+    expect(url.searchParams.get("next")).toBe(`/candidate/resume?role=${ROLE}`);
+  });
+
+  it("encodes the role id", () => {
+    expect(applyHref("a&b", true)).toBe("/candidate/resume?role=a%26b");
   });
 });

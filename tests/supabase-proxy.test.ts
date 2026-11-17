@@ -47,12 +47,17 @@ describe("Supabase proxy login redirect", () => {
 
   it.each([
     "/candidate",
-    "/candidate/roles/software-engineer",
+    "/candidate/resume",
     "/candidate/consent",
   ])("redirects signed-out %s to /auth/login (candidate pages need a session)", async (path) => {
     const res = await updateSession(post(path));
     expect(res.status).toBe(307);
     expect(new URL(res.headers.get("location")!).pathname).toMatch(/^\/auth\/login\/?$/);
+  });
+
+  it("lets signed-out visitors open a role's details page", async () => {
+    const res = await updateSession(post("/candidate/roles/software-engineer"));
+    expect(res.status).not.toBe(307);
   });
 
   it("lets signed-out visitors view the interview role chooser", async () => {

@@ -4,8 +4,9 @@
  * /candidate/roles is public on purpose: it lists active roles straight from
  * Supabase as `anon`, and the RLS policy `roles_select_active` (migration
  * 20261111000000_candidate_roles.sql) is what limits that to active rows.
- * Loosening that policy would expose more here. Opening a role
- * (/candidate/roles/<id>) still needs a session.
+ * Loosening that policy would expose more here. A role's page
+ * (/candidate/roles/<id>) is public for the same reason; applying from it
+ * goes through login, and every later step still needs a session.
  *
  * A path is listed here only when it either is part of the sign-in flow or
  * authenticates itself and answers a structured JSON 401 / 403:
@@ -49,6 +50,8 @@ const EXACT_PATHS: ReadonlySet<string> = new Set([
 const PATTERNS: readonly RegExp[] = [
   // The sign-in flow: /auth/login, /auth/sign-up, /auth/confirm, ...
   /^\/auth(\/|$)/,
+  // One role's details page (role ids are lowercase slugs).
+  /^\/candidate\/roles\/[a-z0-9]+(-[a-z0-9]+)*$/,
   new RegExp(`^/api/candidate/attempts/${UUID}$`, "i"),
   new RegExp(`^/api/candidate/resume/${UUID}$`, "i"),
   new RegExp(`^/api/sessions/${UUID}(/(transcript|feedback))?$`, "i"),
