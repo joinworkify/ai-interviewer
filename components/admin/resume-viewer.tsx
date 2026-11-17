@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 
+import { ResumePreviewFallback } from "./resume-preview-boundary";
+
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
@@ -17,7 +19,11 @@ const STEP = 0.25;
  * 1x means the page fills the box width. The PDF is fetched in the browser from
  * a short-lived presigned S3 link, so the bucket CORS must allow GET.
  */
-export function ResumeViewer({ url, fileName }: { url: string; fileName: string }) {
+export function ResumeViewer(props: { url: string; fileName: string }) {
+  return <ResumePreview key={props.url} {...props} />;
+}
+
+function ResumePreview({ url, fileName }: { url: string; fileName: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [boxWidth, setBoxWidth] = useState(0);
   const [zoom, setZoom] = useState(1);
@@ -94,14 +100,16 @@ export function ResumeViewer({ url, fileName }: { url: string; fileName: string 
         }`}
       >
         {failed ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            Could not show the preview for {fileName}. Use Download resume instead.
-          </p>
+          <ResumePreviewFallback fileName={fileName} />
         ) : (
           <Document
+            // react-pdf 11's Suspense mode throws even after onLoadError runs.
+            // Use callback-based errors so an unreadable resume stays local.
+            suspense={false}
             file={url}
             onLoadSuccess={({ numPages }) => setPages(numPages)}
             onLoadError={() => setFailed(true)}
+            onSourceError={() => setFailed(true)}
             loading={<p className="p-4 text-sm text-muted-foreground">Loading resume…</p>}
             error={null}
             className="flex w-max min-w-full flex-col items-center gap-3 p-2"
@@ -111,6 +119,9 @@ export function ResumeViewer({ url, fileName }: { url: string; fileName: string 
                 <Page
                   key={i}
                   pageNumber={i + 1}
+                  suspense={false}
+                  onLoadError={() => setFailed(true)}
+                  onRenderError={() => setFailed(true)}
                   width={Math.max(1, Math.round((boxWidth - 16) * zoom))}
                   renderTextLayer={false}
                   renderAnnotationLayer={false}
