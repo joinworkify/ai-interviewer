@@ -34,6 +34,13 @@ export function ResumeProfileForm({ initialProfile }: Props) {
     };
   }, [photoPreview]);
 
+  useEffect(() => {
+    if (!message) return;
+
+    const timeout = setTimeout(() => setMessage(""), 4000);
+    return () => clearTimeout(timeout);
+  }, [message]);
+
   function handlePhotoChange(file: File | undefined) {
     if (!file) return;
 
@@ -72,10 +79,6 @@ export function ResumeProfileForm({ initialProfile }: Props) {
 
     setIsSaving(false);
     setMessage("Profile saved successfully.");
-
-    setTimeout(() => {
-      setMessage("");
-    }, 4000);
   }
 
   return (
