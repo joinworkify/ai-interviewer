@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { PROFILE_UPDATED_EVENT } from "@/lib/candidate/profile-client";
@@ -9,7 +9,6 @@ import { createClient } from "@/lib/supabase/client";
 
 export function CandidateHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
 
@@ -61,7 +60,9 @@ export function CandidateHeader() {
 
   async function logOut() {
     await createClient().auth.signOut();
-    router.push("/auth/login");
+    // Full reload: Cache Components preserves client state across router.push,
+    // so the login page would otherwise restore the previous session's form.
+    window.location.href = "/auth/login";
   }
 
   return (
