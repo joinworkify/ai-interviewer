@@ -3,7 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeError } from "@/lib/log/safe-error";
 import type { Database } from "@/types/database";
 
-import { ATTEMPT_DURATION_MINUTES, type AttemptStore } from "./attempts";
+import {
+  ATTEMPT_DURATION_MINUTES,
+  type AttemptRole,
+  type AttemptStore,
+  type RoleRequirement,
+  type RoleStore,
+} from "./attempts";
 
 /**
  * Must be given the service-role (admin) client: browsers cannot write
@@ -98,6 +104,45 @@ export function createSupabaseAttemptStore(client: SupabaseClient<Database>): At
       }
 
       return { sessionId: session.data.id };
+    },
+  };
+}
+
+function parseRequirements(v: unknown): RoleRequirement[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter(
+      (item): item is { title: string; text?: string } =>
+        item != null && typeof item === "object" && typeof (item as { title?: unknown }).title === "string",
+    )
+    .map((item) => ({
+      title: item.title,
+      text: typeof item.text === "string" ? item.text : "",
+    }));
+}
+
+/**
+ * Looks up active roles by id from public.roles to construct interview questions.
+ */
+export function createSupabaseRoleStore(client: SupabaseClient<Database>): RoleStore {
+  return {
+    async getRole(id: string): Promise<AttemptRole | null> {
+      const { data, error } = await client
+        .from("roles")
+        .select("id, title, requirements")
+        .eq("id", id)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) {
+        console.error("[candidate-attempts] getRole failed:", describeError(error));
+        throw new Error("getRole failed");
+      }
+      if (!data) return null;
+      return {
+        id: data.id,
+        title: data.title,
+        requirements: parseRequirements(data.requirements),
+      };
     },
   };
 }

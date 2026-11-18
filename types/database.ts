@@ -398,7 +398,10 @@ export type Database = {
         Row: {
           id: string;
           title: string;
-          pay_rate: string;
+          pay_rate: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
           job_type: string;
           skills: string[];
           about: string;
@@ -412,7 +415,10 @@ export type Database = {
         Insert: {
           id: string;
           title: string;
-          pay_rate: string;
+          pay_rate?: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
           job_type: string;
           skills?: string[];
           about?: string;
@@ -426,7 +432,10 @@ export type Database = {
         Update: {
           id?: string;
           title?: string;
-          pay_rate?: string;
+          pay_rate?: string | null;
+          pay_min?: number;
+          pay_max?: number;
+          pay_type?: "hour" | "task";
           job_type?: string;
           skills?: string[];
           about?: string;
@@ -468,6 +477,28 @@ export type Database = {
           p_session_id?: string | null;
         };
         Returns: number;
+      };
+      search_roles: {
+        Args: {
+          p_query: string;
+        };
+        Returns: {
+          id: string;
+          title: string;
+          pay_rate: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
+          job_type: string;
+          skills: string[];
+          about: string;
+          responsibilities: Json;
+          requirements: Json;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        }[];
       };
     };
     Enums: { [_ in never]: never };

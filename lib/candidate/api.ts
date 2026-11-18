@@ -1,25 +1,32 @@
 /**
  * Candidate interview data.
  *
- * Roles are read from Supabase (public.roles, readable when active).
- * Function names mirror the REST calls in the "Datasea AI interviewer"
- * diagram, so TRH's API can replace the bodies without changing the screens.
+ * Roles are read from Supabase (public.roles via search_roles, readable when
+ * active). Function names mirror the REST calls in the "Datasea AI
+ * interviewer" diagram, so TRH's API can replace the bodies without changing
+ * the screens.
  *
  * shortcut: instructions, consent/attempt and result are still fixtures;
  * replace them with TRH's REST API once it exists.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { createClient } from "@/lib/supabase/client";
 import { CONSENT_VERSION } from "./consent";
+import type { PayType } from "./pay";
 import type { Database } from "@/types/database";
 
 type RoleRow = Database["public"]["Tables"]["roles"]["Row"];
+type RolesClient = Pick<SupabaseClient<Database>, "rpc">;
 type Bullet = { title: string; text: string };
 
 export interface Role {
   id: string;
   title: string;
-  payRate: string;
+  payMin: number;
+  payMax: number;
+  payType: PayType;
   jobType?: string;
   skills: string[];
   about?: string;
@@ -54,7 +61,7 @@ export class ApiError extends Error {
 }
 
 const ROLE_COLUMNS =
-  "id, title, pay_rate, job_type, skills, about, responsibilities, requirements";
+  "id, title, pay_min, pay_max, pay_type, job_type, skills, about, responsibilities, requirements";
 
 /** Maps a public.roles row to the shape the screens use. */
 export function roleFromRow(
@@ -62,7 +69,9 @@ export function roleFromRow(
     RoleRow,
     | "id"
     | "title"
-    | "pay_rate"
+    | "pay_min"
+    | "pay_max"
+    | "pay_type"
     | "job_type"
     | "skills"
     | "about"
@@ -75,7 +84,9 @@ export function roleFromRow(
   return {
     id: row.id,
     title: row.title,
-    payRate: row.pay_rate,
+    payMin: Number(row.pay_min),
+    payMax: Number(row.pay_max),
+    payType: row.pay_type === "task" ? "task" : "hour",
     jobType: row.job_type || undefined,
     skills: row.skills ?? [],
     about: row.about || undefined,
@@ -84,15 +95,19 @@ export function roleFromRow(
   };
 }
 
-/** GET /roles: active roles, in display order. */
-export async function getRoles(): Promise<Role[]> {
-  const { data, error } = await createClient()
-    .from("roles")
-    .select(ROLE_COLUMNS)
-    .order("sort_order", { ascending: true })
-    .order("title", { ascending: true });
+/**
+ * GET /roles?q=: active roles, in display order. Search runs in Postgres
+ * (search_roles) so the browser never downloads the whole table to filter it.
+ */
+export async function getRoles(
+  query = "",
+  client: RolesClient = createClient(),
+): Promise<Role[]> {
+  const { data, error } = await client.rpc("search_roles", {
+    p_query: query.trim(),
+  });
   if (error) throw new ApiError("ROLES_FAILED", "Roles failed to load.");
-  return data.map(roleFromRow);
+  return (data ?? []).map(roleFromRow);
 }
 
 /** GET /roles/:id */
@@ -106,17 +121,6 @@ export async function getRole(id: string): Promise<Role> {
   if (!data)
     throw new ApiError("NOT_FOUND", "This role is no longer available.");
   return roleFromRow(data);
-}
-
-/** Case-insensitive title/skill search for the role list. */
-export function filterRoles(roles: Role[], query: string): Role[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return roles;
-  return roles.filter(
-    (r) =>
-      r.title.toLowerCase().includes(q) ||
-      r.skills.some((s) => s.toLowerCase().includes(q)),
-  );
 }
 
 /** Basic shape check (something@domain.tld); the server does the real validation. */

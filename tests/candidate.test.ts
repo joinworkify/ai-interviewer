@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, filterRoles, getResult, isValidEmail, roleFromRow, waitForResult, type Role } from "@/lib/candidate/api";
+import { ApiError, getResult, getRoles, isValidEmail, roleFromRow, waitForResult } from "@/lib/candidate/api";
 import { formatCountdown, setupGate } from "@/lib/candidate/setup";
 import { createFakeVoiceSession, type VoiceStatus } from "@/lib/candidate/voice";
-import seedRoles from "@/lib/candidate/roles.json";
-
-const ROLES: Role[] = seedRoles;
+import { fakeClient } from "./helpers/fake-supabase";
 
 describe("roleFromRow", () => {
   it("maps a public.roles row and drops empty optional fields", () => {
     const role = roleFromRow({
       id: "x",
       title: "X",
-      pay_rate: "$1~$2/Hour",
+      pay_min: 1,
+      pay_max: 2,
+      pay_type: "hour",
       job_type: "",
       skills: ["Go"],
       about: "",
@@ -21,7 +21,9 @@ describe("roleFromRow", () => {
     expect(role).toEqual({
       id: "x",
       title: "X",
-      payRate: "$1~$2/Hour",
+      payMin: 1,
+      payMax: 2,
+      payType: "hour",
       jobType: undefined,
       skills: ["Go"],
       about: undefined,
@@ -31,12 +33,57 @@ describe("roleFromRow", () => {
   });
 });
 
-describe("filterRoles", () => {
-  it("filters by title or skill, case-insensitively", () => {
-    expect(filterRoles(ROLES, "")).toHaveLength(ROLES.length);
-    expect(filterRoles(ROLES, "  SEMICONDUCTOR ").map((r) => r.id)).toEqual(["semiconductor-engineering-expert"]);
-    expect(filterRoles(ROLES, "typescript").length).toBeGreaterThan(0);
-    expect(filterRoles(ROLES, "no such role")).toEqual([]);
+describe("getRoles", () => {
+  const row = (id: string, title: string, skills: string[] = []) => ({
+    id,
+    title,
+    pay_min: 1, pay_max: 2, pay_type: "hour",
+    job_type: "",
+    skills,
+    about: "",
+    responsibilities: [],
+    requirements: [],
+  });
+
+  it("runs the search in the database and maps the rows", async () => {
+    const { client, log } = fakeClient(() => ({ data: null, error: null }), {
+      rpc: () => ({ data: [row("x", "X", ["TypeScript"])], error: null }),
+    });
+    const roles = await getRoles("  TypeScript ", client);
+    expect(log[0]).toMatchObject({
+      table: "rpc:search_roles",
+      payload: { p_query: "TypeScript" },
+    });
+    expect(roles).toEqual([
+      {
+        id: "x",
+        title: "X",
+        payMin: 1, payMax: 2, payType: "hour",
+        jobType: undefined,
+        skills: ["TypeScript"],
+        about: undefined,
+        responsibilities: [],
+        requirements: [],
+      },
+    ]);
+  });
+
+  it("passes an empty query through, so the first load lists every active role", async () => {
+    const { client, log } = fakeClient(() => ({ data: null, error: null }), {
+      rpc: () => ({ data: [row("a", "A"), row("b", "B")], error: null }),
+    });
+    await expect(getRoles("  ", client)).resolves.toHaveLength(2);
+    expect(log[0]).toMatchObject({ payload: { p_query: "" } });
+  });
+
+  it("throws an ApiError when the database search fails", async () => {
+    const { client } = fakeClient(() => ({ data: null, error: null }), {
+      rpc: () => ({ data: null, error: { message: "boom" } }),
+    });
+    await expect(getRoles("engineer", client)).rejects.toMatchObject({
+      code: "ROLES_FAILED",
+      message: "Roles failed to load.",
+    });
   });
 });
 

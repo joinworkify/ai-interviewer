@@ -1,6 +1,5 @@
 import "server-only";
 
-import { findRole } from "@/lib/candidate/attempts";
 import { createS3Client, createS3ResumeStorage, readResumeS3Config } from "@/lib/candidate/resume-s3";
 import { normalizeTranscript, type TranscriptTurn } from "@/lib/sessions/transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -26,11 +25,6 @@ export interface AttemptListItem {
   reviewStatus: ReviewStatus;
   hasResume: boolean;
   startedAt: string;
-}
-
-function roleTitle(roleId: string | undefined): string | null {
-  if (!roleId) return null;
-  return findRole(roleId)?.title ?? roleId;
 }
 
 function fail(op: string, error: unknown): never {
@@ -66,17 +60,33 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const withResume = new Set((resumes.data ?? []).map((r) => r.user_id));
 
-  return rows.map((s) => ({
-    sessionId: s.id,
-    userId: s.user_id,
-    name: profileById.get(s.user_id)?.name ?? null,
-    email: profileById.get(s.user_id)?.email ?? null,
-    roleTitle: roleTitle(roleBySession.get(s.id)),
-    interviewStatus: s.status,
-    reviewStatus: reviewBySession.get(s.id) ?? "pending",
-    hasResume: withResume.has(s.user_id),
-    startedAt: s.started_at,
-  }));
+  const roleIds = [
+    ...new Set(
+      (consents.data ?? [])
+        .map((c) => c.role_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ];
+  const roles = roleIds.length > 0
+    ? await db.from("roles").select("id, title").in("id", roleIds)
+    : { data: [], error: null };
+  if (roles.error) fail("roles", roles.error);
+  const roleTitleById = new Map((roles.data ?? []).map((r) => [r.id, r.title]));
+
+  return rows.map((s) => {
+    const roleId = roleBySession.get(s.id);
+    return {
+      sessionId: s.id,
+      userId: s.user_id,
+      name: profileById.get(s.user_id)?.name ?? null,
+      email: profileById.get(s.user_id)?.email ?? null,
+      roleTitle: roleId ? (roleTitleById.get(roleId) ?? roleId) : null,
+      interviewStatus: s.status,
+      reviewStatus: reviewBySession.get(s.id) ?? "pending",
+      hasResume: withResume.has(s.user_id),
+      startedAt: s.started_at,
+    };
+  });
 }
 
 export interface AttemptDetail {
@@ -158,6 +168,13 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     }
   }
 
+  let roleTitle: string | null = null;
+  if (consent.data?.role_id) {
+    const role = await db.from("roles").select("title").eq("id", consent.data.role_id).maybeSingle();
+    if (role.error) fail("role", role.error);
+    roleTitle = role.data?.title ?? consent.data.role_id;
+  }
+
   return {
     sessionId: s.id,
     interviewStatus: s.status,
@@ -165,7 +182,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     endedAt: s.ended_at,
     durationSeconds: s.duration_seconds,
     endedReason: s.ended_reason,
-    roleTitle: roleTitle(consent.data?.role_id),
+    roleTitle,
     consent: consent.data
       ? { version: consent.data.consent_version, acceptedAt: consent.data.accepted_at }
       : null,

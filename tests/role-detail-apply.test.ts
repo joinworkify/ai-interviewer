@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser } }) }));
 vi.mock("@/lib/candidate/api", () => ({
-  getRole: async () => ({ id: "engineer", title: "Engineer", skills: [], responsibilities: [], requirements: [] }),
+  getRole: async () => ({ id: "engineer", title: "Engineer", payMin: 10, payMax: 15, payType: "hour", skills: [], responsibilities: [], requirements: [] }),
 }));
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let container: HTMLDivElement;

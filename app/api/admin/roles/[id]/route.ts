@@ -1,7 +1,7 @@
 ﻿
 import { NextResponse } from "next/server";
 import { describeError } from "@/lib/log/safe-error";
-import { isRoleBullets } from "@/lib/admin/role-validation";
+import { isRoleBullets, isRolePay } from "@/lib/admin/role-validation";
 
 import { requireAdmin } from "@/lib/admin/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -56,18 +56,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       updates.title = input.title.trim();
     }
 
-    if ("pay_rate" in input) {
-      if (
-        typeof input.pay_rate !== "string" ||
-        !input.pay_rate.trim() ||
-        input.pay_rate.trim().length > 60
-      ) {
-        return NextResponse.json(
-          { success: false, message: "Invalid pay rate." },
-          { status: 400 },
-        );
+    if (["pay_rate", "pay_min", "pay_max", "pay_type"].some((key) => key in input)) {
+      if (!isRolePay(input)) {
+        return NextResponse.json({ success: false, message: "Provide a valid pay minimum, maximum and type together." }, { status: 400 });
       }
-      updates.pay_rate = input.pay_rate.trim();
+      updates.pay_min = input.pay_min;
+      updates.pay_max = input.pay_max;
+      updates.pay_type = input.pay_type;
     }
 
     if ("job_type" in input) {

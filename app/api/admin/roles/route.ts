@@ -1,7 +1,7 @@
 ﻿
 import { NextResponse } from "next/server";
 import { describeError } from "@/lib/log/safe-error";
-import { isRoleBullets } from "@/lib/admin/role-validation";
+import { isRoleBullets, isRolePay } from "@/lib/admin/role-validation";
 
 import { requireAdmin } from "@/lib/admin/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     const {
       id,
       title,
-      pay_rate,
+      pay_min, pay_max, pay_type,
       job_type,
       skills = [],
       about = "",
@@ -67,9 +67,7 @@ export async function POST(request: Request) {
       typeof title !== "string" ||
       !title.trim() ||
       title.trim().length > 120 ||
-      typeof pay_rate !== "string" ||
-      !pay_rate.trim() ||
-      pay_rate.trim().length > 60 ||
+      !isRolePay({ pay_min, pay_max, pay_type }) ||
       typeof job_type !== "string" ||
       !job_type.trim() ||
       job_type.trim().length > 80 ||
@@ -94,7 +92,9 @@ export async function POST(request: Request) {
       .insert({
         id,
         title: title.trim(),
-        pay_rate: pay_rate.trim(),
+        pay_min: pay_min as number,
+        pay_max: pay_max as number,
+        pay_type: pay_type as "hour" | "task",
         job_type: job_type.trim(),
         skills,
         about: about.trim(),

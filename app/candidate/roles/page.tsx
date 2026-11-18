@@ -1,59 +1,68 @@
-
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { ChevronRight, Search } from "lucide-react";
-
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronRight, Loader2, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-
-import { filterRoles, getRoles, type Role } from "@/lib/candidate/api";
-
+import { getRoles, type Role } from "@/lib/candidate/api";
+import { PayRateFilter } from "@/components/candidate/pay-rate-filter";
+import { EMPTY_PAY_FILTER, filterRolesByPay, formatPayRate, type PayFilter } from "@/lib/candidate/pay";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
 const PAGE_SIZE = 14;
 
+const SEARCH_DEBOUNCE_MS = 250;
+
+/** Results remember the term that produced them, so the labels never lie. */
+type Results = { term: string; roles: Role[] };
+
 export default function RolesPage() {
-  const [roles, setRoles] = useState<Role[] | null>(null);
-  const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [payFilter, setPayFilter] = useState<PayFilter>(EMPTY_PAY_FILTER);
+  const [term, setTerm] = useState("");
+  const [results, setResults] = useState<Results | null>(null);
+  const [searching, setSearching] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const requestId = useRef(0);
 
-  const load = useCallback(() => {
+  // The database sees the trimmed term, not every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setTerm(query.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const load = useCallback((searchTerm: string) => {
+    const id = ++requestId.current;
     setFailed(false);
-    setRoles(null);
-    setCurrentPage(1);
-    getRoles().then(setRoles, () => setFailed(true));
+    setSearching(true);
+    getRoles(searchTerm).then(
+      (roles) => {
+        if (id !== requestId.current) return;
+        setResults({ term: searchTerm, roles });
+        setCurrentPage(1);
+        setSearching(false);
+      },
+      () => {
+        if (id !== requestId.current) return;
+        setFailed(true);
+        setSearching(false);
+      },
+    );
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => load(term), [load, term]);
 
-  const shown = roles ? filterRoles(roles, query) : [];
-
-  const totalPages = Math.ceil(shown.length / PAGE_SIZE);
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedRoles = shown.slice(
-    startIndex,
-    startIndex + PAGE_SIZE,
-  );
-
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+  const retry = () => {
+    setResults(null);
+    load(term);
   };
 
-  const visiblePages = Array.from(
-    { length: totalPages },
-    (_, index) => index + 1,
-  );
+  const shown = filterRolesByPay(results?.roles ?? [], payFilter);
+  const totalPages = Math.ceil(shown.length / PAGE_SIZE);
+  const page = Math.min(currentPage, Math.max(1, totalPages));
+  const paginatedRoles = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,11 +70,15 @@ export default function RolesPage() {
         <h1 className="text-3xl font-bold tracking-tight">
           Explore open roles
         </h1>
-
-        {roles && roles.length > 0 && (
-          <p className="-mt-2 text-sm text-muted-foreground">
-            {roles.length} {roles.length === 1 ? "role" : "roles"} open for
-            interviews
+        {results && shown.length > 0 && (
+          <p className="-mt-2 text-sm text-muted-foreground" role="status">
+            {results.term
+              ? `${shown.length} matching ${
+                  shown.length === 1 ? "role" : "roles"
+                }`
+              : `${shown.length} ${
+                  shown.length === 1 ? "role" : "roles"
+                } open for interviews`}
           </p>
         )}
 
@@ -74,176 +87,126 @@ export default function RolesPage() {
           <Input
             aria-label="Search jobs"
             placeholder="Search jobs"
-            className="h-11 rounded-lg pl-11 text-base"
+            className="h-11 rounded-lg pl-11 pr-11 text-base"
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
-              setCurrentPage(1);
             }}
           />
+          {searching && results && (
+            <Loader2
+              aria-hidden="true"
+              className="absolute right-4 top-3.5 h-4 w-4 animate-spin text-muted-foreground"
+            />
+          )}
         </div>
+        <PayRateFilter value={payFilter} onChange={(value) => { setPayFilter(value); setCurrentPage(1); }} />
       </div>
 
       {failed ? (
-        <div
-          role="alert"
-          className="flex flex-col items-center gap-3 text-sm"
-        >
+        <div role="alert" className="flex flex-col items-center gap-3 text-sm">
           <p className="text-destructive">Roles failed to load.</p>
-          <Button variant="outline" onClick={load}>
+          <Button variant="outline" onClick={retry}>
             Retry
           </Button>
         </div>
-      ) : roles === null ? (
+      ) : results === null ? (
         <div
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
           aria-busy="true"
         >
-          {Array.from({ length: 6 }, (_, index) => (
-            <div
-              key={index}
-              className="h-32 animate-pulse rounded-xl bg-muted"
-            />
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
           ))}
         </div>
       ) : shown.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No roles available right now.
-        </p>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          {results.term ? (
+            <>
+              <p role="status">No roles match &quot;{results.term}&quot;.</p>
+              <Button variant="outline" onClick={() => setQuery("")}>
+                Clear search
+              </Button>
+            </>
+          ) : (
+            <>
+              <p role="status">{results.roles.length > 0 ? "No roles match your pay filter." : "No roles available right now."}</p>
+              {results.roles.length > 0 && <Button variant="outline" onClick={() => { setPayFilter(EMPTY_PAY_FILTER); setCurrentPage(1); }}>Clear pay filter</Button>}
+            </>
+          )}
+        </div>
       ) : (
-        <>
-          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {paginatedRoles.map((role) => (
-              <li key={role.id}>
-                <Link
-                  href={`/candidate/roles/${role.id}`}
-                  className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-heading text-lg font-semibold leading-snug">
-                      {role.title}
+        <ul
+          aria-busy={searching}
+          className={`grid gap-5 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${
+            searching ? "opacity-60" : ""
+          }`}
+        >
+          {paginatedRoles.map((r) => (
+            <li key={r.id}>
+              <Link
+                href={`/candidate/roles/${r.id}`}
+                className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-heading text-xl font-semibold leading-snug">
+                    {r.title}
+                  </span>
+                  <span className="text-sm font-medium text-primary">
+                    Pay rate: {formatPayRate(r)}
+                  </span>
+                  {r.jobType && (
+                    <span className="text-sm text-muted-foreground">
+                      {r.jobType}
                     </span>
-
-                    <span className="text-sm font-medium text-primary">
-                      Pay rate: {role.payRate}
-                    </span>
-
-                    {role.jobType && (
-                      <span className="text-sm text-muted-foreground">
-                        {role.jobType}
-                      </span>
+                  )}
+                </div>
+                {r.about && (
+                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
+                    {r.about}
+                  </p>
+                )}
+                {r.skills.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {r.skills.slice(0, 4).map((skill) => (
+                      <Badge
+                        key={skill}
+                        variant="outline"
+                        className="font-normal"
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
+                    {r.skills.length > 4 && (
+                      <Badge
+                        variant="outline"
+                        className="font-normal text-muted-foreground"
+                      >
+                        +{r.skills.length - 4}
+                      </Badge>
                     )}
                   </div>
-
-                  {role.about && (
-                    <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-                      {role.about}
-                    </p>
-                  )}
-
-                  {role.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {role.skills.slice(0, 4).map((skill) => (
-                        <Badge
-                          key={skill}
-                          variant="outline"
-                          className="font-normal"
-                        >
-                          {skill}
-                        </Badge>
-                      ))}
-
-                      {role.skills.length > 4 && (
-                        <Badge
-                          variant="outline"
-                          className="font-normal text-muted-foreground"
-                        >
-                          +{role.skills.length - 4}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-
-                  <span className="mt-auto flex items-center justify-between pt-2 font-ui text-sm font-medium text-primary">
-                    View role
-
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
-                      <ChevronRight className="h-4 w-4" />
-                    </span>
+                )}
+                <span className="mt-auto flex items-center justify-between pt-2 text-sm font-medium text-primary">
+                  View role
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
+                    <ChevronRight className="h-4 w-4" />
                   </span>
-                </Link>
-              </li>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {shown.length > 0 && (
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm text-muted-foreground">Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, shown.length)} of {shown.length} roles</p>
+          {totalPages > 1 && <Pagination><PaginationContent>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+              <PaginationItem key={n}><PaginationLink href="#" aria-label={`Go to page ${n}`} isActive={page === n} onClick={(event) => { event.preventDefault(); setCurrentPage(n); }}>{n}</PaginationLink></PaginationItem>
             ))}
-          </ul>
-
-          <div className="flex flex-col items-center gap-3 pt-2">
-            <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1}–
-              {Math.min(startIndex + PAGE_SIZE, shown.length)} of{" "}
-              {shown.length} roles
-            </p>
-
-            {totalPages >= 1 && (
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      aria-disabled={currentPage === 1}
-                      className={
-                        currentPage === 1
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                      onClick={(event) => {
-                        event.preventDefault();
-                        goToPage(currentPage - 1);
-                      }}
-                    />
-                  </PaginationItem>
-
-                  {visiblePages.map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        isActive={currentPage === page}
-                        aria-label={`Go to page ${page}`}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          goToPage(page);
-                        }}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-
-                  {totalPages > 5 && (
-                    <PaginationItem>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  )}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      aria-disabled={currentPage === totalPages}
-                      className={
-                        currentPage === totalPages
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                      onClick={(event) => {
-                        event.preventDefault();
-                        goToPage(currentPage + 1);
-                      }}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
-          </div>
-        </>
+          </PaginationContent></Pagination>}
+        </div>
       )}
     </div>
   );

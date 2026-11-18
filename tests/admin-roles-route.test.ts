@@ -14,7 +14,7 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient }));
 const { POST } = await import("@/app/api/admin/roles/route");
 const { PATCH, DELETE } = await import("@/app/api/admin/roles/[id]/route");
 const context = { params: Promise.resolve({ id: "engineer" }) };
-const role = { id: "engineer", title: "Engineer", pay_rate: "$10/hour", job_type: "Contract", responsibilities: [], requirements: [] };
+const role = { id: "engineer", title: "Engineer", pay_min: 10, pay_max: 15, pay_type: "hour", job_type: "Contract", responsibilities: [], requirements: [] };
 function request(method: string, body?: unknown, origin = "http://localhost:3000") {
   return new Request("http://localhost:3000/api/admin/roles/engineer", {
     method, headers: { origin, "content-type": "application/json" },
@@ -70,3 +70,22 @@ it("does not disclose raw database errors in logs or responses", async () => {
   expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("private database content");
   expect(await response.text()).not.toContain("private database content");
 });
+
+it("updates structured pay together and persists the exact range", async () => {
+  const pay = { pay_min: 2.5, pay_max: 5, pay_type: "task" };
+  expect((await PATCH(request("PATCH", pay), context)).status).toBe(200);
+  expect(chain.update).toHaveBeenCalledWith(pay);
+});
+for (const pay of [
+  { pay_min: 2 }, { pay_rate: "$2/Hour" },
+  { pay_min: 5, pay_max: 2, pay_type: "hour" },
+  { pay_min: -1, pay_max: 2, pay_type: "hour" },
+  { pay_min: 1, pay_max: 2, pay_type: "month" },
+  { pay_min: null, pay_max: 2, pay_type: "hour" },
+]) {
+  it(`rejects invalid/incomplete structured pay ${JSON.stringify(pay)}`, async () => {
+    expect((await POST(request("POST", { ...role, pay_min: undefined, pay_max: undefined, pay_type: undefined, ...pay }))).status).toBe(400);
+    expect((await PATCH(request("PATCH", pay), context)).status).toBe(400);
+    expect(createAdminClient).not.toHaveBeenCalled();
+  });
+}
