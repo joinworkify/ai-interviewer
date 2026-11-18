@@ -1,34 +1,70 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { ChevronRight, Search } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronRight, Loader2, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { filterRoles, getRoles, type Role } from "@/lib/candidate/api";
+import { getRoles, type Role } from "@/lib/candidate/api";
+
+const SEARCH_DEBOUNCE_MS = 250;
+
+/** Results remember the term that produced them, so the labels never lie. */
+type Results = { term: string; roles: Role[] };
 
 export default function RolesPage() {
-  const [roles, setRoles] = useState<Role[] | null>(null);
-  const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
+  const [term, setTerm] = useState("");
+  const [results, setResults] = useState<Results | null>(null);
+  const [searching, setSearching] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const requestId = useRef(0);
 
-  const load = useCallback(() => {
+  // The database sees the trimmed term, not every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setTerm(query.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const load = useCallback((searchTerm: string) => {
+    const id = ++requestId.current;
     setFailed(false);
-    setRoles(null);
-    getRoles().then(setRoles, () => setFailed(true));
+    setSearching(true);
+    getRoles(searchTerm).then(
+      (roles) => {
+        if (id !== requestId.current) return;
+        setResults({ term: searchTerm, roles });
+        setSearching(false);
+      },
+      () => {
+        if (id !== requestId.current) return;
+        setFailed(true);
+        setSearching(false);
+      },
+    );
   }, []);
-  useEffect(load, [load]);
 
-  const shown = roles ? filterRoles(roles, query) : [];
+  useEffect(() => load(term), [load, term]);
+
+  const retry = () => {
+    setResults(null);
+    load(term);
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Explore open roles</h1>
-        {roles && roles.length > 0 && (
-          <p className="-mt-2 text-sm text-muted-foreground">
-            {roles.length} {roles.length === 1 ? "role" : "roles"} open for interviews
+        {results && results.roles.length > 0 && (
+          <p className="-mt-2 text-sm text-muted-foreground" role="status">
+            {results.term
+              ? `${results.roles.length} matching ${
+                  results.roles.length === 1 ? "role" : "roles"
+                }`
+              : `${results.roles.length} ${
+                  results.roles.length === 1 ? "role" : "roles"
+                } open for interviews`}
           </p>
         )}
         <div className="relative w-full max-w-xl">
@@ -36,33 +72,53 @@ export default function RolesPage() {
           <Input
             aria-label="Search jobs"
             placeholder="Search jobs"
-            className="h-11 rounded-lg pl-11 text-base"
+            className="h-11 rounded-lg pl-11 pr-11 text-base"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          {searching && results && (
+            <Loader2
+              aria-hidden="true"
+              className="absolute right-4 top-3.5 h-4 w-4 animate-spin text-muted-foreground"
+            />
+          )}
         </div>
       </div>
 
       {failed ? (
         <div role="alert" className="flex flex-col items-center gap-3 text-sm">
           <p className="text-destructive">Roles failed to load.</p>
-          <Button variant="outline" onClick={load}>
+          <Button variant="outline" onClick={retry}>
             Retry
           </Button>
         </div>
-      ) : roles === null ? (
+      ) : results === null ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
           ))}
         </div>
-      ) : shown.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No roles available right now.
-        </p>
+      ) : results.roles.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          {results.term ? (
+            <>
+              <p role="status">No roles match &quot;{results.term}&quot;.</p>
+              <Button variant="outline" onClick={() => setQuery("")}>
+                Clear search
+              </Button>
+            </>
+          ) : (
+            <p role="status">No roles available right now.</p>
+          )}
+        </div>
       ) : (
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {shown.map((r) => (
+        <ul
+          aria-busy={searching}
+          className={`grid gap-5 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${
+            searching ? "opacity-60" : ""
+          }`}
+        >
+          {results.roles.map((r) => (
             <li key={r.id}>
               <Link
                 href={`/candidate/roles/${r.id}`}

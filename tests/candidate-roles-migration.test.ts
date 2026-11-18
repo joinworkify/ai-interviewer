@@ -11,12 +11,15 @@ import roles from "@/lib/candidate/roles.json";
 const read = (path: string) =>
   readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
 
-const sql = read("../supabase/migrations/20261111000000_candidate_roles.sql")
-  .split(/\r?\n/) // Windows checkouts use CRLF
-  .map((l) => l.replace(/--.*$/, ""))
-  .join(" ")
-  .replace(/\s+/g, " ")
-  .toLowerCase();
+const normalize = (path: string) =>
+  read(path)
+    .split(/\r?\n/) // Windows checkouts use CRLF
+    .map((l) => l.replace(/--.*$/, ""))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
+const sql = normalize("../supabase/migrations/20261111000000_candidate_roles.sql");
 const stmts = sql.split(";").map((s) => s.trim()).filter(Boolean);
 
 describe("roles migration", () => {
@@ -38,6 +41,35 @@ describe("roles migration", () => {
 
   it("is purely additive", () => {
     expect(sql).not.toMatch(/\b(drop table|drop column|alter table public\.(?!roles\b))/);
+  });
+});
+
+describe("roles search migration", () => {
+  const searchSql = normalize("../supabase/migrations/20261118000000_roles_search.sql");
+
+  it("searches as the caller, with RLS in force", () => {
+    expect(searchSql).toMatch(
+      /create or replace function public\.search_roles\(p_query text\)/,
+    );
+    expect(searchSql).toMatch(/security invoker/);
+    expect(searchSql).toMatch(/set search_path = ''/);
+    expect(searchSql).not.toMatch(/security definer/);
+  });
+
+  it("grants execute to browsers and the service role only", () => {
+    expect(searchSql).toMatch(
+      /revoke all on function public\.search_roles\(text\) from public, anon, authenticated/,
+    );
+    expect(searchSql).toMatch(
+      /grant execute on function public\.search_roles\(text\) to anon, authenticated, service_role/,
+    );
+  });
+
+  it("matches title and skills, case-insensitively, for active roles", () => {
+    expect(searchSql).toMatch(/where is_active/);
+    expect(searchSql).toMatch(/strpos\(lower\(title\), lower\(trim\(p_query\)\)\)/);
+    expect(searchSql).toMatch(/unnest\(skills\) as skill/);
+    expect(searchSql).toMatch(/order by sort_order, title/);
   });
 });
 
