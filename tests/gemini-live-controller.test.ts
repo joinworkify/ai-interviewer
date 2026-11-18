@@ -21,7 +21,7 @@ const DETAILS: LiveInterviewDetails = {
 const GRANT: TokenGrant = {
   token: "auth_tokens/one",
   model: "gemini-3.8-live",
-  maxSessionSeconds: 300,
+  maxSessionSeconds: 1200,
 };
 
 function deferred<T>() {
@@ -641,10 +641,10 @@ describe("end_interview tool and time limit", () => {
     expect(h.controller.getSnapshot().phase).toBe("active");
   });
 
-  it("sends a wrap-up notice 30 s before the cap and hard-stops at 5 minutes", async () => {
+  it("sends a wrap-up notice 30 s before the cap and hard-stops at 20 minutes", async () => {
     const h = harness();
     const session = await startActive(h);
-    await vi.advanceTimersByTimeAsync(269_000);
+    await vi.advanceTimersByTimeAsync(1_169_000);
     expect(session.texts).toHaveLength(1);
     await vi.advanceTimersByTimeAsync(1_000);
     expect(session.texts).toHaveLength(2);
@@ -652,7 +652,7 @@ describe("end_interview tool and time limit", () => {
     await vi.advanceTimersByTimeAsync(30_000);
     const snap = h.controller.getSnapshot();
     expect(snap.phase).toBe("ended");
-    expect(snap.notice).toMatch(/5-minute/);
+    expect(snap.notice).toMatch(/20-minute/);
     expect(session.closed).toBe(1);
     expect(h.mics[0].stopped).toBe(1);
   });

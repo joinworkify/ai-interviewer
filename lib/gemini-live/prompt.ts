@@ -19,7 +19,7 @@ import {
 
 /** How long the browser has to open the session with a fresh token. */
 export const NEW_SESSION_WINDOW_SECONDS = 60;
-/** Extra slack after the 5-minute cap before Google rejects messages. */
+/** Extra slack after the session cap before Google rejects messages. */
 const EXPIRY_GRACE_SECONDS = 30;
 
 export const MAX_PROMPT_QUESTIONS = 10;

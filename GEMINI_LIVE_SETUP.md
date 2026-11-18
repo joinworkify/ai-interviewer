@@ -63,7 +63,7 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
 
 - `uses: 1` — one session per token.
 - `newSessionExpireTime`: now + 60 s (the browser must connect within 1 min).
-- `expireTime`: now + 60 s + 5 min + 30 s grace.
+- `expireTime`: now + 60 s + 20 min + 30 s grace.
 - `liveConnectConstraints` lock the model, `responseModalities: [AUDIO]`,
   the interviewer system instruction (built from the validated
   role/level/stack), the `end_interview` function tool, and input/output
@@ -168,8 +168,8 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
 
 ## 4. Session length and reconnection
 
-- **Prototype cap: 5 minutes per session.** 30 s before the cap the model is
-  told to wrap up and call `end_interview`; at 5:00 the client hard-stops.
+- **Cap: 20 minutes per session.** 30 s before the cap the model is
+  told to wrap up and call `end_interview`; at 20:00 the client hard-stops.
 - Live WebSocket connections are limited to roughly 10 minutes and need
   session resumption to go longer (see Session management docs). **Session
   resumption, context-window compression and seamless reconnect are not
@@ -240,7 +240,7 @@ npm run test && npm run typecheck && npm run lint && npm run build
 
 ## 7. Current limitations
 
-- No session resumption or reconnect; 5-minute cap (see §4).
+- No session resumption or reconnect; 20-minute cap (see §4).
 - In-memory, per-instance throttle only (see §5).
 - Behind a proxy that changes the scheme or Host, you must set
   `GEMINI_LIVE_APP_ORIGIN`. Without it, requests are rejected with

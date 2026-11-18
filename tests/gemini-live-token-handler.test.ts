@@ -262,7 +262,7 @@ describe("token issuance", () => {
     expect(key).toBe(API_KEY);
     expect(config.uses).toBe(1);
     expect(config.newSessionExpireTime).toBe("2026-11-09T12:01:00.000Z");
-    expect(config.expireTime).toBe("2026-11-09T12:06:30.000Z");
+    expect(config.expireTime).toBe("2026-11-09T12:21:30.000Z");
     expect(config.abortSignal).toBeInstanceOf(AbortSignal);
     const c = config.liveConnectConstraints!;
     expect(c.model).toBe("gemini-3.8-live");
@@ -275,9 +275,9 @@ describe("token issuance", () => {
     expect(body).toEqual({
       token: "auth_tokens/abc123",
       model: "gemini-3.8-live",
-      expiresAt: "2026-11-09T12:06:30.000Z",
+      expiresAt: "2026-11-09T12:21:30.000Z",
       newSessionExpiresAt: "2026-11-09T12:01:00.000Z",
-      maxSessionSeconds: 300,
+      maxSessionSeconds: 1200,
     });
     expect(text).not.toContain(API_KEY);
   });

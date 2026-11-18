@@ -23,9 +23,9 @@ import roles from "./roles.json";
  */
 
 export const MAX_ATTEMPT_BODY_BYTES = 1024;
-/** One intro question plus up to four about the role's requirements: about 5 minutes. */
+/** Prepared questions; the interviewer adds follow-ups up to 8 in all, within 20 minutes. */
 export const MAX_ATTEMPT_QUESTIONS = 5;
-export const ATTEMPT_DURATION_MINUTES = 5;
+export const ATTEMPT_DURATION_MINUTES = 20;
 /** A candidate may start this many attempts per role; abandoned ones do not count. */
 export const MAX_ATTEMPTS_PER_ROLE = 3;
 /**

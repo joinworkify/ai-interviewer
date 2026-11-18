@@ -311,7 +311,7 @@ export class LiveInterviewController {
     this.timer(() => {
       if (!stale()) {
         this.finish(
-          `Reached the ${Math.round(capSeconds / 60)}-minute prototype session limit.`,
+          `Reached the ${Math.round(capSeconds / 60)}-minute session limit.`,
           "time_limit",
         );
       }

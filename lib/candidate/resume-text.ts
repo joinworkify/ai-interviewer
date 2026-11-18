@@ -40,10 +40,8 @@ async function pdfText(bytes: Uint8Array): Promise<string> {
 }
 
 /**
- * Text of a PDF resume, or null when the file type is not supported yet or
- * no text could be read (for example a scanned image).
- * shortcut: .docx resumes return null (role-only questions) until a Word
- * text extractor is approved for the project.
+ * Text of a PDF resume, or null for other file types (Word resumes get
+ * role-only questions) or when no text could be read (for example a scan).
  */
 export async function extractResumeText(bytes: Uint8Array, contentType: string): Promise<string | null> {
   if (contentType !== PDF_TYPE) return null;

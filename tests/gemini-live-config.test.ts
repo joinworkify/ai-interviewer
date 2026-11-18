@@ -120,7 +120,7 @@ describe("buildInterviewerInstruction", () => {
     expect(text).toMatch(/at most one follow-up/i);
     expect(text).toMatch(/stop|bye/i);
     expect(text).toContain(END_INTERVIEW_TOOL);
-    expect(text).toMatch(/5 minutes/);
+    expect(text).toMatch(/20 minutes/);
   });
 
   it("keeps the interview in English: reminds, then ends after the third reminder as non_english", () => {
@@ -151,11 +151,11 @@ describe("buildEphemeralTokenConfig", () => {
       new Date(now + NEW_SESSION_WINDOW_SECONDS * 1000).toISOString(),
     );
     expect(NEW_SESSION_WINDOW_SECONDS).toBe(60);
-    // Start window + 5 minute session + 30 s grace.
+    // Start window + 20 minute session + 30 s grace.
     expect(cfg.expireTime).toBe(
       new Date(now + (60 + MAX_SESSION_SECONDS + 30) * 1000).toISOString(),
     );
-    expect(MAX_SESSION_SECONDS).toBe(300);
+    expect(MAX_SESSION_SECONDS).toBe(1200);
     // No lockAdditionalFields: every field of the constraints is locked.
     expect(cfg).not.toHaveProperty("lockAdditionalFields");
 
