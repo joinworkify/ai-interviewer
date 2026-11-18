@@ -17,7 +17,7 @@ const js = (v) => `${q(JSON.stringify(v))}::jsonb`;
 const rows = roles
   .map(
     (r, i) =>
-      `  (${q(r.id)}, ${q(r.title)}, ${q(r.payRate)}, ${q(r.jobType)}, ${i + 1},\n` +
+      `  (${q(r.id)}, ${q(r.title)}, ${r.payMin}, ${r.payMax}, ${q(r.payType)}, ${q(r.jobType)}, ${i + 1},\n` +
       `   ${arr(r.skills)}, ${q(r.about ?? "")},\n` +
       `   ${js(r.responsibilities)},\n` +
       `   ${js(r.requirements)})`,
@@ -25,12 +25,14 @@ const rows = roles
   .join(",\n");
 
 const block = `insert into public.roles
-  (id, title, pay_rate, job_type, sort_order, skills, about, responsibilities, requirements)
+  (id, title, pay_min, pay_max, pay_type, job_type, sort_order, skills, about, responsibilities, requirements)
 values
 ${rows}
 on conflict (id) do update set
   title            = excluded.title,
-  pay_rate         = excluded.pay_rate,
+  pay_min          = excluded.pay_min,
+  pay_max          = excluded.pay_max,
+  pay_type         = excluded.pay_type,
   job_type         = excluded.job_type,
   sort_order       = excluded.sort_order,
   skills           = excluded.skills,

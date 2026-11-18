@@ -3,15 +3,19 @@ import { ApiError, filterRoles, getResult, isValidEmail, roleFromRow, waitForRes
 import { formatCountdown, setupGate } from "@/lib/candidate/setup";
 import { createFakeVoiceSession, type VoiceStatus } from "@/lib/candidate/voice";
 import seedRoles from "@/lib/candidate/roles.json";
+import type { PayType } from "@/lib/candidate/pay";
 
-const ROLES: Role[] = seedRoles;
+// JSON imports type payType as string, so narrow it here.
+const ROLES: Role[] = seedRoles.map((r) => ({ ...r, payType: r.payType as PayType }));
 
 describe("roleFromRow", () => {
   it("maps a public.roles row and drops empty optional fields", () => {
     const role = roleFromRow({
       id: "x",
       title: "X",
-      pay_rate: "$1~$2/Hour",
+      pay_min: 1,
+      pay_max: 2,
+      pay_type: "hour",
       job_type: "",
       skills: ["Go"],
       about: "",
@@ -21,7 +25,9 @@ describe("roleFromRow", () => {
     expect(role).toEqual({
       id: "x",
       title: "X",
-      payRate: "$1~$2/Hour",
+      payMin: 1,
+      payMax: 2,
+      payType: "hour",
       jobType: undefined,
       skills: ["Go"],
       about: undefined,

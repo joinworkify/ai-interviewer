@@ -398,7 +398,10 @@ export type Database = {
         Row: {
           id: string;
           title: string;
-          pay_rate: string;
+          pay_rate: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
           job_type: string;
           skills: string[];
           about: string;
@@ -412,7 +415,10 @@ export type Database = {
         Insert: {
           id: string;
           title: string;
-          pay_rate: string;
+          pay_rate?: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
           job_type: string;
           skills?: string[];
           about?: string;
@@ -426,7 +432,10 @@ export type Database = {
         Update: {
           id?: string;
           title?: string;
-          pay_rate?: string;
+          pay_rate?: string | null;
+          pay_min?: number;
+          pay_max?: number;
+          pay_type?: "hour" | "task";
           job_type?: string;
           skills?: string[];
           about?: string;

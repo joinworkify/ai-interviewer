@@ -45,12 +45,19 @@ describe("roles seed", () => {
   // Only the generated roles block; seed.sql also holds other dev data.
   const all = read("../supabase/seed.sql");
   const seed = all.slice(all.indexOf("-- BEGIN candidate roles"), all.indexOf("-- END candidate roles"));
-  const rows = [...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*'([^']+)'/g)].map(
-    ([, id, title, payRate]) => ({ id, title, payRate }),
-  );
+  const rows = [
+    ...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*([\d.]+),\s*([\d.]+),\s*'(hour|task)'/g),
+  ].map(([, id, title, min, max, type]) => ({
+    id,
+    title,
+    payMin: Number(min),
+    payMax: Number(max),
+    payType: type,
+  }));
 
   it("matches lib/candidate/roles.json (regenerate with node scripts/gen-roles-seed.mjs)", () => {
-    expect(rows).toEqual(roles.map(({ id, title, payRate }) => ({ id, title, payRate })));
+    expect(rows).toHaveLength(roles.length);
+    expect(rows).toEqual(roles.map(({ id, title, payMin, payMax, payType }) => ({ id, title, payMin, payMax, payType })));
   });
 
   it("can be re-run without duplicates", () => {

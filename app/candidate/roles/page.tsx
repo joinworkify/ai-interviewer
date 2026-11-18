@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { filterRoles, getRoles, type Role } from "@/lib/candidate/api";
+import { PayRateFilter } from "@/components/candidate/pay-rate-filter";
+import { EMPTY_PAY_FILTER, filterRolesByPay, formatPayRate, type PayFilter } from "@/lib/candidate/pay";
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
+  const [payFilter, setPayFilter] = useState<PayFilter>(EMPTY_PAY_FILTER);
 
   const load = useCallback(() => {
     setFailed(false);
@@ -20,7 +23,7 @@ export default function RolesPage() {
   }, []);
   useEffect(load, [load]);
 
-  const shown = roles ? filterRoles(roles, query) : [];
+  const shown = roles ? filterRolesByPay(filterRoles(roles, query), payFilter) : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,6 +44,7 @@ export default function RolesPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+        <PayRateFilter value={payFilter} onChange={setPayFilter} />
       </div>
 
       {failed ? (
@@ -58,7 +62,7 @@ export default function RolesPage() {
         </div>
       ) : shown.length === 0 ? (
         <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No roles available right now.
+          {roles.length > 0 ? "No roles match your search or pay filter." : "No roles available right now."}
         </p>
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -70,7 +74,7 @@ export default function RolesPage() {
               >
                 <div className="flex flex-col gap-1">
                   <span className="text-lg font-semibold leading-snug">{r.title}</span>
-                  <span className="text-sm font-medium text-primary">Pay rate: {r.payRate}</span>
+                  <span className="text-sm font-medium text-primary">Pay rate: {formatPayRate(r)}</span>
                   {r.jobType && <span className="text-sm text-muted-foreground">{r.jobType}</span>}
                 </div>
                 {r.about && (

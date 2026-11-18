@@ -7,6 +7,7 @@ import { Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRole, type Role } from "@/lib/candidate/api";
+import { formatPayRate } from "@/lib/candidate/pay";
 import { APPLICATION_STEPS, applyHref } from "@/lib/candidate/steps";
 import { createClient } from "@/lib/supabase/client";
 
@@ -81,7 +82,7 @@ export default function RoleDetailPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{role.title}</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Pay rate: {role.payRate}
+            Pay rate: {formatPayRate(role)}
           </p>
           {role.jobType && (
             <p className="text-sm text-muted-foreground">

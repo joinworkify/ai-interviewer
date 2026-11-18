@@ -2,7 +2,9 @@
   {
     "id": "software-engineer",
     "title": "Software Engineer",
-    "payRate": "$10~$15/Hour",
+    "payMin": 10,
+    "payMax": 15,
+    "payType": "hour",
     "jobType": "Contractor (~15 hrs a week)",
     "skills": [
       "Python",
@@ -58,7 +60,9 @@
   {
     "id": "data-annotation-generalist",
     "title": "Generalist for Data Annotation",
-    "payRate": "$21~$35/Hour",
+    "payMin": 21,
+    "payMax": 35,
+    "payType": "hour",
     "jobType": "Contractor (~15 hrs a week)",
     "skills": [
       "Annotation",
@@ -116,7 +120,9 @@
   {
     "id": "mechanical-engineering-expert",
     "title": "Mechanical Engineering Expert",
-    "payRate": "$60~$120/Hour",
+    "payMin": 60,
+    "payMax": 120,
+    "payType": "hour",
     "jobType": "Contractor (~15 hrs a week)",
     "skills": [
       "CAD",
@@ -166,7 +172,9 @@
   {
     "id": "senior-software-engineer",
     "title": "Senior Software Engineer",
-    "payRate": "$80~$120/Hour",
+    "payMin": 80,
+    "payMax": 120,
+    "payType": "hour",
     "jobType": "Contractor (~15 hrs a week)",
     "skills": [
       "System design",
@@ -217,7 +225,9 @@
   {
     "id": "generalist",
     "title": "Generalist",
-    "payRate": "$30~$49/Hour",
+    "payMin": 30,
+    "payMax": 49,
+    "payType": "hour",
     "jobType": "Contractor (~15 hrs a week)",
     "skills": [
       "Writing",
@@ -275,7 +285,9 @@
   {
     "id": "semiconductor-engineering-expert",
     "title": "Semiconductor Engineering Expert",
-    "payRate": "$85~$185/Hour",
+    "payMin": 85,
+    "payMax": 185,
+    "payType": "hour",
     "jobType": "Contractor (~15 hrs a week)",
     "skills": [
       "VLSI",
