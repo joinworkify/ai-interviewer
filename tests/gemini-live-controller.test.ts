@@ -631,15 +631,40 @@ describe("end_interview tool and time limit", () => {
     expect(session.closed).toBe(1);
   });
 
-  it("records non_english when the interviewer ends after repeated reminders", async () => {
+  const say = (session: FakeSession, text: string) => {
+    session.callbacks.onmessage({ serverContent: { inputTranscription: { text, finished: true } } });
+    session.callbacks.onmessage({ serverContent: { outputTranscription: { text: "Please answer in English." }, turnComplete: true } });
+  };
+
+  it("records non_english when the interviewer ends after three clearly non-English answers", async () => {
     const h = harness();
     const session = await startActive(h);
     h.players[0].remaining = 0;
+    say(session, "Hola, me llamo Juan y trabajo como ingeniero de datos.");
+    say(session, "Prefiero hablar en español porque es más fácil para mí.");
+    say(session, "Lo siento, no puedo responder en inglés ahora mismo.");
     session.callbacks.onmessage({
       toolCall: { functionCalls: [{ id: "c", name: "end_interview", args: { reason: "non_english" } }] },
     });
     await vi.advanceTimersByTimeAsync(10_000);
     expect(h.controller.getSnapshot()).toMatchObject({ phase: "ended", endReason: "non_english" });
+  });
+
+  it("refuses a non_english ending when the answers were short or accented English", async () => {
+    const h = harness();
+    const session = await startActive(h);
+    h.players[0].remaining = 0;
+    say(session, "las Andes");
+    say(session, "las Andy interview");
+    say(session, "Oh, ja.");
+    session.callbacks.onmessage({
+      toolCall: { functionCalls: [{ id: "c", name: "end_interview", args: { reason: "non_english" } }] },
+    });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(h.controller.getSnapshot().phase).toBe("active");
+    const reply = session.toolResponses[0].functionResponses![0].response as { output: { ended: boolean; instruction: string } };
+    expect(reply.output.ended).toBe(false);
+    expect(reply.output.instruction).toMatch(/repeat their answer/);
   });
 
   it("records interviewer_ended for any other end reason, and resets on the next start", async () => {

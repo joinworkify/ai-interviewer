@@ -1,3 +1,4 @@
+import { isClearlyNonEnglish } from "./language";
 import { INPUT_MIME_TYPE, MicChunkEncoder, parsePcmSampleRate } from "./audio";
 import {
   describeCloseEvent,
@@ -141,6 +142,11 @@ const CLOSING_MAX_MS = 10_000;
  * over it, and cut every turn off before a word was heard.
  */
 const ECHO_TAIL_MS = 500;
+
+/** Clearly non-English candidate answers needed before a "non_english" ending is allowed. */
+const NON_ENGLISH_ANSWERS_TO_END = 3;
+const NOT_NON_ENGLISH_TEXT =
+  "Do not end the interview. The candidate's answers were short or unclear, probably accented English, not another language. Say sorry, you may have misheard, ask them to repeat their answer, and continue the interview. Do not count this as a reminder.";
 
 const KICKOFF_TEXT =
   "The candidate has joined and is ready. Begin the interview now.";
@@ -508,6 +514,11 @@ export class LiveInterviewController {
     let endRequested = false;
     const functionResponses = calls.map((call) => {
       if (call.name === END_INTERVIEW_TOOL) {
+        // Only end for language when the captions back it up: accented English
+        // is often heard as another language, and a wrong kick-out is unfair.
+        if (call.args?.reason === "non_english" && this.nonEnglishAnswers() < NON_ENGLISH_ANSWERS_TO_END) {
+          return { id: call.id, name: call.name, response: { output: { ended: false, instruction: NOT_NON_ENGLISH_TEXT } } };
+        }
         endRequested = true;
         if (call.args?.reason === "non_english") this.closingReason = "non_english";
         return { id: call.id, name: call.name, response: { output: { ended: true } } };
@@ -524,6 +535,10 @@ export class LiveInterviewController {
       // Socket closing; onclose handles it.
     }
     if (endRequested && this.state.phase === "active") this.beginClosing();
+  }
+
+  private nonEnglishAnswers(): number {
+    return this.transcript.entries.filter((e) => e.speaker === "candidate" && isClearlyNonEnglish(e.text)).length;
   }
 
   /** Let the closing sentence finish playing, then end. Mic is released now. */
