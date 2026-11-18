@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Bot, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ export function GeminiInterview() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saved, setSaved] = useState<SaveTranscriptOutcome | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const logRef = useRef<HTMLDivElement>(null);
 
   // Stop the mic, socket and audio when leaving the page.
   useEffect(() => () => controller.dispose(), [controller]);
@@ -81,6 +82,12 @@ export function GeminiInterview() {
       () => setLoadError("Couldn't load this role. Please go back and try again."),
     );
   }, [attemptId, roleId]);
+
+  // Keep the newest words in view as the conversation grows.
+  useEffect(() => {
+    const log = logRef.current;
+    if (log) log.scrollTop = log.scrollHeight;
+  }, [state.transcript]);
 
   const timing = state.phase === "active" || state.phase === "closing";
   useEffect(() => {
@@ -124,7 +131,6 @@ export function GeminiInterview() {
 
   const running = RUNNING.has(state.phase);
   const elapsed = state.startedAt === null ? 0 : (timing ? now : (state.endedAt ?? now)) - state.startedAt;
-  const lastInterviewerLine = [...state.transcript].reverse().find((t) => t.speaker === "interviewer")?.text;
 
   return (
     <div className="flex flex-col gap-4">
@@ -171,9 +177,30 @@ export function GeminiInterview() {
                     : "Thank you. Saving your interview…"
                   : STATUS_LABEL[state.phase]}
             </p>
-            <div className="w-full rounded-md border bg-muted/40 p-3 text-sm" aria-live="polite">
-              <span className="sr-only">Interviewer said: </span>
-              {lastInterviewerLine || "The interviewer's words will appear here."}
+            <div
+              ref={logRef}
+              role="log"
+              aria-label="Conversation"
+              className="flex max-h-80 w-full flex-col gap-2 overflow-y-auto rounded-md border bg-muted/40 p-3 text-sm"
+            >
+              {state.transcript.length === 0 ? (
+                <p className="text-muted-foreground">The conversation will appear here as you talk.</p>
+              ) : (
+                state.transcript.map((entry) => {
+                  const mine = entry.speaker === "candidate";
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                        mine ? "self-end bg-primary text-primary-foreground" : "self-start bg-background"
+                      } ${entry.final ? "" : "opacity-80"}`}
+                    >
+                      <span className="sr-only">{mine ? "You said: " : "Interviewer said: "}</span>
+                      {entry.text}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </>
         )}

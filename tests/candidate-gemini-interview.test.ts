@@ -140,9 +140,14 @@ describe("GeminiInterview (candidate)", () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).payload.endedReason).toBe("page_closed");
   });
 
-  it("shows the interviewer's last line and never the candidate's transcript", async () => {
+  it("shows the conversation live, including the candidate's words while they speak", async () => {
     await startInterview();
-    expect(container.textContent).toContain("Hello.");
-    expect(container.textContent).not.toContain("Hi there.");
+    const log = container.querySelector('[role="log"]')!;
+    expect(log.textContent).toContain("Interviewer said: Hello.");
+    expect(log.textContent).toContain("You said: Hi there.");
+    await act(async () => {
+      sessionCallbacks!.onmessage({ serverContent: { inputTranscription: { text: " I build APIs" } } });
+    });
+    expect(log.textContent).toContain("Hi there. I build APIs");
   });
 });
