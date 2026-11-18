@@ -1,3 +1,4 @@
+import JSZip from "jszip";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildCandidateQuestionsMessages } from "@/lib/ai/prompts/candidate-questions";
@@ -147,11 +148,33 @@ describe("resume text", () => {
     expect(await extractResumeText(pdf, "application/pdf")).toContain("Built REST APIs at Acme");
   });
 
-  it("returns null for a Word file (role-only questions for now)", async () => {
+  it("reads the text of a Word file", async () => {
     const docxType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    expect(await extractResumeText(new Uint8Array([80, 75, 3, 4]), docxType)).toBeNull();
+    expect(await extractResumeText(await minimalDocx("Led a data team at Acme"), docxType)).toBe("Led a data team at Acme");
+  });
+
+  it("returns null for other file types", async () => {
+    expect(await extractResumeText(new Uint8Array([1, 2, 3]), "image/png")).toBeNull();
   });
 });
+
+/** The smallest .docx Word opens: one paragraph of text. */
+async function minimalDocx(text: string): Promise<Uint8Array> {
+  const zip = new JSZip();
+  zip.file(
+    "[Content_Types].xml",
+    '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
+  );
+  zip.file(
+    "_rels/.rels",
+    '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="r1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
+  );
+  zip.file(
+    "word/document.xml",
+    `<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>${text}</w:t></w:r></w:p></w:body></w:document>`,
+  );
+  return zip.generateAsync({ type: "uint8array" });
+}
 
 /** A one-page PDF with a line of text, with a correct cross-reference table. */
 function minimalPdf(text: string): Uint8Array {

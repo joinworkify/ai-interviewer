@@ -6,8 +6,8 @@ const nextConfig: NextConfig = {
   // default for new projects (segments prefetch their static shell only).
   partialPrefetching: true,
   // pdfjs loads its worker file at run time; bundling it breaks that path
-  // (resume text for tailored questions).
-  serverExternalPackages: ["pdfjs-dist"],
+  // (resume text for tailored questions). mammoth reads Word resumes.
+  serverExternalPackages: ["pdfjs-dist", "mammoth"],
 };
 
 export default nextConfig;

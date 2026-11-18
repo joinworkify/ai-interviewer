@@ -8,6 +8,7 @@
 export const MAX_RESUME_TEXT_CHARS = 6_000;
 
 const PDF_TYPE = "application/pdf";
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 /** Collapses whitespace, removes control characters and caps the length. */
 export function cleanResumeText(raw: string): string {
@@ -39,12 +40,20 @@ async function pdfText(bytes: Uint8Array): Promise<string> {
   }
 }
 
+async function docxText(bytes: Uint8Array): Promise<string> {
+  const { default: mammoth } = await import("mammoth");
+  const result = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
+  return result.value;
+}
+
 /**
- * Text of a PDF resume, or null for other file types (Word resumes get
- * role-only questions) or when no text could be read (for example a scan).
+ * Text of a PDF or Word (.docx) resume, or null for other file types or when
+ * no text could be read (for example a scan).
  */
 export async function extractResumeText(bytes: Uint8Array, contentType: string): Promise<string | null> {
-  if (contentType !== PDF_TYPE) return null;
-  const text = cleanResumeText(await pdfText(bytes));
+  const raw =
+    contentType === PDF_TYPE ? await pdfText(bytes) : contentType === DOCX_TYPE ? await docxText(bytes) : null;
+  if (raw === null) return null;
+  const text = cleanResumeText(raw);
   return text.length > 0 ? text : null;
 }
