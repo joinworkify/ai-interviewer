@@ -2,6 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+// `after` only works inside a real request; capture what the route schedules.
+const afterCallbacks: (() => unknown)[] = [];
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: (fn: () => unknown) => void afterCallbacks.push(fn),
+}));
+
 const getClaims = vi.fn();
 const createClient = vi.fn(async () => ({ auth: { getClaims } }));
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
@@ -65,6 +72,7 @@ function signedInAs(sub: string) {
 }
 
 beforeEach(() => {
+  afterCallbacks.length = 0;
   createClient.mockClear();
   createAdminClient.mockClear();
   getClaims.mockReset();
@@ -147,6 +155,8 @@ describe("PUT /api/sessions/[id]/transcript", () => {
         ],
       }),
     );
+    // Clean-up and AI feedback are scheduled once, after the response.
+    expect(afterCallbacks).toHaveLength(1);
   });
 
   it("rejects a user id supplied in the body and never calls the database", async () => {

@@ -1,12 +1,19 @@
 import "server-only";
 
+import { after } from "next/server";
+
+import { createSupabaseUsageStore } from "@/lib/ai/usage";
 import { jsonResponse } from "@/lib/http/json";
+import { describeError } from "@/lib/log/safe-error";
+import { evaluateStoredSession } from "@/lib/sessions/auto-evaluate";
+import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import { defaultAdapters } from "./adapters";
 import type { TranscriptHandlerDeps } from "./handlers";
-import { createSupabaseTranscriptStore } from "./store";
+import { cleanTranscript } from "./cleanup";
+import { createSupabaseTranscriptStore, replaceStoredTranscript } from "./store";
 
 /**
  * Real dependencies for the transcript route. Identity comes from the
@@ -49,6 +56,29 @@ export async function runTranscriptRoute(
       },
       store: createSupabaseTranscriptStore(createAdminClient()),
       adapters: defaultAdapters,
+      // After the response: fix misheard captions, then write the AI feedback
+      // for reviewers (on the cleaned text). The user id is the verified one.
+      onStored: ({ userId, sessionId, transcript }) => {
+        after(async () => {
+          const admin = createAdminClient();
+          const usage = createSupabaseUsageStore(admin);
+          try {
+            const cleaned = await cleanTranscript({ env: process.env, usage }, userId, transcript);
+            if (cleaned) await replaceStoredTranscript(admin, sessionId, userId, cleaned);
+          } catch (err) {
+            console.error("[transcripts] clean-up failed", describeError(err));
+          }
+          try {
+            await evaluateStoredSession(userId, sessionId, {
+              env: process.env,
+              store: createSupabaseSessionStore(admin, async () => userId),
+              usage,
+            });
+          } catch (err) {
+            console.error("[transcripts] evaluation failed", describeError(err));
+          }
+        });
+      },
     });
   } catch {
     console.error("[transcripts] unhandled error");

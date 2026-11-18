@@ -11,6 +11,8 @@ export interface CanonicalTurn {
   text: string;
   /** ISO timestamp, when the provider reports one. */
   at?: string;
+  /** The raw caption, kept when the AI clean-up corrected `text` (see cleanup.ts). */
+  original?: string;
 }
 
 /**

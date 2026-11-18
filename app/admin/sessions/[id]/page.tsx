@@ -149,6 +149,12 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                       {ai ? "AI interviewer" : t.role === "candidate" ? "Candidate" : "Speaker"}
                     </div>
                     <p className="whitespace-pre-wrap">{t.text}</p>
+                    {t.original && (
+                      <details className="mt-1 text-xs text-muted-foreground">
+                        <summary className="cursor-pointer">Corrected by AI: show original caption</summary>
+                        <p className="mt-1 whitespace-pre-wrap">{t.original}</p>
+                      </details>
+                    )}
                   </div>
                 </li>
               );

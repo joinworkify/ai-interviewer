@@ -27,6 +27,24 @@ export interface TranscriptStore {
   storeOnce(input: StoreTranscriptInput): Promise<StoreTranscriptOutcome>;
 }
 
+/**
+ * Replaces the saved transcript with the cleaned-up one (cleanup.ts). Only
+ * the user's own session is touched; the original captions travel inside it.
+ */
+export async function replaceStoredTranscript(
+  admin: SupabaseClient<Database>,
+  sessionId: string,
+  userId: string,
+  transcript: CanonicalTurn[],
+): Promise<void> {
+  const { error } = await admin
+    .from("interview_sessions")
+    .update({ transcript: transcript as unknown as Json })
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+  if (error) fail("replaceStoredTranscript", error.message);
+}
+
 function fail(op: string, message: string): never {
   console.error(`[transcripts] ${op} failed:`, message);
   throw new TranscriptStoreError(`${op} failed`);
