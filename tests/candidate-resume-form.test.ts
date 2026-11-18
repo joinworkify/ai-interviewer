@@ -4,6 +4,7 @@ import {
   formatFileSize,
   linkError,
   phoneError,
+  phoneInputFromProfile,
   resumeFileError,
 } from "@/lib/candidate/resume-form";
 
@@ -36,6 +37,23 @@ describe("optional fields", () => {
     expect(linkError("https://linkedin.com/in/someone")).toBeNull();
     expect(linkError("linkedin.com/in/someone")).not.toBeNull();
     expect(linkError("javascript:alert(1)")).not.toBeNull();
+  });
+});
+
+describe("phoneInputFromProfile", () => {
+  it("splits a saved international number into country code and national number", () => {
+    expect(phoneInputFromProfile("+95 9-123-456-78")).toEqual({
+      dialCode: "+95",
+      phone: "912345678",
+    });
+  });
+
+  it("uses the default country for a saved national number or an empty value", () => {
+    expect(phoneInputFromProfile("2015550123")).toEqual({
+      dialCode: "+1",
+      phone: "2015550123",
+    });
+    expect(phoneInputFromProfile(null)).toEqual({ dialCode: "+1", phone: "" });
   });
 });
 

@@ -31,6 +31,26 @@ export function getCountryConfig(dialCode: string): CountryPhoneConfig {
   );
 }
 
+export function phoneInputFromProfile(phone: string | null | undefined): {
+  dialCode: string;
+  phone: string;
+} {
+  const normalized = phone?.trim() ?? "";
+  const digits = normalized.replace(/\D/g, "");
+  const country = normalized.startsWith("+")
+    ? [...COUNTRY_PHONE_CONFIGS]
+        .sort((a, b) => b.dialCode.length - a.dialCode.length)
+        .find(({ dialCode }) => normalized.startsWith(dialCode))
+    : undefined;
+
+  return {
+    dialCode: country?.dialCode ?? DEFAULT_DIAL_CODE,
+    phone: country
+      ? digits.slice(country.dialCode.replace(/\D/g, "").length)
+      : digits,
+  };
+}
+
 export function validatePhoneNumber(
   rawPhone: string,
   dialCode: string = DEFAULT_DIAL_CODE
