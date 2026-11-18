@@ -53,10 +53,38 @@ Copy `.env.example` to `.env.local` (`npm run setup:env` does this).
 | `npm run supabase:start` / `stop` / `status`        | Local Supabase (Docker)         |
 | `npm run db:push` / `db:reset` / `db:new -- <name>` | Apply or create migrations      |
 | `npm run db:migrate` / `db:seed`                    | Local DB: apply new migrations, load `supabase/seed.sql` (keeps existing data) |
+| `npm run admin:create`                              | Create or update an admin account (see below)   |
 
-`db:reset` also loads `supabase/seed.sql` (the candidate roles). To add them to a running local database without wiping it: `npm run db:migrate && npm run db:seed`.
+`npm run db:reset` also loads [`supabase/seed.sql`](supabase/seed.sql): fake data,
+the candidate roles and three dev logins (`dev@example.test`,
+`priya.nair@example.test` and `admin@example.test`, all with the password
+`test123!`). The admin login opens `/admin`. It is local only and never runs on
+`db:push`. To load it without a reset, run `npm run db:migrate && npm run db:seed`
+(or `docker exec -i supabase_db_ai-interviewer psql -U postgres < supabase/seed.sql`).
 
-`npm run db:reset` also loads [`supabase/seed.sql`](supabase/seed.sql): fake data and two dev logins (`dev@example.test` and `priya.nair@example.test`, both with the password `test123!`). It is local only and never runs on `db:push`. To load it without a reset: `docker exec -i supabase_db_ai-interviewer psql -U postgres < supabase/seed.sql`.
+## Admin dashboard
+
+`/admin` is for reviewers. Access is decided by the Supabase user's
+`app_metadata.role`: only verified claims with `role: "admin"` get in (see
+`lib/admin/access.ts`). Users can edit `user_metadata` but never `app_metadata`,
+so the flag cannot be raised from a browser, and no extra column or RLS policy
+is needed. Non-admins get a 404, and every admin page and API route re-checks on
+the server.
+
+Create or update an admin against the project in `.env.local`:
+
+```bash
+# add ADMIN_EMAIL and ADMIN_PASSWORD to .env.local first
+npm run admin:create
+```
+
+The script confirms the email, sets the password and sets
+`app_metadata.role = "admin"`; running it again updates the same user. For the
+hosted project, run it with production values for `NEXT_PUBLIC_SUPABASE_URL`
+and `SUPABASE_SECRET_KEY`. Never commit the password or the secret key.
+
+The local seed already creates `admin@example.test` / `test123!` with the role
+set, so a hosted environment only needs `npm run admin:create`.
 
 ## Project layout
 

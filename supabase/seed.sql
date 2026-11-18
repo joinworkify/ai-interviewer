@@ -8,22 +8,26 @@
 -- Dev login: dev@example.test / test123!
 -- Second user (to check that users only see their own rows):
 --            priya.nair@example.test / test123!
+-- Admin (opens /admin): admin@example.test / test123!
 --
 -- All data is fake. Safe to run more than once: fixed ids and
--- "on conflict do nothing". The two users are the exception: they are upserted,
--- so running the seed again also resets their password. Every insert lists its
+-- "on conflict do nothing". The three users are the exception: they are
+-- upserted, so running the seed again also resets their password and
+-- app_metadata (the admin's role included). Every insert lists its
 -- columns, so a column added later (nullable or with a default) does not break
 -- this file. When a migration renames or drops a column, or adds a NOT NULL
 -- column without a default, tests/db/seed.test.ts fails; update the matching
 -- insert here.
 --
--- Two rows per table (the roles catalogue excepted: it is generated from
--- lib/candidate/roles.json). Each user has one interview with a completed
--- Gemini Live session, its feedback and one AI usage row, so the dev user can
--- be checked against the other user's rows.
+-- Two rows per table for the two candidate users (the roles catalogue
+-- excepted: it is generated from lib/candidate/roles.json). The admin has no
+-- interviews, so it only adds an auth user and a profile. Each candidate has
+-- one interview with a completed Gemini Live session, its feedback and one AI
+-- usage row, so the dev user can be checked against the other user's rows.
 --
--- Ids use a d0..dd prefix for the dev user and e0..e4 for the second user, so
--- they never collide with the fixed ids in tests/helpers/psql.ts.
+-- Ids use a d0..dd prefix for the dev user, e0..e4 for the second user and an
+-- f0 prefix for the admin, so they never collide with the fixed ids in
+-- tests/helpers/psql.ts.
 
 -- ---------------------------------------------------------------------------
 -- Users. The handle_new_user trigger creates the matching profiles row.
@@ -59,10 +63,24 @@ insert into auth.users (
     '{"name":"Priya Nair"}',
     now(), now(),
     '', '', '', '', ''
+  ),
+  (
+    'f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'admin@example.test',
+    crypt('test123!', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"],"role":"admin"}',
+    '{"name":"DataSea Admin"}',
+    now(), now(),
+    '', '', '', '', ''
   )
 on conflict (id) do update set
   encrypted_password = excluded.encrypted_password,
   raw_user_meta_data = excluded.raw_user_meta_data,
+  raw_app_meta_data  = excluded.raw_app_meta_data,
   created_at         = coalesce(auth.users.created_at, excluded.created_at),
   updated_at         = excluded.updated_at;
 
@@ -82,6 +100,12 @@ values
     'e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0',
     'e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0',
     '{"sub":"e0e0e0e0-e0e0-4e0e-8e0e-e0e0e0e0e0e0","email":"priya.nair@example.test","email_verified":true}',
+    'email', now(), now()
+  ),
+  (
+    'f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0',
+    'f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0',
+    '{"sub":"f0f0f0f0-f0f0-4f0f-8f0f-f0f0f0f0f0f0","email":"admin@example.test","email_verified":true}',
     'email', now(), now()
   )
 on conflict (provider_id, provider) do update set

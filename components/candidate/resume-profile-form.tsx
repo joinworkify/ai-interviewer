@@ -34,6 +34,13 @@ export function ResumeProfileForm({ initialProfile }: Props) {
     };
   }, [photoPreview]);
 
+  useEffect(() => {
+    if (!message) return;
+
+    const timeout = setTimeout(() => setMessage(""), 4000);
+    return () => clearTimeout(timeout);
+  }, [message]);
+
   function handlePhotoChange(file: File | undefined) {
     if (!file) return;
 
@@ -63,7 +70,9 @@ export function ResumeProfileForm({ initialProfile }: Props) {
     } catch (err) {
       setIsSaving(false);
       setErrorMessage(
-        err instanceof ProfileSaveError ? err.message : "Could not save your profile.",
+        err instanceof ProfileSaveError
+          ? err.message
+          : "Could not save your profile.",
       );
       return;
     }
@@ -77,7 +86,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
       <div className="mb-8">
         <Link
           href="/candidate/roles"
-          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+          className="text-sm font-medium text-[#800020] hover:text-[#660019]"
         >
           ← Back to Roles
         </Link>
@@ -246,7 +255,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-[#800020] px-6 py-3 text-sm font-semibold text-white hover:bg-[#660019] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Saving..." : "Save Profile"}
           </button>
