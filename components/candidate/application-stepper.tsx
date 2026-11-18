@@ -25,7 +25,7 @@ export function ApplicationStepper() {
   const summary = current ? `Step ${currentIndex + 1} of ${total}: ${current.label}` : "All steps complete";
 
   return (
-    <nav aria-label="Application progress" className="mx-auto mb-8 w-full max-w-3xl">
+    <nav aria-label="Application progress" className="mx-auto mb-8 w-full max-w-3xl font-ui">
       {/* Phones: one line and a bar. */}
       <div className="sm:hidden">
         <p className="text-sm font-medium">{summary}</p>

@@ -1,9 +1,11 @@
+
 "use client";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Share2 } from "lucide-react";
+import { Check, Share2 } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRole, type Role } from "@/lib/candidate/api";
@@ -12,15 +14,18 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function RoleDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [role, setRole] = useState<Role | null>(null);
   const router = useRouter();
+  const [role, setRole] = useState<Role | null>(null);
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [shareStatus, setShareStatus] = useState("");
+
+  const [copied, setCopied] = useState(false);
+  const [shareError, setShareError] = useState("");
 
   useEffect(() => {
     getRole(id).then(setRole, (e: Error) => setError(e.message));
+
   }, [id]);
 
   // This page is public: signed-out visitors log in first, then land on the resume step.
@@ -41,14 +46,16 @@ export default function RoleDetailPage() {
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      setShareStatus("Link copied!");
-    } catch {
-      setShareStatus("Unable to copy link.");
-    }
 
-    setTimeout(() => {
-      setShareStatus("");
-    }, 2000);
+      setCopied(true);
+      setShareError("");
+
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 3000);
+    } catch {
+      setShareError("Unable to copy link. Please try again.");
+    }
   };
 
   if (error) {
@@ -61,13 +68,15 @@ export default function RoleDetailPage() {
       </div>
     );
   }
-  if (!role)
+
+  if (!role) {
     return (
       <div
         className="h-64 animate-pulse rounded-lg bg-muted"
         aria-busy="true"
       />
     );
+  }
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-14">
@@ -78,17 +87,23 @@ export default function RoleDetailPage() {
         >
           ← All roles
         </Link>
+
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{role.title}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {role.title}
+          </h1>
+
           <p className="mt-3 text-sm text-muted-foreground">
             Pay rate: {role.payRate}
           </p>
+
           {role.jobType && (
             <p className="text-sm text-muted-foreground">
               Job type: {role.jobType}
             </p>
           )}
         </div>
+
         {role.skills.length > 0 && (
           <div className="flex flex-wrap gap-2.5">
             {role.skills.map((s) => (
@@ -98,13 +113,21 @@ export default function RoleDetailPage() {
             ))}
           </div>
         )}
+
         {role.about && (
           <section>
-            <h2 className="mb-3 text-lg font-semibold">About the role</h2>
+            <h2 className="mb-3 text-lg font-semibold">
+              About the role
+            </h2>
             <p className="text-[15px] leading-7">{role.about}</p>
           </section>
         )}
-        <Section title="Key Responsibilities" items={role.responsibilities} />
+
+        <Section
+          title="Key Responsibilities"
+          items={role.responsibilities}
+        />
+
         <Section
           title="Required Skills & Qualifications"
           items={role.requirements}
@@ -112,36 +135,63 @@ export default function RoleDetailPage() {
 
         <div className="flex justify-end border-t pt-4">
           <div className="flex flex-col items-end gap-1">
-            <Button variant="outline" onClick={handleShare}>
-              <Share2 className="mr-2 h-4 w-4" />
-              Share
+            <Button
+              variant="outline"
+              onClick={handleShare}
+              disabled={copied}
+            >
+              {copied ? (
+                <>
+                  <Check className="mr-2 h-4 w-4 text-green-600" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share
+                </>
+              )}
             </Button>
 
-            {shareStatus && (
-              <span role="status" className="text-xs text-muted-foreground">
-                {shareStatus}
+            {shareError && (
+              <span
+                role="alert"
+                className="text-xs text-destructive"
+              >
+                {shareError}
               </span>
             )}
           </div>
-        </div></article>
+        </div>
+      </article>
 
       <aside className="h-fit rounded-xl border bg-card p-6 shadow-sm lg:sticky lg:top-6">
-        <section aria-labelledby="how-it-works" className="mb-6 border-b pb-6">
+        <section
+          aria-labelledby="how-it-works"
+          className="mb-6 border-b pb-6"
+        >
           <h2 id="how-it-works" className="mb-4 font-semibold">
             How applying works
           </h2>
+
           <ol className="flex flex-col gap-5">
             {APPLICATION_STEPS.map((step, i) => (
-              <li key={step.id} className="flex gap-3.5 text-sm">
+              <li
+                key={step.id}
+                className="flex gap-3.5 text-sm"
+              >
                 <span
                   aria-hidden="true"
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary text-xs font-semibold text-primary"
                 >
                   {i + 1}
                 </span>
+
                 <span>
                   <span className="font-medium">{step.label}</span>
-                  <span className="mt-0.5 block leading-6 text-muted-foreground">{step.description}</span>
+                  <span className="mt-0.5 block leading-6 text-muted-foreground">
+                    {step.description}
+                  </span>
                 </span>
               </li>
             ))}
@@ -166,6 +216,7 @@ function Section({
   return (
     <section>
       <h2 className="mb-4 text-lg font-semibold">{title}</h2>
+
       <ul className="flex list-disc flex-col gap-4 pl-5 text-[15px] leading-7 marker:text-muted-foreground">
         {items.map((i) => (
           <li key={i.title} className="pl-1">
