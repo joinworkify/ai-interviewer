@@ -9,7 +9,9 @@ describe("roleFromRow", () => {
     const role = roleFromRow({
       id: "x",
       title: "X",
-      pay_rate: "$1~$2/Hour",
+      pay_min: 1,
+      pay_max: 2,
+      pay_type: "hour",
       job_type: "",
       skills: ["Go"],
       about: "",
@@ -19,7 +21,9 @@ describe("roleFromRow", () => {
     expect(role).toEqual({
       id: "x",
       title: "X",
-      payRate: "$1~$2/Hour",
+      payMin: 1,
+      payMax: 2,
+      payType: "hour",
       jobType: undefined,
       skills: ["Go"],
       about: undefined,
@@ -33,7 +37,7 @@ describe("getRoles", () => {
   const row = (id: string, title: string, skills: string[] = []) => ({
     id,
     title,
-    pay_rate: "$1~$2/Hour",
+    pay_min: 1, pay_max: 2, pay_type: "hour",
     job_type: "",
     skills,
     about: "",
@@ -54,7 +58,7 @@ describe("getRoles", () => {
       {
         id: "x",
         title: "X",
-        payRate: "$1~$2/Hour",
+        payMin: 1, payMax: 2, payType: "hour",
         jobType: undefined,
         skills: ["TypeScript"],
         about: undefined,

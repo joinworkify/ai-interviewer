@@ -4,8 +4,12 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import RolesPage from "@/app/candidate/roles/page";
 
+const { roleRows, getRoles } = vi.hoisted(() => {
+  const roleRows = Array.from({ length: 15 }, (_, i) => ({ id: `role-${i}`, title: `Role ${i}`, payMin: i, payMax: i + 10, payType: "hour", skills: [], about: "" }));
+  return { roleRows, getRoles: vi.fn(async (query = "") => roleRows.filter((role) => role.title.includes(query))) };
+});
 vi.mock("@/lib/candidate/api", () => ({
-  getRoles: async () => Array.from({ length: 15 }, (_, i) => ({ id: `role-${i}`, title: `Role ${i}`, payRate: "$10/hour", skills: [], about: "" })),
+  getRoles,
   filterRoles: (roles: { title: string }[], query: string) => roles.filter((role) => role.title.includes(query)),
 }));
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -33,7 +37,39 @@ it("searching from page two returns to the first page of matching results", asyn
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Role 0");
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
+  await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
   expect(container.querySelectorAll("ul.grid > li")).toHaveLength(1);
   expect(container.textContent).toContain("Role 0");
   expect(container.textContent).toContain("Showing 1–1 of 1 roles");
+});
+
+it("applies pay filtering to DB results and resets page two", async () => {
+  await act(async () => (container.querySelector('[aria-label="Go to page 2"]') as HTMLElement).click());
+  const input = container.querySelector('input[type="number"]')!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "24");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  expect(container.querySelectorAll("ul.grid > li")).toHaveLength(1);
+  expect(container.textContent).toContain("Role 14");
+  expect(container.textContent).toContain("Showing 1–1 of 1 roles");
+});
+
+it("keeps the latest database search when an older request resolves late", async () => {
+  let finishOld!: (rows: typeof roleRows) => void;
+  getRoles.mockImplementationOnce(() => new Promise((resolve) => { finishOld = resolve; }));
+  const input = container.querySelector('[aria-label="Search jobs"]')!;
+  const search = async (value: string) => {
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 300)); });
+  };
+  await search("Role 1");
+  await search("Role 0");
+  expect(container.querySelectorAll("ul.grid > li")).toHaveLength(1);
+  await act(async () => finishOld(roleRows));
+  expect(container.querySelectorAll("ul.grid > li")).toHaveLength(1);
+  expect(container.querySelector("ul.grid")?.textContent).toContain("Role 0");
 });

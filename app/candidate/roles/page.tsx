@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getRoles, type Role } from "@/lib/candidate/api";
+import { PayRateFilter } from "@/components/candidate/pay-rate-filter";
+import { EMPTY_PAY_FILTER, filterRolesByPay, formatPayRate, type PayFilter } from "@/lib/candidate/pay";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
+const PAGE_SIZE = 14;
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -15,6 +19,8 @@ type Results = { term: string; roles: Role[] };
 
 export default function RolesPage() {
   const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [payFilter, setPayFilter] = useState<PayFilter>(EMPTY_PAY_FILTER);
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<Results | null>(null);
   const [searching, setSearching] = useState(true);
@@ -35,6 +41,7 @@ export default function RolesPage() {
       (roles) => {
         if (id !== requestId.current) return;
         setResults({ term: searchTerm, roles });
+        setCurrentPage(1);
         setSearching(false);
       },
       () => {
@@ -52,20 +59,25 @@ export default function RolesPage() {
     load(term);
   };
 
+  const shown = filterRolesByPay(results?.roles ?? [], payFilter);
+  const totalPages = Math.ceil(shown.length / PAGE_SIZE);
+  const page = Math.min(currentPage, Math.max(1, totalPages));
+  const paginatedRoles = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight">
           Explore open roles
         </h1>
-        {results && results.roles.length > 0 && (
+        {results && shown.length > 0 && (
           <p className="-mt-2 text-sm text-muted-foreground" role="status">
             {results.term
-              ? `${results.roles.length} matching ${
-                  results.roles.length === 1 ? "role" : "roles"
+              ? `${shown.length} matching ${
+                  shown.length === 1 ? "role" : "roles"
                 }`
-              : `${results.roles.length} ${
-                  results.roles.length === 1 ? "role" : "roles"
+              : `${shown.length} ${
+                  shown.length === 1 ? "role" : "roles"
                 } open for interviews`}
           </p>
         )}
@@ -88,6 +100,7 @@ export default function RolesPage() {
             />
           )}
         </div>
+        <PayRateFilter value={payFilter} onChange={(value) => { setPayFilter(value); setCurrentPage(1); }} />
       </div>
 
       {failed ? (
@@ -106,7 +119,7 @@ export default function RolesPage() {
             <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
           ))}
         </div>
-      ) : results.roles.length === 0 ? (
+      ) : shown.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
           {results.term ? (
             <>
@@ -116,7 +129,10 @@ export default function RolesPage() {
               </Button>
             </>
           ) : (
-            <p role="status">No roles available right now.</p>
+            <>
+              <p role="status">{results.roles.length > 0 ? "No roles match your pay filter." : "No roles available right now."}</p>
+              {results.roles.length > 0 && <Button variant="outline" onClick={() => { setPayFilter(EMPTY_PAY_FILTER); setCurrentPage(1); }}>Clear pay filter</Button>}
+            </>
           )}
         </div>
       ) : (
@@ -126,18 +142,18 @@ export default function RolesPage() {
             searching ? "opacity-60" : ""
           }`}
         >
-          {results.roles.map((r) => (
+          {paginatedRoles.map((r) => (
             <li key={r.id}>
               <Link
                 href={`/candidate/roles/${r.id}`}
-                className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-white p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex flex-col gap-1">
-                  <span className="text-xl font-semibold leading-snug">
+                  <span className="font-heading text-xl font-semibold leading-snug">
                     {r.title}
                   </span>
                   <span className="text-sm font-medium text-primary">
-                    Pay rate: {r.payRate}
+                    Pay rate: {formatPayRate(r)}
                   </span>
                   {r.jobType && (
                     <span className="text-sm text-muted-foreground">
@@ -181,6 +197,16 @@ export default function RolesPage() {
             </li>
           ))}
         </ul>
+      )}
+      {shown.length > 0 && (
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm text-muted-foreground">Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, shown.length)} of {shown.length} roles</p>
+          {totalPages > 1 && <Pagination><PaginationContent>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+              <PaginationItem key={n}><PaginationLink href="#" aria-label={`Go to page ${n}`} isActive={page === n} onClick={(event) => { event.preventDefault(); setCurrentPage(n); }}>{n}</PaginationLink></PaginationItem>
+            ))}
+          </PaginationContent></Pagination>}
+        </div>
       )}
     </div>
   );

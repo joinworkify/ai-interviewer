@@ -11,10 +11,10 @@ import { dbAvailable, runSql } from "../helpers/psql";
 const HAS_DB = dbAvailable();
 
 const FIXTURE = `
-insert into public.roles (id, title, pay_rate, job_type, skills, is_active, sort_order) values
-  ('db-search-second', 'Second Search Role', '$2/Hour', 'Contractor', array['PostgreSQL'], true, 2),
-  ('db-search-first', 'First Search Role', '$1/Hour', 'Contractor', array['Search'], true, 1),
-  ('db-search-hidden', 'Hidden Search Role', '$3/Hour', 'Contractor', array['PostgreSQL'], false, 0)
+insert into public.roles (id, title, pay_min, pay_max, pay_type, job_type, skills, is_active, sort_order) values
+  ('db-search-second', 'Second Search Role', 2, 3, 'hour', 'Contractor', array['PostgreSQL'], true, 2),
+  ('db-search-first', 'First Search Role', 1, 2, 'hour', 'Contractor', array['Search'], true, 1),
+  ('db-search-hidden', 'Hidden Search Role', 3, 4, 'hour', 'Contractor', array['PostgreSQL'], false, 0)
 on conflict (id) do update set
   title = excluded.title,
   skills = excluded.skills,

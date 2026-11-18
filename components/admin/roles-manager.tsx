@@ -18,6 +18,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { formatPayRate, validatePayRate, type PayType } from "@/lib/candidate/pay";
+
 type Bullet = {
   title: string;
   text: string;
@@ -26,7 +28,9 @@ type Bullet = {
 type Role = {
   id: string;
   title: string;
-  pay_rate: string;
+  pay_min: number;
+  pay_max: number;
+  pay_type: PayType;
   job_type: string;
   skills: string[];
   about: string;
@@ -41,7 +45,9 @@ type Role = {
 type RoleForm = {
   id: string;
   title: string;
-  pay_rate: string;
+  pay_min: string;
+  pay_max: string;
+  pay_type: PayType;
   job_type: string;
   skills: string;
   about: string;
@@ -61,7 +67,9 @@ type ApiResponse = {
 const emptyForm: RoleForm = {
   id: "",
   title: "",
-  pay_rate: "",
+  pay_min: "",
+  pay_max: "",
+  pay_type: "hour",
   job_type: "",
   skills: "",
   about: "",
@@ -101,7 +109,9 @@ function roleToForm(role: Role): RoleForm {
   return {
     id: role.id,
     title: role.title,
-    pay_rate: role.pay_rate,
+    pay_min: String(role.pay_min),
+    pay_max: String(role.pay_max),
+    pay_type: role.pay_type,
     job_type: role.job_type,
     skills: role.skills.join(", "),
     about: role.about ?? "",
@@ -219,7 +229,7 @@ export function RolesManager() {
     setError("");
     setSuccess("");
 
-    if (!form.title.trim() || !form.pay_rate.trim() || !form.job_type.trim()) {
+    if (!form.title.trim() || Object.keys(validatePayRate({ min: form.pay_min, max: form.pay_max, type: form.pay_type })).length > 0 || !form.job_type.trim()) {
       setError("Please complete the title, pay rate, and job type.");
       return;
     }
@@ -232,7 +242,9 @@ export function RolesManager() {
     const payload = {
       ...(editingId ? {} : { id: form.id.trim() }),
       title: form.title.trim(),
-      pay_rate: form.pay_rate.trim(),
+      pay_min: Number(form.pay_min),
+      pay_max: Number(form.pay_max),
+      pay_type: form.pay_type,
       job_type: form.job_type.trim(),
       skills: form.skills
         .split(",")
@@ -468,15 +480,11 @@ export function RolesManager() {
                 <label htmlFor="role-pay" className="text-sm font-medium">
                   Pay rate *
                 </label>
-                <input
-                  id="role-pay"
-                  required
-                  maxLength={60}
-                  value={form.pay_rate}
-                  onChange={(event) => updateForm("pay_rate", event.target.value)}
-                  placeholder="$10~$15/Hour"
-                  className="h-10 w-full rounded-md border bg-white px-3 text-sm"
-                />
+                <div className="flex gap-2">
+                  <input id="role-pay" aria-label="Minimum pay" type="number" min="0" step="0.01" required value={form.pay_min} onChange={(event) => updateForm("pay_min", event.target.value)} className="h-10 w-24 rounded-md border px-3 text-sm" />
+                  <input aria-label="Maximum pay" type="number" min="0" step="0.01" required value={form.pay_max} onChange={(event) => updateForm("pay_max", event.target.value)} className="h-10 w-24 rounded-md border px-3 text-sm" />
+                  <select aria-label="Pay type" value={form.pay_type} onChange={(event) => updateForm("pay_type", event.target.value as PayType)} className="h-10 rounded-md border px-3 text-sm"><option value="hour">Per hour</option><option value="task">Per task</option></select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -688,7 +696,7 @@ export function RolesManager() {
                   </td>
 
                   <td className="whitespace-nowrap px-4 py-3">
-                    {role.pay_rate}
+                    {formatPayRate({ payMin: role.pay_min, payMax: role.pay_max, payType: role.pay_type })}
                   </td>
 
                   <td className="px-4 py-3">{role.job_type}</td>

@@ -80,7 +80,7 @@ async function AdminPageContent({
           <Link
             key={s}
             href={statusFilter === s ? "/admin" : `/admin?status=${s}`}
-            className={`rounded-xl border bg-white p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
+            className={`rounded-xl border bg-card p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
           >
             <div className="text-sm text-muted-foreground">
               {REVIEW_STATUS_LABELS[s]}
@@ -92,9 +92,9 @@ async function AdminPageContent({
 
       <AdminFilters />
 
-      <div className="overflow-x-auto rounded-xl border bg-white">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-left text-sm">
-          <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="border-b bg-muted/40 font-ui text-xs uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Candidate</th>
               <th className="px-4 py-3">Role</th>

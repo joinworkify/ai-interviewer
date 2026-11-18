@@ -75,12 +75,18 @@ describe("roles search migration", () => {
 describe("roles seed", () => {
   const all = read("../supabase/seed.sql");
   const seed = all.slice(all.indexOf("-- BEGIN candidate roles"), all.indexOf("-- END candidate roles"));
-  const rows = [...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*'([^']+)'/g)].map(
-    ([, id, title, payRate]) => ({ id, title, payRate }),
-  );
+  const rows = [
+    ...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*([\d.]+),\s*([\d.]+),\s*'(hour|task)'/g),
+  ].map(([, id, title, min, max, type]) => ({
+    id,
+    title,
+    payMin: Number(min),
+    payMax: Number(max),
+    payType: type,
+  }));
 
   it("seeds candidate roles", () => {
-    expect(rows.length).toBeGreaterThan(0);
+    expect(rows).toHaveLength(16);
   });
 
   it("can be re-run without duplicates", () => {

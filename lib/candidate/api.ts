@@ -14,6 +14,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/client";
 import { CONSENT_VERSION } from "./consent";
+import type { PayType } from "./pay";
 import type { Database } from "@/types/database";
 
 type RoleRow = Database["public"]["Tables"]["roles"]["Row"];
@@ -23,7 +24,9 @@ type Bullet = { title: string; text: string };
 export interface Role {
   id: string;
   title: string;
-  payRate: string;
+  payMin: number;
+  payMax: number;
+  payType: PayType;
   jobType?: string;
   skills: string[];
   about?: string;
@@ -58,7 +61,7 @@ export class ApiError extends Error {
 }
 
 const ROLE_COLUMNS =
-  "id, title, pay_rate, job_type, skills, about, responsibilities, requirements";
+  "id, title, pay_min, pay_max, pay_type, job_type, skills, about, responsibilities, requirements";
 
 /** Maps a public.roles row to the shape the screens use. */
 export function roleFromRow(
@@ -66,7 +69,9 @@ export function roleFromRow(
     RoleRow,
     | "id"
     | "title"
-    | "pay_rate"
+    | "pay_min"
+    | "pay_max"
+    | "pay_type"
     | "job_type"
     | "skills"
     | "about"
@@ -79,7 +84,9 @@ export function roleFromRow(
   return {
     id: row.id,
     title: row.title,
-    payRate: row.pay_rate,
+    payMin: Number(row.pay_min),
+    payMax: Number(row.pay_max),
+    payType: row.pay_type === "task" ? "task" : "hour",
     jobType: row.job_type || undefined,
     skills: row.skills ?? [],
     about: row.about || undefined,
