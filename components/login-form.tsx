@@ -77,7 +77,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             <SocialAuthButtons next={next} />
             <div className="flex items-center gap-3" aria-hidden="true">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Or continue with email</span>
+              <span className="font-ui text-xs font-medium uppercase tracking-wider text-muted-foreground">Or continue with email</span>
               <div className="h-px flex-1 bg-border" />
             </div>
           </div>

@@ -25,10 +25,13 @@ export default function RolesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Explore open roles</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Explore open roles
+        </h1>
         {roles && roles.length > 0 && (
           <p className="-mt-2 text-sm text-muted-foreground">
-            {roles.length} {roles.length === 1 ? "role" : "roles"} open for interviews
+            {roles.length} {roles.length === 1 ? "role" : "roles"} open for
+            interviews
           </p>
         )}
         <div className="relative w-full max-w-xl">
@@ -51,7 +54,10 @@ export default function RolesPage() {
           </Button>
         </div>
       ) : roles === null ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+        <div
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-busy="true"
+        >
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
           ))}
@@ -69,28 +75,45 @@ export default function RolesPage() {
                 className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex flex-col gap-1">
-                  <span className="text-lg font-semibold leading-snug">{r.title}</span>
-                  <span className="text-sm font-medium text-primary">Pay rate: {r.payRate}</span>
-                  {r.jobType && <span className="text-sm text-muted-foreground">{r.jobType}</span>}
+                  <span className="font-heading text-lg font-semibold leading-snug">
+                    {r.title}
+                  </span>
+                  <span className="text-sm font-medium text-primary">
+                    Pay rate: {r.payRate}
+                  </span>
+                  {r.jobType && (
+                    <span className="text-sm text-muted-foreground">
+                      {r.jobType}
+                    </span>
+                  )}
                 </div>
                 {r.about && (
-                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{r.about}</p>
+                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
+                    {r.about}
+                  </p>
                 )}
                 {r.skills.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {r.skills.slice(0, 4).map((skill) => (
-                      <Badge key={skill} variant="outline" className="font-normal">
+                      <Badge
+                        key={skill}
+                        variant="outline"
+                        className="font-normal"
+                      >
                         {skill}
                       </Badge>
                     ))}
                     {r.skills.length > 4 && (
-                      <Badge variant="outline" className="font-normal text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className="font-normal text-muted-foreground"
+                      >
                         +{r.skills.length - 4}
                       </Badge>
                     )}
                   </div>
                 )}
-                <span className="mt-auto flex items-center justify-between pt-2 text-sm font-medium text-primary">
+                <span className="mt-auto flex items-center justify-between pt-2 font-ui text-sm font-medium text-primary">
                   View role
                   <span className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
                     <ChevronRight className="h-4 w-4" />

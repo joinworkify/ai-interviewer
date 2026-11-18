@@ -139,10 +139,10 @@ function ResumeStep() {
   // The resume is optional: an upload with no file chosen just skips it.
   const nameProblem = fullName.trim().length === 0 ? "Enter your full name." : null;
   const fieldClass = (invalid: boolean) =>
-    `w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none ${
+    `w-full rounded-xl border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none ${
       invalid
-        ? "border-red-500 focus:border-red-500"
-        : "border-slate-300 focus:border-[#7a1c2e]"
+        ? "border-destructive focus:border-destructive"
+        : "border-input focus:border-ring focus:ring-2 focus:ring-ring/20"
     }`;
   const canContinue =
     !submitting &&
@@ -152,11 +152,11 @@ function ResumeStep() {
     !portfolioProblem;
 
   return (
-    <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-      <h1 className="mb-6 text-center text-3xl font-bold text-slate-900">
+    <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <h1 className="mb-6 text-center text-3xl font-bold text-foreground">
         Add your resume
       </h1>
-      <p className="-mt-3 mb-6 text-center text-sm text-slate-600">
+      <p className="-mt-3 mb-6 text-center text-sm text-muted-foreground">
         This step is optional. You can skip it and continue to consent.
       </p>
 
@@ -194,7 +194,7 @@ function ResumeStep() {
       >
         {/* Full Name */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-900">
+          <label className="mb-2 block text-sm font-medium text-foreground">
             Full name *
           </label>
           <input
@@ -207,7 +207,7 @@ function ResumeStep() {
             className={fieldClass(touched.name && !!nameProblem)}
           />
           {touched.name && nameProblem && (
-            <p role="alert" className="mt-1.5 text-xs text-red-600">
+            <p role="alert" className="mt-1.5 text-xs text-destructive">
               {nameProblem}
             </p>
           )}
@@ -215,7 +215,7 @@ function ResumeStep() {
 
         {/* Phone (optional) with Flag + Dial Code Selector */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-900">
+          <label className="mb-2 block text-sm font-medium text-foreground">
             Phone (optional)
           </label>
           <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ function ResumeStep() {
           </div>
 
           {touched.phone && !phoneValidation.valid && (
-            <p role="alert" className="mt-1.5 text-xs text-red-600">
+            <p role="alert" className="mt-1.5 text-xs text-destructive">
               {phoneValidation.error}
             </p>
           )}
@@ -249,15 +249,15 @@ function ResumeStep() {
 
         {/* Resume (optional) */}
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-slate-900">
+          <label className="block text-sm font-medium text-foreground">
             Resume (optional)
           </label>
 
           {/* Saved resumes: one row each, pick one or delete it */}
           {resumes.length === 0 ? (
-            <div className="cursor-not-allowed rounded-2xl border border-slate-200 p-4 opacity-60">
-              <label className="flex items-center gap-3 text-sm font-medium text-slate-900">
-                <input type="radio" name="resumeOption" disabled className="h-4 w-4 accent-[#7a1c2e]" />
+            <div className="cursor-not-allowed rounded-2xl border border-border p-4 opacity-60">
+              <label className="flex items-center gap-3 text-sm font-medium text-foreground">
+                <input type="radio" name="resumeOption" disabled className="h-4 w-4 accent-primary" />
                 <span>Use saved resume (none saved yet)</span>
               </label>
             </div>
@@ -272,10 +272,10 @@ function ResumeStep() {
                     setResumeOption("saved");
                   }}
                   className={`flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition ${
-                    chosen ? "border-[#7a1c2e]" : "border-slate-200"
+                    chosen ? "border-primary" : "border-border"
                   }`}
                 >
-                  <label className="flex min-w-0 cursor-pointer items-center gap-3 text-sm font-medium text-slate-900">
+                  <label className="flex min-w-0 cursor-pointer items-center gap-3 text-sm font-medium text-foreground">
                     <input
                       type="radio"
                       name="resumeOption"
@@ -284,10 +284,10 @@ function ResumeStep() {
                         setSelectedId(resume.id);
                         setResumeOption("saved");
                       }}
-                      className="h-4 w-4 shrink-0 accent-[#7a1c2e]"
+                      className="h-4 w-4 shrink-0 accent-primary"
                     />
                     <span className="truncate">Use saved resume ({resume.fileName})</span>
-                    <span className="shrink-0 text-xs font-normal text-slate-500">
+                    <span className="shrink-0 text-xs font-normal text-muted-foreground">
                       {formatFileSize(resume.size)}
                     </span>
                   </label>
@@ -299,7 +299,7 @@ function ResumeStep() {
                       void removeResume(resume);
                     }}
                     aria-label={`Delete ${resume.fileName}`}
-                    className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    className="shrink-0 rounded-lg border border-destructive/30 bg-background px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
                     {deletingId === resume.id ? "Deleting..." : "Delete"}
                   </button>
@@ -313,8 +313,8 @@ function ResumeStep() {
             onClick={() => setResumeOption("upload")}
             className={`rounded-2xl border p-5 transition ${
               resumeOption === "upload"
-                ? "border-[#7a1c2e]"
-                : "border-slate-200"
+                ? "border-primary"
+                : "border-border"
             }`}
           >
             <label className="flex cursor-pointer items-start gap-3">
@@ -323,13 +323,13 @@ function ResumeStep() {
                 name="resumeOption"
                 checked={resumeOption === "upload"}
                 onChange={() => setResumeOption("upload")}
-                className="mt-1 h-4 w-4 accent-[#7a1c2e]"
+                className="mt-1 h-4 w-4 accent-primary"
               />
               <div>
-                <div className="text-sm font-medium text-slate-900">
+                <div className="text-sm font-medium text-foreground">
                   Upload a resume
                 </div>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   PDF or DOCX, one file, max 5 MB. It is saved to your profile as
                   soon as it uploads.
                 </p>
@@ -351,20 +351,20 @@ function ResumeStep() {
                   }}
                   aria-busy={uploading}
                   className={`flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center ${
-                    uploading ? "cursor-wait opacity-70" : "cursor-pointer hover:bg-slate-50"
+                    uploading ? "cursor-wait opacity-70" : "cursor-pointer hover:bg-muted/50"
                   } ${
                     dragging
-                      ? "border-[#7a1c2e] bg-rose-50"
-                      : "border-slate-300"
+                      ? "border-primary bg-primary/5"
+                      : "border-input"
                   }`}
                 >
-                  <span className="rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-[#7a1c2e]">
+                  <span className="rounded-lg bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                     {uploading ? "Uploading..." : "Upload file"}
                   </span>
-                  <span className="mt-2 text-xs text-slate-600">
+                  <span className="mt-2 text-xs text-muted-foreground">
                     or drag and drop a file here
                   </span>
-                  <span className="mt-1 text-xs text-slate-500">
+                  <span className="mt-1 text-xs text-muted-foreground">
                     PDF or DOCX, one file, max 5 MB
                   </span>
                   <input
@@ -380,10 +380,10 @@ function ResumeStep() {
                   />
                 </label>
                 {fileError && (
-                  <p className="mt-2 text-xs text-red-600">{fileError}</p>
+                  <p className="mt-2 text-xs text-destructive">{fileError}</p>
                 )}
 
-                <p className="mt-4 text-xs text-slate-600">
+                <p className="mt-4 text-xs text-muted-foreground">
                   Your resume is kept on your profile and can be reused for
                   future applications.
                 </p>
@@ -394,7 +394,7 @@ function ResumeStep() {
 
         {/* LinkedIn or portfolio link */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-900">
+          <label className="mb-2 block text-sm font-medium text-foreground">
             LinkedIn or portfolio link (optional)
           </label>
           <input
@@ -407,7 +407,7 @@ function ResumeStep() {
             className={fieldClass(touched.link && !!portfolioProblem)}
           />
           {touched.link && portfolioProblem && (
-            <p role="alert" className="mt-1.5 text-xs text-red-600">{portfolioProblem}</p>
+            <p role="alert" className="mt-1.5 text-xs text-destructive">{portfolioProblem}</p>
           )}
         </div>
 
@@ -417,7 +417,7 @@ function ResumeStep() {
             type="submit"
             // Not disabled for invalid input: clicking it reveals what to fix.
             disabled={submitting || !roleId}
-            className="rounded-xl bg-[#7a1c2e] px-10 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="rounded-xl bg-primary px-10 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {submitting ? "Uploading..." : "Continue"}
           </button>
@@ -425,12 +425,12 @@ function ResumeStep() {
             type="button"
             disabled={submitting || !roleId}
             onClick={() => router.push(nextStep())}
-            className="text-xs text-slate-500 hover:text-slate-700 hover:underline disabled:opacity-50"
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline disabled:opacity-50"
           >
             Skip this step
           </button>
           {submitError && (
-            <p role="alert" className="text-xs text-red-600">
+            <p role="alert" className="text-xs text-destructive">
               {submitError}
             </p>
           )}
@@ -440,11 +440,11 @@ function ResumeStep() {
                 ? `/candidate/roles/${encodeURIComponent(roleId)}`
                 : "/candidate/roles"
             }
-            className="text-xs text-slate-500 hover:text-slate-700 hover:underline"
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
           >
             Back to role
           </Link>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-muted-foreground">
             Fields marked * are required to save your details.
           </p>
         </div>

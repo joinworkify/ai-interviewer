@@ -226,7 +226,7 @@ export default function ApplicationsPage() {
 
                   <div className="flex flex-col items-start gap-3 sm:items-end">
                     <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium ${status.className}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-ui text-sm font-medium ${status.className}`}
                     >
                       <StatusIcon className="h-4 w-4" />
                       {status.label}

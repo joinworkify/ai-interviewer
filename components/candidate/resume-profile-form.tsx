@@ -86,28 +86,28 @@ export function ResumeProfileForm({ initialProfile }: Props) {
       <div className="mb-8">
         <Link
           href="/candidate/roles"
-          className="text-sm font-medium text-[#800020] hover:text-[#660019]"
+          className="text-sm font-medium text-primary hover:text-primary/80"
         >
           ← Back to Roles
         </Link>
 
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">
+        <h1 className="mt-4 text-2xl font-bold text-foreground">
           Profile Detail
         </h1>
 
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage your personal information.
         </p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
-        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">
             Profile Photo
           </h2>
 
           <div className="mt-5 flex items-center gap-5">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gray-100">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-muted">
               {photoPreview ? (
                 <img
                   src={photoPreview}
@@ -115,7 +115,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <span className="text-2xl font-semibold text-gray-400">
+                <span className="text-2xl font-semibold text-muted-foreground">
                   {name.charAt(0).toUpperCase() || "?"}
                 </span>
               )}
@@ -135,20 +135,20 @@ export function ResumeProfileForm({ initialProfile }: Props) {
               <button
                 type="button"
                 onClick={() => photoInputRef.current?.click()}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-input px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
               >
                 Choose Photo
               </button>
 
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Image preview only. Photo is not uploaded or stored yet.
               </p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">
             Personal Information
           </h2>
 
@@ -156,7 +156,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
             <div>
               <label
                 htmlFor="name"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-foreground"
               >
                 Full Name
               </label>
@@ -166,14 +166,14 @@ export function ResumeProfileForm({ initialProfile }: Props) {
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="Enter your full name"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border border-input px-3 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
               />
             </div>
 
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-foreground"
               >
                 Email Address
               </label>
@@ -182,14 +182,14 @@ export function ResumeProfileForm({ initialProfile }: Props) {
                 type="email"
                 value={initialProfile.email}
                 disabled
-                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-500"
+                className="w-full rounded-lg border border-input bg-muted px-3 py-2.5 text-sm text-muted-foreground"
               />
             </div>
 
             <div>
               <label
                 htmlFor="phone"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-foreground"
               >
                 Phone Number
               </label>
@@ -199,14 +199,14 @@ export function ResumeProfileForm({ initialProfile }: Props) {
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
                 placeholder="Enter your phone number"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border border-input px-3 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
               />
             </div>
 
             <div>
               <label
                 htmlFor="linkedin"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-foreground"
               >
                 LinkedIn URL
               </label>
@@ -216,14 +216,14 @@ export function ResumeProfileForm({ initialProfile }: Props) {
                 value={linkedinUrl}
                 onChange={(event) => setLinkedinUrl(event.target.value)}
                 placeholder="https://linkedin.com/in/yourname"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border border-input px-3 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
               />
             </div>
 
             <div className="sm:col-span-2">
               <label
                 htmlFor="portfolio"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-foreground"
               >
                 Portfolio URL
               </label>
@@ -233,7 +233,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
                 value={portfolioUrl}
                 onChange={(event) => setPortfolioUrl(event.target.value)}
                 placeholder="https://yourportfolio.com"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border border-input px-3 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
               />
             </div>
           </div>
@@ -246,7 +246,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
         )}
 
         {errorMessage && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-sm text-destructive">
             {errorMessage}
           </p>
         )}
@@ -255,7 +255,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-lg bg-[#800020] px-6 py-3 text-sm font-semibold text-white hover:bg-[#660019] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Saving..." : "Save Profile"}
           </button>

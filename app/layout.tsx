@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Newsreader, Source_Serif_4 } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -20,6 +20,18 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+const newsreader = Newsreader({
+  variable: "--font-editorial-heading",
+  display: "swap",
+  subsets: ["latin"],
+});
+
+const sourceSerif = Source_Serif_4({
+  variable: "--font-editorial-body",
+  display: "swap",
+  subsets: ["latin"],
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,7 +39,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${newsreader.variable} ${sourceSerif.variable} antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

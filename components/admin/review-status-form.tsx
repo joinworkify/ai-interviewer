@@ -40,7 +40,7 @@ export function ReviewStatusForm({ sessionId, status }: { sessionId: string; sta
         value={value}
         onChange={(e) => setValue(e.target.value as ReviewStatus)}
         aria-label="Review status"
-        className="h-10 rounded-md border bg-white px-3 text-sm"
+        className="h-10 rounded-md border bg-background px-3 text-sm"
       >
         {REVIEW_STATUSES.map((s) => (
           <option key={s} value={s}>
