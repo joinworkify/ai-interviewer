@@ -68,32 +68,45 @@
 }
 
 /*
- * DataSea candidate theme (joindatasea.com style, burgundy accent).
- * Scoped to the candidate, auth and /protected layouts via .theme-datasea so
- * other pages keep the default theme. Burgundy #800020, tint #f8e9ec.
+ * DataSea theme, copied from joindatasea.com: warm cream surfaces, #8a2346
+ * burgundy and the same three typefaces. Scoped via .theme-datasea so the
+ * candidate, auth, /protected and admin shells share one palette.
  */
 @layer base {
   .theme-datasea {
-    --background: 0 0% 100%;
-    --foreground: 345 30% 8%;
-    --card: 0 0% 100%;
-    --card-foreground: 345 30% 8%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 345 30% 8%;
-    --primary: 345 100% 25%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 350 59% 94%;
-    --secondary-foreground: 345 100% 25%;
-    --muted: 345 15% 97%;
-    --muted-foreground: 345 8% 42%;
-    --accent: 350 59% 94%;
-    --accent-foreground: 345 100% 25%;
-    --border: 345 12% 89%;
-    --input: 345 12% 86%;
-    --ring: 345 100% 25%;
+    --background: 40 50% 97.65%;
+    --foreground: 25.71 9.33% 14.71%;
+    --card: 40 100% 98.82%;
+    --card-foreground: 25.71 9.33% 14.71%;
+    --popover: 40 100% 98.82%;
+    --popover-foreground: 25.71 9.33% 14.71%;
+    --primary: 339.61 59.54% 33.92%;
+    --primary-foreground: 30 100% 98.04%;
+    --secondary: 38.18 31.43% 93.14%;
+    --secondary-foreground: 25.71 9.33% 14.71%;
+    --muted: 38.18 31.43% 93.14%;
+    --muted-foreground: 28.24 8.63% 38.63%;
+    --accent: 38.18 31.43% 93.14%;
+    --accent-foreground: 25.71 9.33% 14.71%;
+    --destructive: 354.74 100% 44.71%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 35.29 26.98% 87.65%;
+    --input: 35.29 26.98% 87.65%;
+    --ring: 339.61 59.54% 33.92%;
     --radius: 0.75rem;
+    color-scheme: light;
     color: hsl(var(--foreground));
     background-color: hsl(var(--background));
+    font-family: var(--font-editorial-body), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  }
+
+  .theme-datasea :where(h1, h2, h3, h4) {
+    font-family: var(--font-editorial-heading), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  }
+
+  /* Controls and site chrome use the sans face, as on joindatasea.com. */
+  .theme-datasea :where(button, [role="button"], input, textarea, select, label, header a, nav a, footer a) {
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
   }
 }
 

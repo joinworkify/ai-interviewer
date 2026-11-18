@@ -69,7 +69,7 @@ function ResumePreview({ url, fileName }: { url: string; fileName: string }) {
   }
 
   const btn =
-    "flex h-8 min-w-8 items-center justify-center rounded-md border bg-white px-2 text-sm font-medium hover:border-primary disabled:opacity-40 disabled:hover:border-border";
+    "flex h-8 min-w-8 items-center justify-center rounded-md border bg-background px-2 text-sm font-medium hover:border-primary disabled:opacity-40 disabled:hover:border-border";
 
   return (
     <div className="grid gap-2">

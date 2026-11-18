@@ -16,7 +16,7 @@ function formatDate(iso: string | null) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border bg-white p-5">
+    <section className="rounded-xl border bg-card p-5">
       <h2 className="mb-3 text-lg font-semibold">{title}</h2>
       {children}
     </section>
@@ -115,7 +115,7 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                 {a.resume.downloadUrl ? (
                   <a
                     href={a.resume.downloadUrl}
-                    className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                    className="w-fit rounded-md bg-primary px-4 py-2 font-ui text-sm font-medium text-primary-foreground"
                   >
                     Download resume
                   </a>

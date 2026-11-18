@@ -68,7 +68,7 @@ async function AdminPageContent({
           <Link
             key={s}
             href={statusFilter === s ? "/admin" : `/admin?status=${s}`}
-            className={`rounded-xl border bg-white p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
+            className={`rounded-xl border bg-card p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
           >
             <div className="text-sm text-muted-foreground">{REVIEW_STATUS_LABELS[s]}</div>
             <div className="text-2xl font-bold">{counts[s]}</div>
@@ -78,9 +78,9 @@ async function AdminPageContent({
 
       <AdminFilters />
 
-      <div className="overflow-x-auto rounded-xl border bg-white">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-left text-sm">
-          <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="border-b bg-muted/40 font-ui text-xs uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Candidate</th>
               <th className="px-4 py-3">Role</th>
@@ -109,7 +109,7 @@ async function AdminPageContent({
                 <td className="px-4 py-3 capitalize">{r.interviewStatus.replace("_", " ")}</td>
                 <td className="px-4 py-3">{r.hasResume ? "Yes" : "No"}</td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_STYLE[r.reviewStatus]}`}>
+                  <span className={`rounded-full px-2 py-1 font-ui text-xs font-medium ${STATUS_STYLE[r.reviewStatus]}`}>
                     {REVIEW_STATUS_LABELS[r.reviewStatus]}
                   </span>
                 </td>
@@ -132,21 +132,21 @@ async function AdminPageContent({
           </p>
           <div className="flex items-center gap-2">
             {page > 1 ? (
-              <Link href={pageHref(page - 1)} className="rounded-md border bg-white px-3 py-2 hover:border-primary">
+              <Link href={pageHref(page - 1)} className="rounded-md border bg-background px-3 py-2 hover:border-primary">
                 Previous
               </Link>
             ) : (
-              <span className="rounded-md border bg-white px-3 py-2 opacity-50">Previous</span>
+              <span className="rounded-md border bg-background px-3 py-2 opacity-50">Previous</span>
             )}
             <span className="px-1 text-muted-foreground">
               Page {page} of {pageCount}
             </span>
             {page < pageCount ? (
-              <Link href={pageHref(page + 1)} className="rounded-md border bg-white px-3 py-2 hover:border-primary">
+              <Link href={pageHref(page + 1)} className="rounded-md border bg-background px-3 py-2 hover:border-primary">
                 Next
               </Link>
             ) : (
-              <span className="rounded-md border bg-white px-3 py-2 opacity-50">Next</span>
+              <span className="rounded-md border bg-background px-3 py-2 opacity-50">Next</span>
             )}
           </div>
         </nav>

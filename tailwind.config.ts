@@ -11,6 +11,24 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        ui: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        serif: [
+          "var(--font-editorial-body)",
+          '"Iowan Old Style"',
+          '"Palatino Linotype"',
+          "Georgia",
+          "serif",
+        ],
+        heading: [
+          "var(--font-editorial-heading)",
+          '"Iowan Old Style"',
+          '"Palatino Linotype"',
+          "Georgia",
+          "serif",
+        ],
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

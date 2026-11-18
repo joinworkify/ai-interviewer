@@ -64,7 +64,8 @@ export default function RolesPage() {
 
         {roles && roles.length > 0 && (
           <p className="-mt-2 text-sm text-muted-foreground">
-            {roles.length} {roles.length === 1 ? "role" : "roles"} open for interviews
+            {roles.length} {roles.length === 1 ? "role" : "roles"} open for
+            interviews
           </p>
         )}
 
@@ -119,7 +120,7 @@ export default function RolesPage() {
                   className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="flex flex-col gap-1">
-                    <span className="text-lg font-semibold leading-snug">
+                    <span className="font-heading text-lg font-semibold leading-snug">
                       {role.title}
                     </span>
 
@@ -163,7 +164,7 @@ export default function RolesPage() {
                     </div>
                   )}
 
-                  <span className="mt-auto flex items-center justify-between pt-2 text-sm font-medium text-primary">
+                  <span className="mt-auto flex items-center justify-between pt-2 font-ui text-sm font-medium text-primary">
                     View role
 
                     <span className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">

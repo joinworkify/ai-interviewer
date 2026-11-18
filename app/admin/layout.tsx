@@ -22,9 +22,9 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <header className="border-b bg-white">
+      <header className="border-b bg-background">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/admin" className="flex items-center gap-2 font-semibold tracking-tight">
+          <Link href="/admin" className="flex items-center gap-2 font-heading font-semibold tracking-tight">
             <LogoMark size={32} />
             Admin dashboard
           </Link>
@@ -34,7 +34,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-5">{children}</main>
-      <footer className="border-t bg-white">
+      <footer className="border-t bg-background">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-muted-foreground">
           <span>© DataSea. All rights reserved.</span>
           <span>Admin dashboard</span>

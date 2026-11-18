@@ -36,7 +36,7 @@ export function CountrySelect({
           role="combobox"
           aria-expanded={open}
           aria-label="Country calling code"
-          className="h-[42px] min-w-[150px] max-w-[50%] shrink-0 justify-between gap-2 rounded-xl border-slate-300 bg-white px-3 text-sm font-normal text-slate-700 shadow-none hover:bg-white hover:text-slate-900"
+          className="h-[42px] min-w-[150px] max-w-[50%] shrink-0 justify-between gap-2 rounded-xl border-input bg-background px-3 text-sm font-normal text-foreground shadow-none hover:bg-muted/50 hover:text-foreground"
         >
           <span className="truncate">
             {selected.flag} {selected.name} ({selected.dialCode})

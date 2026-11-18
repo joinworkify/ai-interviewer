@@ -66,15 +66,15 @@ export function CandidateHeader() {
   }
 
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-background">
       <div className="mx-auto grid max-w-6xl grid-cols-3 items-center gap-2 px-4 py-3">
         {/* Left: Logo */}
         <Link
           href="/candidate/roles"
-          className="flex items-center gap-2 font-semibold tracking-tight"
+          className="flex items-center gap-2 font-heading font-semibold tracking-tight"
         >
           <LogoMark size={32} />
-          <span className="hidden sm:inline">Candidate Interview</span>
+          <span className="hidden sm:inline">Datasea Interview</span>
         </Link>
 
         {/* Center: Application Status */}
