@@ -1,5 +1,7 @@
 ﻿
 import { NextResponse } from "next/server";
+import { describeError } from "@/lib/log/safe-error";
+import { isRoleBullets } from "@/lib/admin/role-validation";
 
 import { requireAdmin } from "@/lib/admin/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -21,7 +23,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, roles: data });
   } catch (error) {
-    console.error("[admin-roles] GET failed:", error);
+    console.error("[admin-roles] GET failed:", describeError(error));
 
     return NextResponse.json(
       { success: false, message: "Unable to load roles." },
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
       requirements = [],
       is_active = true,
       sort_order = 0,
-    } = body as Record<string, any>;
+    } = body as Record<string, unknown>;
 
     if (
       typeof id !== "string" ||
@@ -74,8 +76,8 @@ export async function POST(request: Request) {
       !Array.isArray(skills) ||
       !skills.every((skill: unknown) => typeof skill === "string") ||
       typeof about !== "string" ||
-      !Array.isArray(responsibilities) ||
-      !Array.isArray(requirements) ||
+      !isRoleBullets(responsibilities) ||
+      !isRoleBullets(requirements) ||
       typeof is_active !== "boolean" ||
       !Number.isInteger(sort_order)
     ) {
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
         responsibilities,
         requirements,
         is_active,
-        sort_order,
+        sort_order: sort_order as number,
       })
       .select()
       .single();
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, role: data }, { status: 201 });
   } catch (error) {
-    console.error("[admin-roles] POST failed:", error);
+    console.error("[admin-roles] POST failed:", describeError(error));
 
     return NextResponse.json(
       { success: false, message: "Unable to create role." },

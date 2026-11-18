@@ -1,5 +1,7 @@
 ﻿
 import { NextResponse } from "next/server";
+import { describeError } from "@/lib/log/safe-error";
+import { isRoleBullets } from "@/lib/admin/role-validation";
 
 import { requireAdmin } from "@/lib/admin/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -107,7 +109,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     for (const field of ["responsibilities", "requirements"] as const) {
       if (field in input) {
-        if (!Array.isArray(input[field])) {
+        if (!isRoleBullets(input[field])) {
           return NextResponse.json(
             { success: false, message: `Invalid ${field}.` },
             { status: 400 },
@@ -169,7 +171,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, role: data });
   } catch (error) {
-    console.error("[admin-roles] PATCH failed:", error);
+    console.error("[admin-roles] PATCH failed:", describeError(error));
 
     return NextResponse.json(
       { success: false, message: "Unable to update role." },
@@ -217,7 +219,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       deletedId: data.id,
     });
   } catch (error) {
-    console.error("[admin-roles] DELETE failed:", error);
+    console.error("[admin-roles] DELETE failed:", describeError(error));
 
     return NextResponse.json(
       { success: false, message: "Unable to delete role." },
