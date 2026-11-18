@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -6,17 +7,13 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { requireAdmin } from "@/lib/admin/server";
 
+export const instant = false;
+
 export const metadata: Metadata = {
   title: { default: "Admin | DataSea", template: "%s | Admin | DataSea" },
   robots: { index: false, follow: false },
 };
 
-/**
- * Admins only. Signed-out visitors are sent to the login page by the proxy;
- * signed-in non-admins get a plain 404, so the dashboard's existence is not
- * revealed (the header is inside the check too). Every admin page and route
- * checks again on the server.
- */
 async function AdminShell({ children }: { children: React.ReactNode }) {
   await requireAdmin();
 
@@ -24,16 +21,36 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
     <>
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/admin" className="flex items-center gap-2 font-semibold tracking-tight">
+          <Link
+            href="/admin"
+            className="flex items-center gap-2 font-semibold tracking-tight"
+          >
             <LogoMark size={32} />
             Admin dashboard
           </Link>
-          <nav className="text-sm">
+
+          <nav className="flex items-center gap-4 text-sm">
+            <Link
+              href="/admin"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Interviews
+            </Link>
+            <Link
+              href="/admin/roles"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Roles
+            </Link>
             <LogoutButton />
           </nav>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-5">{children}</main>
+
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-5">
+        {children}
+      </main>
+
       <footer className="border-t bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-muted-foreground">
           <span>© DataSea. All rights reserved.</span>
@@ -44,10 +61,18 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="theme-datasea flex min-h-screen flex-col bg-background">
-      <Suspense fallback={<p className="p-5 text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense
+        fallback={
+          <p className="p-5 text-sm text-muted-foreground">Loading…</p>
+        }
+      >
         <AdminShell>{children}</AdminShell>
       </Suspense>
     </div>
