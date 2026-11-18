@@ -134,6 +134,14 @@ export const WRAP_UP_LEAD_MS = 30_000;
 const CLOSING_GRACE_MS = 1_200;
 const CLOSING_MAX_MS = 10_000;
 
+/**
+ * The mic stays muted this long after the interviewer's audio ends. Browser
+ * echo cancellation misses Web Audio playback, so on laptop speakers the
+ * interviewer's own voice reached the mic, counted as the candidate talking
+ * over it, and cut every turn off before a word was heard.
+ */
+const ECHO_TAIL_MS = 500;
+
 const KICKOFF_TEXT =
   "The candidate has joined and is ready. Begin the interview now.";
 const WRAP_UP_TEXT =
@@ -177,6 +185,7 @@ export class LiveInterviewController {
   private transcript: TranscriptState = initialTranscript();
   /** Why the interviewer is closing; recorded when it calls the end tool. */
   private closingReason: EndedReason = "interviewer_ended";
+  private micMutedUntil = 0;
   private readonly now: () => number;
 
   constructor(private readonly deps: ControllerDeps) {
@@ -204,6 +213,7 @@ export class LiveInterviewController {
 
     this.transcript = initialTranscript();
     this.closingReason = "interviewer_ended";
+    this.micMutedUntil = 0;
     this.res = { timers: [] };
     this.set({
       ...INITIAL_STATE,
@@ -404,6 +414,10 @@ export class LiveInterviewController {
     if (attempt !== this.attempt || this.state.phase !== "active") return;
     const { encoder, session } = this.res;
     if (!encoder || !session) return;
+    // Don't send the mic while the interviewer is speaking (echo guard).
+    const playing = this.res.player?.remainingMs() ?? 0;
+    if (playing > 0) this.micMutedUntil = this.now() + playing + ECHO_TAIL_MS;
+    if (this.now() < this.micMutedUntil) return;
     for (const data of encoder.push(frames)) {
       this.send({ audio: { data, mimeType: INPUT_MIME_TYPE } });
     }

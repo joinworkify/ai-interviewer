@@ -175,6 +175,23 @@ async function startActive(h: Harness) {
   return h.sessions[h.sessions.length - 1];
 }
 
+describe("echo guard", () => {
+  it("does not send the mic while the interviewer's audio plays, nor for a short tail after", async () => {
+    const h = harness();
+    const session = await startActive(h);
+    h.players[0].remaining = 2_000;
+    h.mics[0].emit(new Float32Array(4800).fill(0.5));
+    expect(session.audio).toHaveLength(0);
+    h.players[0].remaining = 0;
+    await vi.advanceTimersByTimeAsync(2_000);
+    h.mics[0].emit(new Float32Array(4800).fill(0.5));
+    expect(session.audio).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(600);
+    h.mics[0].emit(new Float32Array(4800).fill(0.5));
+    expect(session.audio).toHaveLength(1);
+  });
+});
+
 describe("connection lost", () => {
   it("ends an active call as a dropped connection and closes the socket and mic", async () => {
     const h = harness();
