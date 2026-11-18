@@ -1,6 +1,7 @@
 # Thin wrapper over the npm scripts in package.json. Run `make help`.
 .DEFAULT_GOAL := help
-.PHONY: help setup env secret dev build start lint lint-fix typecheck test test-watch \
+.PHONY: help setup env dev build start lint lint-fix format format-check \
+        typecheck test test-watch \
         check-env verify verify-full \
         supabase-init supabase-start supabase-stop supabase-status supabase-login \
         supabase-link db-reset db-push db-new db-diff
@@ -14,9 +15,6 @@ setup: ## Install deps, create .env.local, init Supabase config
 
 env: ## Create .env.local from .env.example (never overwrites)
 	npm run setup:env
-
-secret: ## Print a random VAPI_TOOL_SIGNING_SECRET
-	@npm run -s setup:secret
 
 # --- App ---------------------------------------------------------------------
 dev: ## Start the Next.js dev server
@@ -34,6 +32,12 @@ lint: ## ESLint
 
 lint-fix: ## ESLint with --fix
 	npm run lint:fix
+
+format: ## Format all files with Prettier
+	npm run format
+
+format-check: ## Check formatting without changing files
+	npm run format:check
 
 typecheck: ## tsc --noEmit
 	npm run typecheck

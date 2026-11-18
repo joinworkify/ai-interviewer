@@ -1,9 +1,9 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ProfileSaveError, saveProfile } from "@/lib/candidate/profile-client";
+import Image from "next/image";
 
 type Props = {
   initialProfile: {
@@ -70,9 +70,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
     } catch (err) {
       setIsSaving(false);
       setErrorMessage(
-        err instanceof ProfileSaveError
-          ? err.message
-          : "Could not save your profile.",
+        err instanceof ProfileSaveError ? err.message : "Could not save your profile.",
       );
       return;
     }
@@ -91,25 +89,19 @@ export function ResumeProfileForm({ initialProfile }: Props) {
           ← Back to Roles
         </Link>
 
-        <h1 className="mt-4 text-2xl font-bold text-foreground">
-          Profile Detail
-        </h1>
+        <h1 className="mt-4 text-2xl font-bold text-foreground">Profile Detail</h1>
 
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your personal information.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Manage your personal information.</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground">
-            Profile Photo
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground">Profile Photo</h2>
 
           <div className="mt-5 flex items-center gap-5">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-muted">
               {photoPreview ? (
-                <img
+                <Image
                   src={photoPreview}
                   alt="Profile preview"
                   className="h-full w-full object-cover"
@@ -127,9 +119,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(event) =>
-                  handlePhotoChange(event.target.files?.[0])
-                }
+                onChange={(event) => handlePhotoChange(event.target.files?.[0])}
               />
 
               <button
@@ -148,16 +138,11 @@ export function ResumeProfileForm({ initialProfile }: Props) {
         </section>
 
         <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground">
-            Personal Information
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground">Personal Information</h2>
 
           <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-              <label
-                htmlFor="name"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
+              <label htmlFor="name" className="mb-2 block text-sm font-medium text-foreground">
                 Full Name
               </label>
               <input
@@ -171,10 +156,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
             </div>
 
             <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-foreground">
                 Email Address
               </label>
               <input
@@ -187,10 +169,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
             </div>
 
             <div>
-              <label
-                htmlFor="phone"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
+              <label htmlFor="phone" className="mb-2 block text-sm font-medium text-foreground">
                 Phone Number
               </label>
               <input
@@ -204,10 +183,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
             </div>
 
             <div>
-              <label
-                htmlFor="linkedin"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
+              <label htmlFor="linkedin" className="mb-2 block text-sm font-medium text-foreground">
                 LinkedIn URL
               </label>
               <input
@@ -221,10 +197,7 @@ export function ResumeProfileForm({ initialProfile }: Props) {
             </div>
 
             <div className="sm:col-span-2">
-              <label
-                htmlFor="portfolio"
-                className="mb-2 block text-sm font-medium text-foreground"
-              >
+              <label htmlFor="portfolio" className="mb-2 block text-sm font-medium text-foreground">
                 Portfolio URL
               </label>
               <input

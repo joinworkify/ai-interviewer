@@ -6,6 +6,8 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "next typegen && tsc --noEmit",
@@ -27,7 +29,17 @@
     "db:seed": "supabase db query --file supabase/seed.sql",
     "db:push": "supabase db push",
     "db:new": "supabase migration new",
-    "db:diff": "supabase db diff"
+    "db:diff": "supabase db diff",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{mjs,cjs,json,md,css,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1169.0",
@@ -62,8 +74,11 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.6.1",
     "postcss": "^8",
+    "prettier": "3.10.1",
     "supabase": "^3.1.0",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
