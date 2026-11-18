@@ -1,4 +1,3 @@
-
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -79,7 +78,7 @@ export default function AdminFilters() {
         aria-label="Filter by status"
         className="h-10 rounded-md border bg-white px-3 text-sm"
       >
-        <option value="">All statuses</option>
+        <option value="">All status</option>
         {REVIEW_STATUSES.map((item) => (
           <option key={item} value={item}>
             {REVIEW_STATUS_LABELS[item]}
@@ -93,7 +92,7 @@ export default function AdminFilters() {
         disabled={isPending}
         className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        Filter
+        Save
       </button>
     </div>
   );

@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import type { AttemptHandlerDeps } from "./attempts";
-import { createSupabaseAttemptStore } from "./attempt-store";
+import { createSupabaseAttemptStore, createSupabaseRoleStore } from "./attempt-store";
 
 /**
  * Real dependencies for POST /api/candidate/attempts. Identity comes from the
@@ -49,9 +49,11 @@ export async function runAttemptRoute(
       const sub = data?.claims?.sub;
       return !error && typeof sub === "string" ? sub : null;
     };
+    const admin = createAdminClient();
     return await run({
       getUserId,
-      store: createSupabaseAttemptStore(createAdminClient()),
+      store: createSupabaseAttemptStore(admin),
+      roles: createSupabaseRoleStore(admin),
       // Reads go through the signed-in user's own client (RLS select-own), and
       // the store pins every query to the verified user id as well.
       sessions: createSupabaseSessionStore(supabase, getUserId),

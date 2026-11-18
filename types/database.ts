@@ -469,6 +469,25 @@ export type Database = {
         };
         Returns: number;
       };
+      search_roles: {
+        Args: {
+          p_query: string;
+        };
+        Returns: {
+          id: string;
+          title: string;
+          pay_rate: string;
+          job_type: string;
+          skills: string[];
+          about: string;
+          responsibilities: Json;
+          requirements: Json;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

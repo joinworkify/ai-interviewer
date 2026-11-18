@@ -12,6 +12,24 @@ const inserts: { table: string; row: Record<string, unknown> }[] = [];
 let existingAttempts = 0;
 const createAdminClient = vi.fn(() => ({
   from(table: string) {
+    if (table === "roles") {
+      const roleChain: Record<string, unknown> = {
+        select: () => roleChain,
+        eq: () => roleChain,
+        maybeSingle: async () => ({
+          data: {
+            id: "software-engineer",
+            title: "Software Engineer",
+            requirements: [
+              { title: "Programming Foundations", text: "Working proficiency." },
+            ],
+          },
+          error: null,
+        }),
+      };
+      return roleChain;
+    }
+
     // Reads/updates used by the attempt limit: update().eq()..., select(.., {head}).eq()...
     const query: Record<string, unknown> = {};
     for (const m of ["update", "eq", "neq", "is", "lt"]) query[m] = () => query;
