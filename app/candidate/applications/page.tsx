@@ -14,6 +14,14 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type ApplicationStatus = "processing" | "submitted" | "incomplete";
 type FilterStatus = "all" | ApplicationStatus;
@@ -26,6 +34,8 @@ interface Application {
   status: ApplicationStatus;
 }
 
+const PAGE_SIZE = 5;
+
 const FILTERS: { label: string; value: FilterStatus }[] = [
   { label: "All", value: "all" },
   { label: "Processing", value: "processing" },
@@ -35,7 +45,12 @@ const FILTERS: { label: string; value: FilterStatus }[] = [
 
 const STATUS_DETAILS: Record<
   ApplicationStatus,
-  { label: string; description: string; className: string; icon: typeof Clock3 }
+  {
+    label: string;
+    description: string;
+    className: string;
+    icon: typeof Clock3;
+  }
 > = {
   processing: {
     label: "Processing",
@@ -62,10 +77,12 @@ export default function ApplicationsPage() {
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterStatus>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const load = useCallback(async () => {
     setFailed(false);
     setApplications(null);
+    setCurrentPage(1);
 
     try {
       const response = await fetch("/api/candidate/applications", {
@@ -106,6 +123,18 @@ export default function ApplicationsPage() {
     });
   }, [applications, filter, query]);
 
+  const totalPages = Math.ceil(shown.length / PAGE_SIZE);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+
+  const paginatedApplications = shown.slice(
+    startIndex,
+    startIndex + PAGE_SIZE,
+  );
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -124,7 +153,10 @@ export default function ApplicationsPage() {
           placeholder="Search by job title"
           className="pl-9"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setCurrentPage(1);
+          }}
         />
       </div>
 
@@ -135,15 +167,19 @@ export default function ApplicationsPage() {
             type="button"
             size="sm"
             variant={filter === item.value ? "default" : "outline"}
-            onClick={() => setFilter(item.value)}
+            onClick={() => {
+              setFilter(item.value);
+              setCurrentPage(1);
+            }}
           >
             {item.label}
             {applications && (
               <span className="ml-1 opacity-75">
                 {item.value === "all"
                   ? applications.length
-                  : applications.filter((app) => app.status === item.value)
-                      .length}
+                  : applications.filter(
+                      (app) => app.status === item.value,
+                    ).length}
               </span>
             )}
           </Button>
@@ -151,7 +187,10 @@ export default function ApplicationsPage() {
       </div>
 
       {failed ? (
-        <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border p-8 text-center text-sm">
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 rounded-xl border p-8 text-center text-sm"
+        >
           <p className="text-destructive">
             Applications failed to load.
           </p>
@@ -190,63 +229,128 @@ export default function ApplicationsPage() {
           )}
         </div>
       ) : (
-        <ul className="flex flex-col gap-4">
-          {shown.map((application) => {
-            const status = STATUS_DETAILS[application.status];
-            const StatusIcon = status.icon;
+        <>
+          <ul className="flex flex-col gap-4">
+            {paginatedApplications.map((application) => {
+              const status = STATUS_DETAILS[application.status];
+              const StatusIcon = status.icon;
 
-            return (
-              <li
-                key={application.id}
-                className="rounded-xl border bg-card p-5 shadow-sm transition-colors hover:border-primary/40"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-col gap-2">
-                    <h2 className="text-lg font-semibold">
-                      {application.roleTitle}
-                    </h2>
+              return (
+                <li
+                  key={application.id}
+                  className="rounded-xl border bg-card p-5 shadow-sm transition-colors hover:border-primary/40"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-2">
+                      <h2 className="text-lg font-semibold">
+                        {application.roleTitle}
+                      </h2>
 
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CalendarDays className="h-4 w-4" />
-                      Applied{" "}
-                      {new Date(application.appliedAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        },
-                      )}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CalendarDays className="h-4 w-4" />
+                        Applied{" "}
+                        {new Date(application.appliedAt).toLocaleDateString(
+                          undefined,
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          },
+                        )}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground">
+                        {status.description}
+                      </p>
                     </div>
 
-                    <p className="text-sm text-muted-foreground">
-                      {status.description}
-                    </p>
-                  </div>
+                    <div className="flex flex-col items-start gap-3 sm:items-end">
+                      <span
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium ${status.className}`}
+                      >
+                        <StatusIcon className="h-4 w-4" />
+                        {status.label}
+                      </span>
 
-                  <div className="flex flex-col items-start gap-3 sm:items-end">
-                    <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium ${status.className}`}
-                    >
-                      <StatusIcon className="h-4 w-4" />
-                      {status.label}
-                    </span>
-
-                    <Link
-                      href={`/candidate/result?attempt=${encodeURIComponent(
-                        application.id,
-                      )}`}
-                      className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                    >
-                      View interview status
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
+                      <Link
+                        href={`/candidate/result?attempt=${encodeURIComponent(
+                          application.id,
+                        )}`}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                      >
+                        View interview status
+                        <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="flex flex-col items-center gap-3 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}–
+              {Math.min(startIndex + PAGE_SIZE, shown.length)} of{" "}
+              {shown.length} applications
+            </p>
+
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    aria-disabled={currentPage === 1}
+                    className={
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToPage(currentPage - 1);
+                    }}
+                  />
+                </PaginationItem>
+
+                {Array.from(
+                  { length: totalPages },
+                  (_, index) => index + 1,
+                ).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href="#"
+                      isActive={currentPage === page}
+                      aria-label={`Go to page ${page}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        goToPage(page);
+                      }}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    aria-disabled={currentPage === totalPages}
+                    className={
+                      currentPage === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToPage(currentPage + 1);
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </>
       )}
     </div>
   );
