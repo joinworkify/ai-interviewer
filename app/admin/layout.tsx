@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -6,17 +7,13 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { requireAdmin } from "@/lib/admin/server";
 
+export const instant = false;
+
 export const metadata: Metadata = {
   title: { default: "Admin | DataSea", template: "%s | Admin | DataSea" },
   robots: { index: false, follow: false },
 };
 
-/**
- * Admins only. Signed-out visitors are sent to the login page by the proxy;
- * signed-in non-admins get a plain 404, so the dashboard's existence is not
- * revealed (the header is inside the check too). Every admin page and route
- * checks again on the server.
- */
 async function AdminShell({ children }: { children: React.ReactNode }) {
   await requireAdmin();
 
@@ -28,7 +25,20 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
             <LogoMark size={32} />
             Admin dashboard
           </Link>
-          <nav className="text-sm">
+
+          <nav className="flex items-center gap-4 text-sm">
+            <Link
+              href="/admin"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Interviews
+            </Link>
+            <Link
+              href="/admin/roles"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Roles
+            </Link>
             <LogoutButton />
           </nav>
         </div>
@@ -44,10 +54,18 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="theme-datasea flex min-h-screen flex-col bg-background">
-      <Suspense fallback={<p className="p-5 text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense
+        fallback={
+          <p className="p-5 text-sm text-muted-foreground">Loading…</p>
+        }
+      >
         <AdminShell>{children}</AdminShell>
       </Suspense>
     </div>

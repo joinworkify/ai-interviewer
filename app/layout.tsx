@@ -1,7 +1,9 @@
+
 import type { Metadata } from "next";
 import { Geist, Newsreader, Source_Serif_4 } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/next";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -48,8 +50,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
         </ThemeProvider>
+
         <Analytics />
       </body>
     </html>
