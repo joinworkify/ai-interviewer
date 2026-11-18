@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ReportProblem } from "@/components/candidate/report-problem";
 import { waitForResult, type AttemptResult } from "@/lib/candidate/api";
 
 const STATUS_TEXT: Partial<Record<AttemptResult["status"], string>> = {
@@ -81,6 +82,7 @@ export default function ResultPage() {
           <p className="text-xs text-muted-foreground">A person at DataSea will review it.</p>
         </>
       )}
+      {attemptId && <ReportProblem sessionId={attemptId} />}
       <Button asChild className="w-32">
         <Link href="/candidate/roles">Done</Link>
       </Button>

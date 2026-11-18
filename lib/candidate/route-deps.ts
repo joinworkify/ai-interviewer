@@ -12,6 +12,7 @@ import { MAX_ATTEMPT_QUESTIONS, type AttemptHandlerDeps } from "./attempts";
 import { createSupabaseAttemptStore } from "./attempt-store";
 import { createS3Client, downloadResumeFile, readResumeS3Config } from "./resume-s3";
 import { extractResumeText } from "./resume-text";
+import { createSupabaseProblemReportStore } from "./problem-reports";
 import { generateTailoredQuestions } from "./tailored-questions";
 
 /**
@@ -58,6 +59,7 @@ export async function runAttemptRoute(
     return await run({
       getUserId,
       store: createSupabaseAttemptStore(admin),
+      problemReports: createSupabaseProblemReportStore(admin),
       // Reads go through the signed-in user's own client (RLS select-own), and
       // the store pins every query to the verified user id as well.
       sessions: createSupabaseSessionStore(supabase, getUserId),

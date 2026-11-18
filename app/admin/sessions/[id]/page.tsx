@@ -14,6 +14,13 @@ function formatDate(iso: string | null) {
   return iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "—";
 }
 
+const PROBLEM_LABELS: Record<string, string> = {
+  lost_internet: "Lost internet",
+  microphone: "Microphone problem",
+  audio: "Couldn't hear the interviewer",
+  other: "Other",
+};
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-xl border bg-white p-5">
@@ -68,6 +75,21 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
           <ReviewStatusForm sessionId={a.sessionId} status={a.review.status} />
         </div>
       </div>
+
+      {a.problemReports.length > 0 && (
+        <div role="note" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          <p className="font-semibold">The candidate reported a problem with this interview</p>
+          <ul className="mt-2 grid gap-2">
+            {a.problemReports.map((r) => (
+              <li key={r.createdAt}>
+                <span className="font-medium">{PROBLEM_LABELS[r.kind] ?? r.kind}</span>
+                <span className="text-red-800"> · {formatDate(r.createdAt)}</span>
+                {r.message && <p className="whitespace-pre-wrap">{r.message}</p>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="grid gap-6">

@@ -325,6 +325,14 @@ export class LiveInterviewController {
     if (IN_PROGRESS.has(this.state.phase)) this.finish("You ended the interview.", "user_ended");
   }
 
+  /**
+   * The browser went offline. The live socket can stay open for minutes
+   * without a network, so end the call now as a dropped connection.
+   */
+  connectionLost(): void {
+    if (IN_PROGRESS.has(this.state.phase)) this.fail("Your internet connection was lost.");
+  }
+
   /** Unmount cleanup. The controller stays reusable (React StrictMode remounts). */
   dispose(): void {
     if (IN_PROGRESS.has(this.state.phase)) {

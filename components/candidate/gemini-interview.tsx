@@ -12,6 +12,7 @@ import { browserControllerDeps } from "@/lib/gemini-live/browser";
 import { LiveInterviewController, type SessionPhase } from "@/lib/gemini-live/controller";
 import { MAX_SESSION_SECONDS, validateLiveInterviewBody, type LiveInterviewDetails } from "@/lib/gemini-live/interview-details";
 import { attachTranscriptSync } from "@/lib/gemini-live/transcript-sync";
+import { ReportProblem } from "@/components/candidate/report-problem";
 import type { SaveTranscriptOutcome } from "@/lib/transcripts/client";
 
 const STATUS_LABEL: Record<SessionPhase, string> = {
@@ -61,6 +62,13 @@ export function GeminiInterview() {
     if (!attemptId) return;
     return attachTranscriptSync(controller, { sessionId: attemptId, onOutcome: setSaved });
   }, [controller, attemptId]);
+
+  // Wi-Fi off: end the call as a dropped connection right away.
+  useEffect(() => {
+    const onOffline = () => controller.connectionLost();
+    window.addEventListener("offline", onOffline);
+    return () => window.removeEventListener("offline", onOffline);
+  }, [controller]);
 
   // Tab close: end the call so the transcript is still sent (keepalive).
   useEffect(() => {
@@ -117,14 +125,44 @@ export function GeminiInterview() {
   }
 
   const error = loadError ?? state.error;
+  // The call had started, then broke: most often the internet dropped.
+  const dropped = !loadError && state.startedAt !== null && state.endedAt !== null;
   if (error) {
     return (
-      <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center shadow-sm">
-        <p className="text-lg font-semibold">The interview could not continue.</p>
-        <p className="text-sm text-muted-foreground">{error}</p>
-        <Button asChild>
-          <Link href={roleHref}>Back to the role</Link>
-        </Button>
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border bg-card p-8 text-center shadow-sm">
+        <div role="alert" className="flex flex-col gap-2">
+          <p className="text-lg font-semibold">
+            {dropped
+              ? `Your connection was lost at ${clock(state.endedAt! - state.startedAt!)}.`
+              : "The interview could not continue."}
+          </p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+        {dropped && (
+          <>
+            <p className="text-sm" aria-live="polite">
+              {saved === null
+                ? "Saving your answers so far… If you're offline, this happens when your internet is back."
+                : saved === "failed"
+                  ? "We couldn't save your answers. Please tell us below."
+                  : "Your answers so far are saved."}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              The first dropped interview doesn&apos;t use up one of your tries, so you can try again once.
+            </p>
+          </>
+        )}
+        {attemptId && <ReportProblem sessionId={attemptId} defaultOpen={dropped} />}
+        <div className="flex flex-wrap justify-center gap-2">
+          {dropped && roleId && (
+            <Button asChild>
+              <Link href={`/candidate/consent?role=${encodeURIComponent(roleId)}`}>Try again</Link>
+            </Button>
+          )}
+          <Button asChild variant={dropped ? "outline" : "default"}>
+            <Link href={roleHref}>Back to the role</Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -216,6 +254,7 @@ export function GeminiInterview() {
             End interview
           </Button>
         )}
+        {running && <ReportProblem sessionId={attemptId} />}
       </div>
     </div>
   );

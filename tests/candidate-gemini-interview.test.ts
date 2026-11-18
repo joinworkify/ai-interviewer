@@ -140,6 +140,20 @@ describe("GeminiInterview (candidate)", () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).payload.endedReason).toBe("page_closed");
   });
 
+  it("going offline shows the connection-lost screen, saves the answers and opens the report form", async () => {
+    await startInterview();
+    await act(async () => window.dispatchEvent(new Event("offline")));
+    await settle();
+    expect(container.textContent).toMatch(/Your connection was lost at 0:\d\d\./);
+    expect(container.textContent).toContain("Your answers so far are saved.");
+    expect(container.querySelector("select")?.value).toBe("lost_internet");
+    const retry = [...container.querySelectorAll("a")].find((a) => /try again/i.test(a.textContent ?? ""));
+    expect(retry?.getAttribute("href")).toBe("/candidate/consent?role=software-engineer");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`/api/sessions/${ATTEMPT}/transcript`);
+    expect(JSON.parse(init.body).payload.endedReason).toBe("error");
+  });
+
   it("shows the conversation live, including the candidate's words while they speak", async () => {
     await startInterview();
     const log = container.querySelector('[role="log"]')!;

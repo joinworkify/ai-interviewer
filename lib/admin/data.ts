@@ -25,6 +25,8 @@ export interface AttemptListItem {
   interviewStatus: string;
   reviewStatus: ReviewStatus;
   hasResume: boolean;
+  /** The candidate sent at least one problem report for this interview. */
+  problemReported: boolean;
   startedAt: string;
 }
 
@@ -51,13 +53,14 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
 
   const sessionIds = rows.map((s) => s.id);
   const userIds = [...new Set(rows.map((s) => s.user_id))];
-  const [consents, reviews, profiles, resumes] = await Promise.all([
+  const [consents, reviews, profiles, resumes, reports] = await Promise.all([
     db.from("candidate_consents").select("session_id, role_id").in("session_id", sessionIds),
     db.from("interview_reviews").select("session_id, status").in("session_id", sessionIds),
     db.from("profiles").select("id, name, email").in("id", userIds),
     db.from("candidate_resumes").select("user_id").eq("status", "uploaded").in("user_id", userIds),
+    db.from("interview_problem_reports").select("session_id").in("session_id", sessionIds),
   ]);
-  for (const [op, r] of [["consents", consents], ["reviews", reviews], ["profiles", profiles], ["resumes", resumes]] as const) {
+  for (const [op, r] of [["consents", consents], ["reviews", reviews], ["profiles", profiles], ["resumes", resumes], ["reports", reports]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -65,6 +68,7 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
   const reviewBySession = new Map((reviews.data ?? []).map((r) => [r.session_id, r.status]));
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const withResume = new Set((resumes.data ?? []).map((r) => r.user_id));
+  const reported = new Set((reports.data ?? []).map((r) => r.session_id));
 
   return rows.map((s) => ({
     sessionId: s.id,
@@ -75,6 +79,7 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
     interviewStatus: s.status,
     reviewStatus: reviewBySession.get(s.id) ?? "pending",
     hasResume: withResume.has(s.user_id),
+    problemReported: reported.has(s.id),
     startedAt: s.started_at,
   }));
 }
@@ -108,6 +113,7 @@ export interface AttemptDetail {
     | null;
   /** The saved interview conversation in order; empty when there is none or it is unreadable. */
   transcript: TranscriptTurn[];
+  problemReports: { kind: string; message: string; createdAt: string }[];
 }
 
 /** Saved transcript (any shape normalizeTranscript accepts) as ordered turns; [] if missing or unreadable. */
@@ -128,7 +134,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
   const s = session.data;
   if (!s) return null;
 
-  const [consent, review, profile, resume] = await Promise.all([
+  const [consent, review, profile, resume, reports] = await Promise.all([
     db.from("candidate_consents").select("role_id, consent_version, accepted_at").eq("session_id", s.id).maybeSingle(),
     db.from("interview_reviews").select("status, updated_at").eq("session_id", s.id).maybeSingle(),
     db.from("profiles").select("name, email, phone, linkedin_url, portfolio_url").eq("id", s.user_id).maybeSingle(),
@@ -142,8 +148,13 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       .order("uploaded_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    db
+      .from("interview_problem_reports")
+      .select("kind, message, created_at")
+      .eq("session_id", s.id)
+      .order("created_at", { ascending: true }),
   ]);
-  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume]] as const) {
+  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -190,5 +201,6 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
         }
       : null,
     transcript: transcriptTurns(s.transcript),
+    problemReports: (reports.data ?? []).map((r) => ({ kind: r.kind, message: r.message, createdAt: r.created_at })),
   };
 }

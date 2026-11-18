@@ -259,7 +259,7 @@ describe("handleStartAttempt", () => {
 });
 
 describe("createSupabaseAttemptStore attempt limits", () => {
-  function recordingClient(result: { count?: number | null; error?: unknown }) {
+  function recordingClient(result: { data?: unknown[] | null; error?: unknown }) {
     const ops: [string, ...unknown[]][] = [];
     const chain: Record<string, unknown> = {};
     for (const m of ["update", "select", "eq", "neq", "is", "lt"]) {
@@ -269,7 +269,7 @@ describe("createSupabaseAttemptStore attempt limits", () => {
       };
     }
     chain.then = (resolve: (v: unknown) => void) =>
-      resolve({ count: result.count ?? null, error: result.error ?? null });
+      resolve({ data: result.data ?? null, error: result.error ?? null });
     return { client: { from: (t: string) => (ops.push(["from", t]), chain) }, ops };
   }
 
@@ -285,8 +285,9 @@ describe("createSupabaseAttemptStore attempt limits", () => {
     expect(ops).toContainEqual(["lt", "started_at", cutoff.toISOString()]);
   });
 
-  it("counts the user's non-abandoned attempts for the role", async () => {
-    const { client, ops } = recordingClient({ count: 2 });
+  it("counts the user's non-abandoned attempts for the role, minus one dropped call", async () => {
+    const row = (ended_reason: string | null) => ({ interview_sessions: { ended_reason } });
+    const { client, ops } = recordingClient({ data: [row("user_ended"), row("error"), row(null)] });
     expect(await createSupabaseAttemptStore(client as never).countAttempts(USER, "generalist")).toBe(2);
     expect(ops).toContainEqual(["from", "candidate_consents"]);
     expect(ops).toContainEqual(["eq", "user_id", USER]);

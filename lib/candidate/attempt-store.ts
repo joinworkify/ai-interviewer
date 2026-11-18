@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describeError } from "@/lib/log/safe-error";
 import type { Database } from "@/types/database";
 
-import { ATTEMPT_DURATION_MINUTES, type AttemptStore } from "./attempts";
+import { ATTEMPT_DURATION_MINUTES, attemptsTowardLimit, type AttemptStore } from "./attempts";
 
 /**
  * Must be given the service-role (admin) client: browsers cannot write
@@ -33,17 +33,17 @@ export function createSupabaseAttemptStore(client: SupabaseClient<Database>): At
 
     async countAttempts(userId, roleId) {
       // Each attempt has exactly one consent row, which carries the role.
-      const { count, error } = await client
+      const { data, error } = await client
         .from("candidate_consents")
-        .select("session_id, interview_sessions!inner(status)", { count: "exact", head: true })
+        .select("session_id, interview_sessions!inner(status, ended_reason)")
         .eq("user_id", userId)
         .eq("role_id", roleId)
         .neq("interview_sessions.status", "abandoned");
-      if (error || count == null) {
+      if (error || !data) {
         console.error("[candidate-attempts] count attempts failed:", describeError(error));
         throw new Error("countAttempts failed");
       }
-      return count;
+      return attemptsTowardLimit(data.map((row) => row.interview_sessions?.ended_reason ?? null));
     },
 
     async createAttempt(userId, questions, consent) {

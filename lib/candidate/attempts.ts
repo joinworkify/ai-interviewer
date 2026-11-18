@@ -1,3 +1,4 @@
+import type { ProblemReportStore } from "./problem-reports";
 import { jsonResponse, readJsonBody } from "@/lib/http/json";
 import { normalizeTranscript } from "@/lib/sessions/transcript";
 import { isUuid } from "@/lib/sessions/validation";
@@ -76,7 +77,7 @@ export interface AttemptStore {
    * have no transcript as `abandoned`, so they stop counting as attempts.
    */
   abandonStaleAttempts(userId: string, cutoff: Date): Promise<void>;
-  /** How many non-abandoned attempts the user already has for this role. */
+  /** How many of the user's attempts for this role count (see attemptsTowardLimit). */
   countAttempts(userId: string, roleId: string): Promise<number>;
   /**
    * Creates the interview, its first session and the consent record, all or
@@ -108,6 +109,17 @@ export interface AttemptHandlerDeps {
    * without an LLM keep the fixed questions.
    */
   tailorQuestions?: (userId: string, role: RoleData) => Promise<string[] | null>;
+  /** Problem reports (POST /api/candidate/attempts/:id/report). */
+  problemReports?: ProblemReportStore;
+}
+
+/**
+ * Attempts that use up the limit, from the ended_reason of each non-abandoned
+ * attempt for one role. The first call that dropped (connection lost, ended
+ * reason "error") is a free retry; any later drop counts like a normal attempt.
+ */
+export function attemptsTowardLimit(endedReasons: readonly (string | null)[]): number {
+  return endedReasons.length - (endedReasons.includes("error") ? 1 : 0);
 }
 
 /**

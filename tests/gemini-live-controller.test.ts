@@ -175,6 +175,26 @@ async function startActive(h: Harness) {
   return h.sessions[h.sessions.length - 1];
 }
 
+describe("connection lost", () => {
+  it("ends an active call as a dropped connection and closes the socket and mic", async () => {
+    const h = harness();
+    const session = await startActive(h);
+    h.controller.connectionLost();
+    const snap = h.controller.getSnapshot();
+    expect(snap.phase).toBe("error");
+    expect(snap.endReason).toBe("error");
+    expect(snap.error).toMatch(/internet connection was lost/);
+    expect(session.closed).toBe(1);
+    expect(h.mics[0].stopped).toBe(1);
+  });
+
+  it("does nothing before the call starts", () => {
+    const h = harness();
+    h.controller.connectionLost();
+    expect(h.controller.getSnapshot().phase).toBe("idle");
+  });
+});
+
 describe("happy path", () => {
   it("goes microphone -> authorizing -> connecting -> active and kicks off the interviewer", async () => {
     const h = harness();
