@@ -101,11 +101,13 @@
   }
 
   .theme-datasea :where(h1, h2, h3, h4) {
-    font-family: var(--font-editorial-heading), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-family:
+      var(--font-editorial-heading), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   }
 
   /* Controls and site chrome use the sans face, as on joindatasea.com. */
-  .theme-datasea :where(button, [role="button"], input, textarea, select, label, header a, nav a, footer a) {
+  .theme-datasea
+    :where(button, [role="button"], input, textarea, select, label, header a, nav a, footer a) {
     font-family: var(--font-geist-sans), system-ui, sans-serif;
   }
 }

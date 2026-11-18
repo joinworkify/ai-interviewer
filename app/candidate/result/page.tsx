@@ -45,7 +45,9 @@ export default function ResultPage() {
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 rounded-xl border bg-card p-8 text-center shadow-sm">
       {failed ? (
         <div role="alert" className="flex flex-col items-center gap-3 text-sm">
-          <p className="text-destructive">Could not load the result. Your attempt is already saved.</p>
+          <p className="text-destructive">
+            Could not load the result. Your attempt is already saved.
+          </p>
           <Button variant="outline" onClick={load}>
             Retry
           </Button>
@@ -58,8 +60,8 @@ export default function ResultPage() {
         <div className="flex flex-col items-center gap-3 text-sm" aria-live="polite">
           <h1 className="text-3xl font-bold tracking-tight">Still processing</h1>
           <p>
-            Your interview ended and your answers are saved. Processing is taking longer than usual; you
-            can leave this page or check again.
+            Your interview ended and your answers are saved. Processing is taking longer than usual;
+            you can leave this page or check again.
           </p>
           <Button variant="outline" onClick={load}>
             Check again

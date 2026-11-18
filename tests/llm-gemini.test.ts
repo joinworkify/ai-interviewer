@@ -7,11 +7,7 @@
  * response shapes. They do NOT prove your key, quota, model, or region work.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_LLM_BASE_URL,
-  generateQuestions,
-  readLlmConfig,
-} from "@/lib/interviews/llm";
+import { DEFAULT_LLM_BASE_URL, generateQuestions, readLlmConfig } from "@/lib/interviews/llm";
 import type { GenerateInterviewInput } from "@/lib/interviews/validation";
 
 const GEMINI_ENV = {
@@ -90,24 +86,16 @@ describe("Gemini OpenAI-compatible config (mocked fetch, not live)", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-    );
+    expect(url).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
     expect(init?.method).toBe("POST");
     const headers = init?.headers as Record<string, string>;
     expect(headers.authorization).toBe("Bearer test-google-key-not-real");
     expect(headers["content-type"]).toBe("application/json");
     const body = JSON.parse(init?.body as string);
     expect(body.model).toBe("gemini-2.5-flash");
-    expect(body.messages.map((m: { role: string }) => m.role)).toEqual([
-      "system",
-      "user",
-    ]);
+    expect(body.messages.map((m: { role: string }) => m.role)).toEqual(["system", "user"]);
 
-    expect(result).toEqual([
-      "What is a React hook?",
-      "How do TypeScript generics help?",
-    ]);
+    expect(result).toEqual(["What is a React hook?", "How do TypeScript generics help?"]);
   });
 
   it("maps a Gemini 429 (quota/rate limit) to rate_limited without leaking detail", async () => {
@@ -116,7 +104,13 @@ describe("Gemini OpenAI-compatible config (mocked fetch, not live)", () => {
       async () =>
         new Response(
           JSON.stringify([
-            { error: { code: 429, message: "Resource has been exhausted", status: "RESOURCE_EXHAUSTED" } },
+            {
+              error: {
+                code: 429,
+                message: "Resource has been exhausted",
+                status: "RESOURCE_EXHAUSTED",
+              },
+            },
           ]),
           { status: 429, headers: { "content-type": "application/json" } },
         ),

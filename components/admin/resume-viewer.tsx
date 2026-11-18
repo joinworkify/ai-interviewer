@@ -74,13 +74,28 @@ function ResumePreview({ url, fileName }: { url: string; fileName: string }) {
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Resume viewer">
-        <button type="button" className={btn} onClick={() => zoomBy(-STEP)} disabled={zoom <= MIN_ZOOM} aria-label="Zoom out">
+        <button
+          type="button"
+          className={btn}
+          onClick={() => zoomBy(-STEP)}
+          disabled={zoom <= MIN_ZOOM}
+          aria-label="Zoom out"
+        >
           −
         </button>
-        <span className="w-14 text-center text-sm tabular-nums text-muted-foreground" aria-live="polite">
+        <span
+          className="w-14 text-center text-sm tabular-nums text-muted-foreground"
+          aria-live="polite"
+        >
           {Math.round(zoom * 100)}%
         </span>
-        <button type="button" className={btn} onClick={() => zoomBy(STEP)} disabled={zoom >= MAX_ZOOM} aria-label="Zoom in">
+        <button
+          type="button"
+          className={btn}
+          onClick={() => zoomBy(STEP)}
+          disabled={zoom >= MAX_ZOOM}
+          aria-label="Zoom in"
+        >
           +
         </button>
         <button type="button" className={btn} onClick={() => setZoom(1)} disabled={zoom === 1}>

@@ -26,7 +26,9 @@ export function createSupabaseProgressStore(client: SupabaseClient<Database>): P
         throw new Error("findOpenAttempt failed");
       }
       if (!data) return null;
-      const session = Array.isArray(data.interview_sessions) ? data.interview_sessions[0] : data.interview_sessions;
+      const session = Array.isArray(data.interview_sessions)
+        ? data.interview_sessions[0]
+        : data.interview_sessions;
       if (!session) return null;
       const open =
         session.status === "in_progress" &&

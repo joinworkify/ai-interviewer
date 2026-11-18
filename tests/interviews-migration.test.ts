@@ -16,10 +16,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const MIGRATION = fileURLToPath(
-  new URL(
-    "../supabase/migrations/20261109000000_create_interviews.sql",
-    import.meta.url,
-  ),
+  new URL("../supabase/migrations/20261109000000_create_interviews.sql", import.meta.url),
 );
 
 /** Migration SQL with `--` comments removed and whitespace collapsed. */
@@ -43,9 +40,7 @@ const BROWSER_ROLES = /\b(anon|authenticated|public)\b/;
 
 describe("interviews migration privileges", () => {
   it("enables row level security", () => {
-    expect(sql).toMatch(
-      /alter table public\.interviews enable row level security/,
-    );
+    expect(sql).toMatch(/alter table public\.interviews enable row level security/);
   });
 
   it("revokes all browser-role privileges before granting", () => {
@@ -61,9 +56,7 @@ describe("interviews migration privileges", () => {
     const browserGrants = stmts.filter(
       (s) => /^grant /.test(s) && / to .*\b(anon|authenticated|public)\b/.test(s),
     );
-    expect(browserGrants).toEqual([
-      "grant select on table public.interviews to authenticated",
-    ]);
+    expect(browserGrants).toEqual(["grant select on table public.interviews to authenticated"]);
   });
 
   it("defines exactly one policy: owner-scoped SELECT for authenticated", () => {

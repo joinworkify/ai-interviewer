@@ -21,10 +21,7 @@ export async function runAttemptRoute(
   // Check before createClient(): it throws without these. Names only.
   const missing = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
-    [
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ],
+    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
     [
       "SUPABASE_SECRET_KEY",
       // `||`, not `??`: a blank SUPABASE_SECRET_KEY must fall back, as in admin.ts.

@@ -79,8 +79,7 @@ export function roleFromRow(
     | "requirements"
   >,
 ): Role {
-  const bullets = (v: unknown): Bullet[] =>
-    Array.isArray(v) ? (v as Bullet[]) : [];
+  const bullets = (v: unknown): Bullet[] => (Array.isArray(v) ? (v as Bullet[]) : []);
   return {
     id: row.id,
     title: row.title,
@@ -99,10 +98,7 @@ export function roleFromRow(
  * GET /roles?q=: active roles, in display order. Search runs in Postgres
  * (search_roles) so the browser never downloads the whole table to filter it.
  */
-export async function getRoles(
-  query = "",
-  client: RolesClient = createClient(),
-): Promise<Role[]> {
+export async function getRoles(query = "", client: RolesClient = createClient()): Promise<Role[]> {
   const { data, error } = await client.rpc("search_roles", {
     p_query: query.trim(),
   });
@@ -118,8 +114,7 @@ export async function getRole(id: string): Promise<Role> {
     .eq("id", id)
     .maybeSingle();
   if (error) throw new ApiError("ROLES_FAILED", "This role failed to load.");
-  if (!data)
-    throw new ApiError("NOT_FOUND", "This role is no longer available.");
+  if (!data) throw new ApiError("NOT_FOUND", "This role is no longer available.");
   return roleFromRow(data);
 }
 
@@ -158,42 +153,29 @@ export async function giveConsentAndCreateAttempt(
       body: JSON.stringify({ roleId, consentVersion: CONSENT_VERSION }),
     });
   } catch {
-    throw new ApiError(
-      "NETWORK",
-      "Network error. Check your connection and try again.",
-    );
+    throw new ApiError("NETWORK", "Network error. Check your connection and try again.");
   }
   const json: unknown = await res.json().catch(() => null);
-  if (
-    res.status === 409 &&
-    (json as { error?: unknown } | null)?.error === "consent_outdated"
-  ) {
+  if (res.status === 409 && (json as { error?: unknown } | null)?.error === "consent_outdated") {
     throw new ApiError(
       "CONSENT_OUTDATED",
       "The consent text has changed. Reload the page and agree again.",
     );
   }
-  if (
-    res.status === 429 &&
-    (json as { error?: unknown } | null)?.error === "attempt_limit"
-  ) {
+  if (res.status === 429 && (json as { error?: unknown } | null)?.error === "attempt_limit") {
     throw new ApiError(
       "ATTEMPT_LIMIT",
       "You have used all of your attempts for this role. Contact DataSea if you need another.",
     );
   }
-  const sessionId = (json as { attempt?: { sessionId?: unknown } } | null)
-    ?.attempt?.sessionId;
+  const sessionId = (json as { attempt?: { sessionId?: unknown } } | null)?.attempt?.sessionId;
   if (!res.ok || typeof sessionId !== "string" || sessionId.length === 0) {
     throw new ApiError("ATTEMPT_FAILED", "Could not start the interview.");
   }
   return { attemptId: sessionId };
 }
 
-const RESULT_SUMMARY: Record<
-  "processing" | "submitted" | "incomplete",
-  string
-> = {
+const RESULT_SUMMARY: Record<"processing" | "submitted" | "incomplete", string> = {
   processing: "We're still processing your interview.",
   submitted: "Your answers were received.",
   incomplete: "We didn't hear an answer, so there is nothing to review.",
@@ -211,29 +193,17 @@ export async function getResult(
 ): Promise<AttemptResult> {
   let res: Response;
   try {
-    res = await fetchImpl(
-      `/api/candidate/attempts/${encodeURIComponent(attemptId)}`,
-      {
-        credentials: "same-origin",
-        cache: "no-store",
-        signal,
-      },
-    );
+    res = await fetchImpl(`/api/candidate/attempts/${encodeURIComponent(attemptId)}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+      signal,
+    });
   } catch {
-    throw new ApiError(
-      "NETWORK",
-      "Network error. Check your connection and try again.",
-    );
+    throw new ApiError("NETWORK", "Network error. Check your connection and try again.");
   }
   const json: unknown = await res.json().catch(() => null);
-  const status = (json as { attempt?: { status?: unknown } } | null)?.attempt
-    ?.status;
-  if (
-    !res.ok ||
-    (status !== "processing" &&
-      status !== "submitted" &&
-      status !== "incomplete")
-  ) {
+  const status = (json as { attempt?: { status?: unknown } } | null)?.attempt?.status;
+  if (!res.ok || (status !== "processing" && status !== "submitted" && status !== "incomplete")) {
     throw new ApiError("RESULT_FAILED", "Could not load the result.");
   }
   return { attemptId, status, summary: RESULT_SUMMARY[status] };
@@ -260,9 +230,7 @@ export async function waitForResult(
 ): Promise<AttemptResult> {
   const interval = options.intervalMs ?? 2000;
   const timeout = options.timeoutMs ?? 60_000;
-  const sleep =
-    options.sleep ??
-    ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const now = options.now ?? Date.now;
   const start = now();
   let last: AttemptResult | null = null;
@@ -282,7 +250,5 @@ export async function waitForResult(
     await sleep(interval);
   }
   if (last) return last;
-  throw (
-    lastError ?? new ApiError("RESULT_FAILED", "Could not load the result.")
-  );
+  throw lastError ?? new ApiError("RESULT_FAILED", "Could not load the result.");
 }

@@ -34,9 +34,7 @@ rollback;
 describe.skipIf(!HAS_DB)("search_roles", () => {
   it("lets anon search active roles by title, case-insensitively", () => {
     const r = runSql(
-      asAnon(
-        `select 'ids=' || string_agg(id, ',') from public.search_roles('SEARCH ROLE');`,
-      ),
+      asAnon(`select 'ids=' || string_agg(id, ',') from public.search_roles('SEARCH ROLE');`),
     );
     expect(r.stderr).toBe("");
     expect(r.stdout).toContain("ids=db-search-first,db-search-second");
@@ -44,9 +42,7 @@ describe.skipIf(!HAS_DB)("search_roles", () => {
 
   it("matches skills but never returns an inactive role", () => {
     const r = runSql(
-      asAnon(
-        `select 'ids=' || string_agg(id, ',') from public.search_roles('postgres');`,
-      ),
+      asAnon(`select 'ids=' || string_agg(id, ',') from public.search_roles('postgres');`),
     );
     expect(r.stderr).toBe("");
     expect(r.stdout).toContain("ids=db-search-second");

@@ -28,9 +28,7 @@ export async function saveProfile(
       body: JSON.stringify(update),
     });
   } catch {
-    throw new ProfileSaveError(
-      "Could not save your details. Check your connection and try again.",
-    );
+    throw new ProfileSaveError("Could not save your details. Check your connection and try again.");
   }
   if (res.ok) {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(PROFILE_UPDATED_EVENT));

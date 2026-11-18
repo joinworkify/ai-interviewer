@@ -1,8 +1,4 @@
-import {
-  SigningSecretError,
-  verifyCapability,
-  type CapabilityErrorCode,
-} from "./capability";
+import { SigningSecretError, verifyCapability, type CapabilityErrorCode } from "./capability";
 import { generateQuestions, LlmError, readLlmConfig } from "./llm";
 import {
   createSupabaseInterviewStore,
@@ -74,8 +70,7 @@ const CAPABILITY_MESSAGES: Record<CapabilityErrorCode, string> = {
   bad_signature: "Invalid generation capability.",
   invalid_claims: "Invalid generation capability.",
   not_yet_valid: "Invalid generation capability.",
-  expired:
-    "The generation session expired. Ask the user to restart the call from the app.",
+  expired: "The generation session expired. Ask the user to restart the call from the app.",
 };
 
 async function readBody(
@@ -85,11 +80,7 @@ async function readBody(
   if (!contentType.toLowerCase().startsWith("application/json")) {
     return {
       ok: false,
-      response: fail(
-        415,
-        "unsupported_media_type",
-        "Content-Type must be application/json.",
-      ),
+      response: fail(415, "unsupported_media_type", "Content-Type must be application/json."),
     };
   }
   const declared = Number(request.headers.get("content-length") ?? "0");
@@ -127,11 +118,7 @@ export async function handleGenerateInterview(
   const body = await readBody(request);
   if (!body.ok) return body.response;
 
-  if (
-    !body.value ||
-    typeof body.value !== "object" ||
-    Array.isArray(body.value)
-  ) {
+  if (!body.value || typeof body.value !== "object" || Array.isArray(body.value)) {
     return fail(400, "invalid_request", "Request body must be a JSON object.");
   }
 
@@ -140,11 +127,7 @@ export async function handleGenerateInterview(
   const record = body.value as Record<string, unknown>;
   const headerToken = request.headers.get("x-interview-capability");
   const bodyToken = record.capability;
-  if (
-    headerToken !== null &&
-    bodyToken !== undefined &&
-    headerToken !== bodyToken
-  ) {
+  if (headerToken !== null && bodyToken !== undefined && headerToken !== bodyToken) {
     return fail(401, "unauthorized", "Conflicting generation capabilities.");
   }
   const token = bodyToken ?? headerToken ?? undefined;
@@ -185,9 +168,7 @@ export async function handleGenerateInterview(
       ...(llm.ok ? [] : [...llm.missing, ...llm.invalid]),
       ...(storeConfig.ok ? [] : storeConfig.missing),
     ];
-    console.error(
-      `[generate-interview] missing/invalid server config: ${missing.join(", ")}`,
-    );
+    console.error(`[generate-interview] missing/invalid server config: ${missing.join(", ")}`);
     return fail(
       503,
       "server_misconfigured",
@@ -234,17 +215,9 @@ export async function handleGenerateInterview(
             "The question generator is busy. Please try again shortly.",
           );
         case "timeout":
-          return fail(
-            504,
-            "llm_timeout",
-            "The question generator timed out. Please try again.",
-          );
+          return fail(504, "llm_timeout", "The question generator timed out. Please try again.");
         default:
-          return fail(
-            502,
-            "llm_failed",
-            "The question generator failed to produce questions.",
-          );
+          return fail(502, "llm_failed", "The question generator failed to produce questions.");
       }
     }
     console.error("[generate-interview] unexpected LLM error", describeError(err));
@@ -266,11 +239,7 @@ export async function handleGenerateInterview(
     });
   } catch (err) {
     if (err instanceof DuplicateGenerationError) {
-      return fail(
-        409,
-        "already_generated",
-        "An interview was already generated in this session.",
-      );
+      return fail(409, "already_generated", "An interview was already generated in this session.");
     }
     return fail(500, "storage_failed", "Could not save the interview.");
   }

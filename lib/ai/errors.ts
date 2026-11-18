@@ -1,10 +1,6 @@
 import type { LlmError } from "./client";
 
-export type LlmFailureCode =
-  | "llm_auth_failed"
-  | "llm_rate_limited"
-  | "llm_timeout"
-  | "llm_failed";
+export type LlmFailureCode = "llm_auth_failed" | "llm_rate_limited" | "llm_timeout" | "llm_failed";
 
 /** HTTP mapping for LLM failures. Messages are safe to show to end users. */
 export function describeLlmError(err: LlmError): {

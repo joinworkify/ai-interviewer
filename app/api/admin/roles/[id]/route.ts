@@ -1,5 +1,4 @@
-﻿
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { describeError } from "@/lib/log/safe-error";
 import { isRoleBullets, isRolePay } from "@/lib/admin/role-validation";
 
@@ -24,19 +23,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     const { id } = await params;
 
     if (!validId(id)) {
-      return NextResponse.json(
-        { success: false, message: "Invalid role ID." },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Invalid role ID." }, { status: 400 });
     }
 
     const body: unknown = await request.json();
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return NextResponse.json(
-        { success: false, message: "Invalid role data." },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Invalid role data." }, { status: 400 });
     }
 
     const input = body as Record<string, unknown>;
@@ -48,17 +41,17 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         !input.title.trim() ||
         input.title.trim().length > 120
       ) {
-        return NextResponse.json(
-          { success: false, message: "Invalid title." },
-          { status: 400 },
-        );
+        return NextResponse.json({ success: false, message: "Invalid title." }, { status: 400 });
       }
       updates.title = input.title.trim();
     }
 
     if (["pay_rate", "pay_min", "pay_max", "pay_type"].some((key) => key in input)) {
       if (!isRolePay(input)) {
-        return NextResponse.json({ success: false, message: "Provide a valid pay minimum, maximum and type together." }, { status: 400 });
+        return NextResponse.json(
+          { success: false, message: "Provide a valid pay minimum, maximum and type together." },
+          { status: 400 },
+        );
       }
       updates.pay_min = input.pay_min;
       updates.pay_max = input.pay_max;
@@ -71,23 +64,14 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         !input.job_type.trim() ||
         input.job_type.trim().length > 80
       ) {
-        return NextResponse.json(
-          { success: false, message: "Invalid job type." },
-          { status: 400 },
-        );
+        return NextResponse.json({ success: false, message: "Invalid job type." }, { status: 400 });
       }
       updates.job_type = input.job_type.trim();
     }
 
     if ("skills" in input) {
-      if (
-        !Array.isArray(input.skills) ||
-        !input.skills.every((item) => typeof item === "string")
-      ) {
-        return NextResponse.json(
-          { success: false, message: "Invalid skills." },
-          { status: 400 },
-        );
+      if (!Array.isArray(input.skills) || !input.skills.every((item) => typeof item === "string")) {
+        return NextResponse.json({ success: false, message: "Invalid skills." }, { status: 400 });
       }
       updates.skills = input.skills;
     }
@@ -158,10 +142,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     if (error) throw error;
 
     if (!data) {
-      return NextResponse.json(
-        { success: false, message: "Role not found." },
-        { status: 404 },
-      );
+      return NextResponse.json({ success: false, message: "Role not found." }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, role: data });
@@ -185,10 +166,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     const { id } = await params;
 
     if (!validId(id)) {
-      return NextResponse.json(
-        { success: false, message: "Invalid role ID." },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Invalid role ID." }, { status: 400 });
     }
 
     const supabase = createAdminClient();
@@ -203,10 +181,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     if (error) throw error;
 
     if (!data) {
-      return NextResponse.json(
-        { success: false, message: "Role not found." },
-        { status: 404 },
-      );
+      return NextResponse.json({ success: false, message: "Role not found." }, { status: 404 });
     }
 
     return NextResponse.json({

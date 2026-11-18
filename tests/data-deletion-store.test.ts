@@ -11,7 +11,10 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
-const found = (q: { op: string }) => ({ data: q.op === "select" ? { id: SID } : null, error: null });
+const found = (q: { op: string }) => ({
+  data: q.op === "select" ? { id: SID } : null,
+  error: null,
+});
 const notFound = () => ({ data: null, error: null });
 
 describe("deleteTranscript", () => {
@@ -19,7 +22,11 @@ describe("deleteTranscript", () => {
     const { client, log, events } = fakeClient(found);
     const ok = await createSupabaseDeletionStore(client).deleteTranscript(ME, SID);
     expect(ok).toBe(true);
-    expect(events).toEqual(["interview_sessions:select", "rpc:purge_vapi_events", "interview_sessions:update"]);
+    expect(events).toEqual([
+      "interview_sessions:select",
+      "rpc:purge_vapi_events",
+      "interview_sessions:update",
+    ]);
     expect(log[0].filters).toEqual({ id: SID, user_id: ME });
     expect(log[1].payload).toEqual({ p_user_id: ME, p_session_id: SID });
     expect(log[2].payload).toEqual({ transcript: null, recording_url: null });
@@ -39,8 +46,12 @@ describe("deleteTranscript", () => {
   });
 
   it("leaves the transcript in place if the purge fails", async () => {
-    const { client, events } = fakeClient(found, { rpc: () => ({ data: null, error: { message: "rpc down" } }) });
-    await expect(createSupabaseDeletionStore(client).deleteTranscript(ME, SID)).rejects.toBeInstanceOf(DeletionStoreError);
+    const { client, events } = fakeClient(found, {
+      rpc: () => ({ data: null, error: { message: "rpc down" } }),
+    });
+    await expect(
+      createSupabaseDeletionStore(client).deleteTranscript(ME, SID),
+    ).rejects.toBeInstanceOf(DeletionStoreError);
     expect(events).not.toContain("interview_sessions:update");
   });
 });
@@ -49,7 +60,11 @@ describe("deleteSession", () => {
   it("purges vapi events first, then deletes the session scoped to the user", async () => {
     const { client, log, events } = fakeClient(found);
     expect(await createSupabaseDeletionStore(client).deleteSession(ME, SID)).toBe(true);
-    expect(events).toEqual(["interview_sessions:select", "rpc:purge_vapi_events", "interview_sessions:delete"]);
+    expect(events).toEqual([
+      "interview_sessions:select",
+      "rpc:purge_vapi_events",
+      "interview_sessions:delete",
+    ]);
     expect(log[2].filters).toEqual({ id: SID, user_id: ME });
   });
 
@@ -60,8 +75,12 @@ describe("deleteSession", () => {
   });
 
   it("keeps the session if the purge fails", async () => {
-    const { client, events } = fakeClient(found, { rpc: () => ({ data: null, error: { message: "x" } }) });
-    await expect(createSupabaseDeletionStore(client).deleteSession(ME, SID)).rejects.toBeInstanceOf(DeletionStoreError);
+    const { client, events } = fakeClient(found, {
+      rpc: () => ({ data: null, error: { message: "x" } }),
+    });
+    await expect(createSupabaseDeletionStore(client).deleteSession(ME, SID)).rejects.toBeInstanceOf(
+      DeletionStoreError,
+    );
     expect(events).not.toContain("interview_sessions:delete");
   });
 });
@@ -76,14 +95,22 @@ describe("deleteAccount", () => {
   });
 
   it("does not delete the user if the purge fails, so nothing is orphaned", async () => {
-    const { client, events } = fakeClient(notFound, { rpc: () => ({ data: null, error: { message: "x" } }) });
-    await expect(createSupabaseDeletionStore(client).deleteAccount(ME)).rejects.toBeInstanceOf(DeletionStoreError);
+    const { client, events } = fakeClient(notFound, {
+      rpc: () => ({ data: null, error: { message: "x" } }),
+    });
+    await expect(createSupabaseDeletionStore(client).deleteAccount(ME)).rejects.toBeInstanceOf(
+      DeletionStoreError,
+    );
     expect(events).not.toContain("auth.deleteUser");
   });
 
   it("surfaces an auth deletion failure without leaking its message", async () => {
-    const { client } = fakeClient(notFound, { deleteUser: () => ({ error: { message: "secret-detail" } }) });
-    const err = await createSupabaseDeletionStore(client).deleteAccount(ME).catch((e: Error) => e);
+    const { client } = fakeClient(notFound, {
+      deleteUser: () => ({ error: { message: "secret-detail" } }),
+    });
+    const err = await createSupabaseDeletionStore(client)
+      .deleteAccount(ME)
+      .catch((e: Error) => e);
     expect(err).toBeInstanceOf(DeletionStoreError);
     expect((err as Error).message).not.toContain("secret-detail");
   });

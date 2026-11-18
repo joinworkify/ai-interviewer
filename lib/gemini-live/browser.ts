@@ -96,9 +96,7 @@ export async function startBrowserMicrophone(
   }
 }
 
-export function createBrowserPlayer(
-  onPlayingChange: (playing: boolean) => void,
-): PlayerLike {
+export function createBrowserPlayer(onPlayingChange: (playing: boolean) => void): PlayerLike {
   if (typeof window === "undefined" || typeof window.AudioContext !== "function") {
     throw new Error("Web Audio API (AudioContext) is not available.");
   }

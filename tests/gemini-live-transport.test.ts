@@ -234,11 +234,18 @@ describe("cancellation during establishment", () => {
 describe("controller + real transport", () => {
   async function makeController(setupTimeoutMs = 5000) {
     const { LiveInterviewController } = await import("@/lib/gemini-live/controller");
-    const mic = { sampleRate: 48000, stops: 0, stop() { this.stops++; } };
+    const mic = {
+      sampleRate: 48000,
+      stops: 0,
+      stop() {
+        this.stops++;
+      },
+    };
     const controller = new LiveInterviewController({
       startMicrophone: async () => mic,
       requestToken: async () => ({ token: TOKEN, model: MODEL, maxSessionSeconds: 300 }),
-      connect: (args) => connectLiveTransport({ ...args, setupTimeoutMs, createWebSocket: factory }),
+      connect: (args) =>
+        connectLiveTransport({ ...args, setupTimeoutMs, createWebSocket: factory }),
       createPlayer: () => ({
         resume: async () => {},
         enqueue: () => {},
@@ -324,15 +331,22 @@ describe("established session", () => {
   it("parses string, Blob and ArrayBuffer frames and delivers them in order", async () => {
     const { messages, socket } = await established();
     const enc = (o: object) => JSON.stringify(o);
-    socket.serverMessage(new Blob([enc({ serverContent: { outputTranscription: { text: "A" } } })]));
+    socket.serverMessage(
+      new Blob([enc({ serverContent: { outputTranscription: { text: "A" } } })]),
+    );
     socket.serverMessage(enc({ serverContent: { outputTranscription: { text: "B" } } }));
     socket.serverMessage(
-      new TextEncoder().encode(enc({ serverContent: { outputTranscription: { text: "C" } } })).buffer,
+      new TextEncoder().encode(enc({ serverContent: { outputTranscription: { text: "C" } } }))
+        .buffer,
     );
     await flush();
     await vi.advanceTimersByTimeAsync(0);
     await flush();
-    expect(messages.map((m) => m.serverContent?.outputTranscription?.text)).toEqual(["A", "B", "C"]);
+    expect(messages.map((m) => m.serverContent?.outputTranscription?.text)).toEqual([
+      "A",
+      "B",
+      "C",
+    ]);
   });
 
   it("forwards every part of a modelTurn untouched", async () => {

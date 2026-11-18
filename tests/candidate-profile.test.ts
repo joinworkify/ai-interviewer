@@ -70,10 +70,7 @@ describe("validateProfileRequest", () => {
     ["a data: link", { linkedinUrl: "data:text/html,x" }],
     ["a link with no scheme", { portfolioUrl: "linkedin.com/in/ada" }],
     ["a non-string link", { portfolioUrl: 5 }],
-    [
-      "a very long link",
-      { portfolioUrl: `https://a.test/${"x".repeat(2100)}` },
-    ],
+    ["a very long link", { portfolioUrl: `https://a.test/${"x".repeat(2100)}` }],
   ])("rejects %s", (_label, body) => {
     expect(validateProfileRequest(body).ok).toBe(false);
   });
@@ -91,10 +88,7 @@ describe("validateProfileRequest", () => {
 describe("handleSaveProfile", () => {
   it("saves for the verified user and returns only what was saved", async () => {
     const { deps: d, update } = deps();
-    const res = await handleSaveProfile(
-      post({ name: "Ada", userId: "someone-else" }),
-      d,
-    );
+    const res = await handleSaveProfile(post({ name: "Ada", userId: "someone-else" }), d);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       success: true,
@@ -113,17 +107,9 @@ describe("handleSaveProfile", () => {
   it("answers 415 for a non-JSON body and 400 for invalid fields", async () => {
     const { deps: d, update } = deps();
     expect(
-      (
-        await handleSaveProfile(
-          post("name=Ada", { "content-type": "text/plain" }),
-          d,
-        )
-      ).status,
+      (await handleSaveProfile(post("name=Ada", { "content-type": "text/plain" }), d)).status,
     ).toBe(415);
-    const bad = await handleSaveProfile(
-      post({ portfolioUrl: "javascript:alert(1)" }),
-      d,
-    );
+    const bad = await handleSaveProfile(post({ portfolioUrl: "javascript:alert(1)" }), d);
     expect(bad.status).toBe(400);
     expect((await bad.json()).error).toBe("invalid_request");
     expect(update).not.toHaveBeenCalled();
@@ -131,9 +117,7 @@ describe("handleSaveProfile", () => {
 
   it("answers 413 for an oversized body", async () => {
     const { deps: d } = deps();
-    expect(
-      (await handleSaveProfile(post({ name: "a".repeat(5000) }), d)).status,
-    ).toBe(413);
+    expect((await handleSaveProfile(post({ name: "a".repeat(5000) }), d)).status).toBe(413);
   });
 
   it("answers 404 when there is no profile and 500 without leaking the cause", async () => {
@@ -161,15 +145,11 @@ describe("handleSaveProfile", () => {
 });
 
 describe("saveProfile (browser helper)", () => {
-  const json = (status: number, body: unknown) =>
-    new Response(JSON.stringify(body), { status });
+  const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
 
   it("posts the fields as JSON", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(json(200, { success: true }));
-    await saveProfile(
-      { name: "Ada", phone: null },
-      fetchImpl as unknown as typeof fetch,
-    );
+    await saveProfile({ name: "Ada", phone: null }, fetchImpl as unknown as typeof fetch);
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toBe("/api/candidate/profile");
     expect(init.method).toBe("POST");
@@ -190,21 +170,13 @@ describe("saveProfile (browser helper)", () => {
     await expect(
       saveProfile(
         { name: "A" },
-        vi
-          .fn()
-          .mockResolvedValue(
-            new Response("oops", { status: 500 }),
-          ) as unknown as typeof fetch,
+        vi.fn().mockResolvedValue(new Response("oops", { status: 500 })) as unknown as typeof fetch,
       ),
     ).rejects.toBeInstanceOf(ProfileSaveError);
     await expect(
       saveProfile(
         { name: "A" },
-        vi
-          .fn()
-          .mockRejectedValue(
-            new TypeError("Failed to fetch"),
-          ) as unknown as typeof fetch,
+        vi.fn().mockRejectedValue(new TypeError("Failed to fetch")) as unknown as typeof fetch,
       ),
     ).rejects.toThrow(/connection/);
   });

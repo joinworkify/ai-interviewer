@@ -23,7 +23,9 @@ afterEach(() => {
 
 describe("PasswordInput", () => {
   it("hides the password until the eye button is pressed, and hides it again on a second press", () => {
-    act(() => root.render(createElement(PasswordInput, { id: "password", defaultValue: "secret" })));
+    act(() =>
+      root.render(createElement(PasswordInput, { id: "password", defaultValue: "secret" })),
+    );
     const input = container.querySelector("input")!;
     const button = container.querySelector("button")!;
 

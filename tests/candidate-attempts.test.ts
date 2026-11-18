@@ -153,11 +153,17 @@ describe("buildRoleQuestions", () => {
 });
 
 describe("interviewDetailsForRole", () => {
-  it.each(FIXTURE_ROLES_WITH_SKILLS.map((r) => [r.id]))("gives details the Dograh session route accepts for %s", (id) => {
-    const role = FIXTURE_ROLES_WITH_SKILLS.find((r) => r.id === id)!;
-    const result = validateLiveInterviewBody({ ...interviewDetailsForRole(role), sessionId: SESSION });
-    expect(result.ok, JSON.stringify(result)).toBe(true);
-  });
+  it.each(FIXTURE_ROLES_WITH_SKILLS.map((r) => [r.id]))(
+    "gives details the Dograh session route accepts for %s",
+    (id) => {
+      const role = FIXTURE_ROLES_WITH_SKILLS.find((r) => r.id === id)!;
+      const result = validateLiveInterviewBody({
+        ...interviewDetailsForRole(role),
+        sessionId: SESSION,
+      });
+      expect(result.ok, JSON.stringify(result)).toBe(true);
+    },
+  );
 
   it("infers the level from the title", () => {
     expect(levelForRole("Senior Software Engineer")).toBe("senior");
@@ -357,7 +363,9 @@ describe("createSupabaseAttemptStore attempt limits", () => {
 
   it("counts the user's non-abandoned attempts for the role", async () => {
     const { client, ops } = recordingClient({ count: 2 });
-    expect(await createSupabaseAttemptStore(client as never).countAttempts(USER, "generalist")).toBe(2);
+    expect(
+      await createSupabaseAttemptStore(client as never).countAttempts(USER, "generalist"),
+    ).toBe(2);
     expect(ops).toContainEqual(["from", "candidate_consents"]);
     expect(ops).toContainEqual(["eq", "user_id", USER]);
     expect(ops).toContainEqual(["eq", "role_id", "generalist"]);
@@ -367,7 +375,9 @@ describe("createSupabaseAttemptStore attempt limits", () => {
   it("throws, rather than reporting zero, when the count or the cleanup fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const failing = recordingClient({ error: { code: "XX000" } });
-    await expect(createSupabaseAttemptStore(failing.client as never).countAttempts(USER, "generalist")).rejects.toThrow();
+    await expect(
+      createSupabaseAttemptStore(failing.client as never).countAttempts(USER, "generalist"),
+    ).rejects.toThrow();
     await expect(
       createSupabaseAttemptStore(failing.client as never).abandonStaleAttempts(USER, new Date()),
     ).rejects.toThrow();
@@ -375,7 +385,11 @@ describe("createSupabaseAttemptStore attempt limits", () => {
 });
 
 describe("createSupabaseAttemptStore", () => {
-  function fakeClient(opts: { interviewError?: boolean; sessionError?: boolean; consentError?: boolean }) {
+  function fakeClient(opts: {
+    interviewError?: boolean;
+    sessionError?: boolean;
+    consentError?: boolean;
+  }) {
     const calls: { table: string; op: string; row?: unknown; eq?: [string, unknown][] }[] = [];
     const client = {
       from(table: string) {
@@ -399,7 +413,9 @@ describe("createSupabaseAttemptStore", () => {
           // `await client.from(..).delete().eq(..).eq(..)` and a bare
           // `await client.from(..).insert(..)` resolve the chain itself.
           then(resolve: (v: { error: unknown }) => void) {
-            resolve({ error: table === "candidate_consents" && opts.consentError ? { code: "23505" } : null });
+            resolve({
+              error: table === "candidate_consents" && opts.consentError ? { code: "23505" } : null,
+            });
           },
           select() {
             return chain;
@@ -444,7 +460,12 @@ describe("createSupabaseAttemptStore", () => {
     expect(calls[2]).toMatchObject({
       table: "candidate_consents",
       op: "insert",
-      row: { user_id: USER, session_id: SESSION, role_id: "generalist", consent_version: CONSENT_VERSION },
+      row: {
+        user_id: USER,
+        session_id: SESSION,
+        role_id: "generalist",
+        consent_version: CONSENT_VERSION,
+      },
     });
     expect(calls.some((c) => c.op === "delete")).toBe(false);
   });
@@ -452,7 +473,9 @@ describe("createSupabaseAttemptStore", () => {
   it("deletes the interview (and with it the session) when the consent insert fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { client, calls } = fakeClient({ consentError: true });
-    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT)).rejects.toThrow();
+    await expect(
+      createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT),
+    ).rejects.toThrow();
     const del = calls.find((c) => c.op === "delete");
     expect(del?.table).toBe("interviews");
     expect(del?.eq).toEqual([
@@ -464,14 +487,18 @@ describe("createSupabaseAttemptStore", () => {
   it("creates no session when the interview insert fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { client, calls } = fakeClient({ interviewError: true });
-    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT)).rejects.toThrow();
+    await expect(
+      createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT),
+    ).rejects.toThrow();
     expect(calls.map((c) => c.table)).toEqual(["interviews"]);
   });
 
   it("deletes the interview (for this user only) when the session insert fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { client, calls } = fakeClient({ sessionError: true });
-    await expect(createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT)).rejects.toThrow();
+    await expect(
+      createSupabaseAttemptStore(client as never).createAttempt(USER, ["q"], CONSENT),
+    ).rejects.toThrow();
     const del = calls.find((c) => c.op === "delete");
     expect(del?.table).toBe("interviews");
     expect(del?.eq).toEqual([
@@ -484,13 +511,21 @@ describe("createSupabaseAttemptStore", () => {
 describe("giveConsentAndCreateAttempt", () => {
   it("posts the role id and the consent version, and returns the session id as the attempt id", async () => {
     const fetchImpl = vi.fn(async () =>
-      Response.json({ success: true, attempt: { sessionId: SESSION, roleId: "generalist" } }, { status: 201 }),
+      Response.json(
+        { success: true, attempt: { sessionId: SESSION, roleId: "generalist" } },
+        { status: 201 },
+      ),
     );
-    expect(await giveConsentAndCreateAttempt("generalist", fetchImpl as never)).toEqual({ attemptId: SESSION });
+    expect(await giveConsentAndCreateAttempt("generalist", fetchImpl as never)).toEqual({
+      attemptId: SESSION,
+    });
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/candidate/attempts");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body as string)).toEqual({ roleId: "generalist", consentVersion: CONSENT_VERSION });
+    expect(JSON.parse(init.body as string)).toEqual({
+      roleId: "generalist",
+      consentVersion: CONSENT_VERSION,
+    });
   });
 
   it.each([
@@ -498,9 +533,9 @@ describe("giveConsentAndCreateAttempt", () => {
     ["a 200 without a session id", () => Response.json({ success: true })],
     ["a non-JSON body", () => new Response("<html>", { status: 502 })],
   ])("throws an ApiError for %s", async (_label, make) => {
-    await expect(giveConsentAndCreateAttempt("generalist", (async () => make()) as never)).rejects.toBeInstanceOf(
-      ApiError,
-    );
+    await expect(
+      giveConsentAndCreateAttempt("generalist", (async () => make()) as never),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 
   it("tells the caller when the consent text is out of date", async () => {
@@ -534,24 +569,43 @@ describe("attemptProgress", () => {
     ["an abandoned session", { status: "abandoned", transcript: null }, "incomplete"],
     [
       "a transcript with a spoken answer",
-      { status: "completed", transcript: turns(["interviewer", "Q?"], ["candidate", "An answer."]) },
+      {
+        status: "completed",
+        transcript: turns(["interviewer", "Q?"], ["candidate", "An answer."]),
+      },
       "submitted",
     ],
     [
       "a Vapi-shaped transcript with a spoken answer",
-      { status: "completed", transcript: [{ role: "assistant", message: "Q?" }, { role: "user", message: "Yes." }] },
+      {
+        status: "completed",
+        transcript: [
+          { role: "assistant", message: "Q?" },
+          { role: "user", message: "Yes." },
+        ],
+      },
       "submitted",
     ],
     [
       "a transcript with only the interviewer talking",
-      { status: "completed", transcript: turns(["interviewer", "Hello?"], ["interviewer", "Anyone there?"]) },
+      {
+        status: "completed",
+        transcript: turns(["interviewer", "Hello?"], ["interviewer", "Anyone there?"]),
+      },
       "incomplete",
     ],
     ["an empty transcript", { status: "completed", transcript: [] }, "incomplete"],
-    ["a blank candidate turn", { status: "completed", transcript: turns(["interviewer", "Q?"], ["candidate", "   "]) }, "incomplete"],
+    [
+      "a blank candidate turn",
+      { status: "completed", transcript: turns(["interviewer", "Q?"], ["candidate", "   "]) },
+      "incomplete",
+    ],
     [
       "a transcript too large to evaluate",
-      { status: "completed", transcript: turns(["interviewer", "Q?"], ["candidate", "x".repeat(70_000)]) },
+      {
+        status: "completed",
+        transcript: turns(["interviewer", "Q?"], ["candidate", "x".repeat(70_000)]),
+      },
       "submitted",
     ],
   ])("is %s -> %s", (_label, session, expected) => {
@@ -580,7 +634,10 @@ describe("handleGetAttempt", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("no-store");
     const text = await res.text();
-    expect(JSON.parse(text)).toEqual({ success: true, attempt: { sessionId: SESSION, status: "submitted" } });
+    expect(JSON.parse(text)).toEqual({
+      success: true,
+      attempt: { sessionId: SESSION, status: "submitted" },
+    });
     // Nothing a reviewer decides, and nothing the candidate said, comes back.
     expect(text).not.toMatch(/SECRET-ANSWER|transcript|feedback|score/i);
   });

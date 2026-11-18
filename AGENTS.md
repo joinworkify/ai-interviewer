@@ -8,12 +8,12 @@ Keep it short: rules live here, explanations live in `docs/` and the setup guide
 
 Read the doc that matches your task before you write code.
 
-| Task                                   | Read                                                  |
-| -------------------------------------- | ----------------------------------------------------- |
-| Run the app, env vars, scripts         | [README.md](README.md)                                |
-| Voice call, webhook, transcripts       | [DOGRAH_SETUP.md](DOGRAH_SETUP.md)                    |
-| What is stored, who can read it, AI use | [docs/security-ai-data.md](docs/security-ai-data.md) |
-| Vapi or Gemini Live prototypes         | [VAPI_SETUP.md](VAPI_SETUP.md), [GEMINI_LIVE_SETUP.md](GEMINI_LIVE_SETUP.md) |
+| Task                                    | Read                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------- |
+| Run the app, env vars, scripts          | [README.md](README.md)                                                       |
+| Voice call, webhook, transcripts        | [DOGRAH_SETUP.md](DOGRAH_SETUP.md)                                           |
+| What is stored, who can read it, AI use | [docs/security-ai-data.md](docs/security-ai-data.md)                         |
+| Vapi or Gemini Live prototypes          | [VAPI_SETUP.md](VAPI_SETUP.md), [GEMINI_LIVE_SETUP.md](GEMINI_LIVE_SETUP.md) |
 
 ## 2. What this project is
 

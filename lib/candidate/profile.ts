@@ -56,13 +56,8 @@ function fail(
 type Parsed<T> = { ok: true; value: T } | { ok: false; message: string };
 
 function parseName(value: unknown): Parsed<string> {
-  const name =
-    typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
-  if (
-    name.length < 1 ||
-    name.length > MAX_NAME_LENGTH ||
-    /[\u0000-\u001f\u007f]/.test(name)
-  ) {
+  const name = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+  if (name.length < 1 || name.length > MAX_NAME_LENGTH || /[\u0000-\u001f\u007f]/.test(name)) {
     return {
       ok: false,
       message: `name must be 1 to ${MAX_NAME_LENGTH} characters.`,
@@ -74,8 +69,7 @@ function parseName(value: unknown): Parsed<string> {
 /** Digits with an optional leading +, 7 to 15 of them (E.164 allows 15). Spaces, dashes and brackets are dropped. */
 function parsePhone(value: unknown): Parsed<string | null> {
   if (value === null || value === "") return { ok: true, value: null };
-  const cleaned =
-    typeof value === "string" ? value.trim().replace(/[\s\-()]/g, "") : "";
+  const cleaned = typeof value === "string" ? value.trim().replace(/[\s\-()]/g, "") : "";
   if (!/^\+?\d{7,15}$/.test(cleaned)) {
     return {
       ok: false,
@@ -89,15 +83,13 @@ function parsePhone(value: unknown): Parsed<string | null> {
 function parseUrl(field: string, value: unknown): Parsed<string | null> {
   if (value === null) return { ok: true, value: null };
   // A non-string must not read as "" and silently clear the field.
-  if (typeof value !== "string") return { ok: false, message: `${field} must be a full http(s) link.` };
+  if (typeof value !== "string")
+    return { ok: false, message: `${field} must be a full http(s) link.` };
   const text = value.trim();
   if (text === "") return { ok: true, value: null };
   try {
     const url = new URL(text);
-    if (
-      (url.protocol === "https:" || url.protocol === "http:") &&
-      text.length <= MAX_URL_LENGTH
-    ) {
+    if ((url.protocol === "https:" || url.protocol === "http:") && text.length <= MAX_URL_LENGTH) {
       return { ok: true, value: text };
     }
   } catch {
@@ -118,8 +110,7 @@ export function validateProfileRequest(
   const parts: [keyof ProfileFields, Parsed<string | null>][] = [];
   if ("name" in body) parts.push(["name", parseName(body.name)]);
   if ("phone" in body) parts.push(["phone", parsePhone(body.phone)]);
-  if ("linkedinUrl" in body)
-    parts.push(["linkedinUrl", parseUrl("linkedinUrl", body.linkedinUrl)]);
+  if ("linkedinUrl" in body) parts.push(["linkedinUrl", parseUrl("linkedinUrl", body.linkedinUrl)]);
   if ("portfolioUrl" in body)
     parts.push(["portfolioUrl", parseUrl("portfolioUrl", body.portfolioUrl)]);
 
@@ -141,8 +132,7 @@ export async function handleSaveProfile(
   deps: ProfileHandlerDeps,
 ): Promise<Response> {
   const userId = await deps.getUserId();
-  if (!userId)
-    return fail(401, "unauthorized", "Sign in to save your profile.");
+  if (!userId) return fail(401, "unauthorized", "Sign in to save your profile.");
 
   const body = await readJsonBody(request, MAX_BODY_BYTES);
   if (!body.ok) return fail(body.status, body.error, body.message);

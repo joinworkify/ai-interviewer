@@ -1,11 +1,15 @@
-import { TRANSCRIPT_SOURCES, type ParsedTranscript, type TranscriptAdapter, type TranscriptSource } from "./types";
+import {
+  TRANSCRIPT_SOURCES,
+  type ParsedTranscript,
+  type TranscriptAdapter,
+  type TranscriptSource,
+} from "./types";
 import { checkLimits } from "./limits";
 
 export type AdapterRegistry = Partial<Record<TranscriptSource, TranscriptAdapter>>;
 
 export type TranscriptBodyResult =
-  | { ok: true; data: ParsedTranscript }
-  | { ok: false; errors: string[] };
+  { ok: true; data: ParsedTranscript } | { ok: false; errors: string[] };
 
 /**
  * Strict body validation for PUT /api/sessions/:id/transcript:

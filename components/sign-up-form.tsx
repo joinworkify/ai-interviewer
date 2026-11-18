@@ -3,13 +3,7 @@
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -19,10 +13,7 @@ import { DEFAULT_NEXT, safeNext } from "@/lib/auth/safe-next";
 import { useState } from "react";
 import { SocialAuthButtons } from "@/components/social-auth-buttons";
 
-export function SignUpForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -69,16 +60,16 @@ export function SignUpForm({
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-center text-2xl">Sign up</CardTitle>
-          <CardDescription className="text-center">
-            Create your candidate account
-          </CardDescription>
+          <CardDescription className="text-center">Create your candidate account</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-5 space-y-4">
             <SocialAuthButtons next={next} />
             <div className="flex items-center gap-3" aria-hidden="true">
               <div className="h-px flex-1 bg-border" />
-              <span className="font-ui text-xs font-medium uppercase tracking-wider text-muted-foreground">Or sign up with email</span>
+              <span className="font-ui text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Or sign up with email
+              </span>
               <div className="h-px flex-1 bg-border" />
             </div>
           </div>
@@ -129,7 +120,11 @@ export function SignUpForm({
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}
               <Link
-                href={next === DEFAULT_NEXT ? "/auth/login" : `/auth/login?next=${encodeURIComponent(next)}`}
+                href={
+                  next === DEFAULT_NEXT
+                    ? "/auth/login"
+                    : `/auth/login?next=${encodeURIComponent(next)}`
+                }
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
                 Log in

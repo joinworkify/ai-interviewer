@@ -14,9 +14,8 @@ function SetupIncomplete({ items, title }: { items: string[]; title: string }) {
     >
       <p className="font-semibold">{title}</p>
       <p>
-        Set these server environment variables (see <code>.env.example</code>{" "}
-        and <code>GEMINI_LIVE_SETUP.md</code>), then restart the dev server or
-        redeploy:
+        Set these server environment variables (see <code>.env.example</code> and{" "}
+        <code>GEMINI_LIVE_SETUP.md</code>), then restart the dev server or redeploy:
       </p>
       <ul className="list-disc pl-5 font-mono text-xs">
         {items.map((name) => (
@@ -35,10 +34,7 @@ async function GeminiContent({
   // Check before createClient(): the Supabase client throws without these.
   const missingSupabase = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
-    [
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ],
+    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
   ]
     .filter(([, value]) => !value?.trim())
     .map(([name]) => name as string);
@@ -106,9 +102,9 @@ export default function GeminiInterviewPage({
           Practice voice interview (Gemini Live)
         </h1>
         <p className="relative max-w-2xl text-base leading-relaxed text-muted-foreground">
-          Enter the role, level and tech stack, then press Start. A Gemini Live
-          interviewer asks one question at a time by voice for up to 5 minutes.
-          Say &quot;stop&quot; or &quot;bye&quot;, or press End, to finish.
+          Enter the role, level and tech stack, then press Start. A Gemini Live interviewer asks one
+          question at a time by voice for up to 5 minutes. Say &quot;stop&quot; or &quot;bye&quot;,
+          or press End, to finish.
         </p>
       </header>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>

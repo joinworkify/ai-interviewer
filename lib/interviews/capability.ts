@@ -29,8 +29,7 @@ export const CAPABILITY_MAX_TTL_SECONDS = 60 * 60;
 export const MIN_SIGNING_SECRET_LENGTH = 32;
 const MAX_TOKEN_LENGTH = 1024;
 const CLOCK_SKEW_SECONDS = 30;
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface CapabilityPayload {
   v: 1;
@@ -46,16 +45,10 @@ export interface CapabilityPayload {
 }
 
 export type CapabilityErrorCode =
-  | "missing"
-  | "malformed"
-  | "bad_signature"
-  | "expired"
-  | "not_yet_valid"
-  | "invalid_claims";
+  "missing" | "malformed" | "bad_signature" | "expired" | "not_yet_valid" | "invalid_claims";
 
 export type VerifyResult =
-  | { ok: true; payload: CapabilityPayload }
-  | { ok: false; code: CapabilityErrorCode };
+  { ok: true; payload: CapabilityPayload } | { ok: false; code: CapabilityErrorCode };
 
 export class SigningSecretError extends Error {}
 
@@ -94,9 +87,7 @@ export function issueCapability(
     iat,
     exp: iat + ttl,
   };
-  const body = Buffer.from(JSON.stringify(payload), "utf8").toString(
-    "base64url",
-  );
+  const body = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
   const signed = `${CAPABILITY_VERSION}.${body}`;
   const sig = sign(signed, key).toString("base64url");
   return { token: `${signed}.${sig}`, payload };
@@ -128,10 +119,7 @@ export function verifyCapability(
   // Verify the signature before parsing anything attacker-controlled.
   const expected = sign(`${version}.${body}`, key);
   const provided = Buffer.from(sig, "base64url");
-  if (
-    provided.length !== expected.length ||
-    !timingSafeEqual(provided, expected)
-  ) {
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
     return { ok: false, code: "bad_signature" };
   }
 

@@ -38,10 +38,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const step = 0x8000;
   for (let i = 0; i < bytes.length; i += step) {
-    binary += String.fromCharCode.apply(
-      null,
-      bytes.subarray(i, i + step) as unknown as number[],
-    );
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + step) as unknown as number[]);
   }
   return btoa(binary);
 }
@@ -119,8 +116,7 @@ export class StreamingResampler {
     const end = base + merged.length; // exclusive absolute end
     const down = this.inputRate > this.outputRate;
 
-    const capacity =
-      Math.ceil((merged.length * this.outputRate) / this.inputRate) + 2;
+    const capacity = Math.ceil((merged.length * this.outputRate) / this.inputRate) + 2;
     const out = new Float32Array(capacity);
     let n = 0;
 
@@ -184,9 +180,7 @@ export class MicChunkEncoder {
     const chunks: string[] = [];
     let offset = 0;
     while (this.pendingLength - offset >= this.chunkSamples) {
-      chunks.push(
-        pcm16ToBase64(this.pending.subarray(offset, offset + this.chunkSamples)),
-      );
+      chunks.push(pcm16ToBase64(this.pending.subarray(offset, offset + this.chunkSamples)));
       offset += this.chunkSamples;
     }
     if (offset > 0) {

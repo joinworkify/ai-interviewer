@@ -23,8 +23,7 @@ export interface LlmConfig {
 }
 
 export type LlmConfigResult =
-  | { ok: true; config: LlmConfig }
-  | { ok: false; missing: string[]; invalid: string[] };
+  { ok: true; config: LlmConfig } | { ok: false; missing: string[]; invalid: string[] };
 
 const GEMINI_HOST = "generativelanguage.googleapis.com";
 const GEMINI_OPENAI_PATH = "/v1beta/openai";
@@ -65,9 +64,7 @@ function warnOnce(config: LlmConfig) {
   }
 }
 
-export function readLlmConfig(
-  env: Record<string, string | undefined>,
-): LlmConfigResult {
+export function readLlmConfig(env: Record<string, string | undefined>): LlmConfigResult {
   const missing: string[] = [];
   const invalid: string[] = [];
   const apiKey = env.LLM_API_KEY?.trim();
@@ -158,8 +155,7 @@ export interface ChatOptions {
   logTag?: string;
 }
 
-const defaultSleep = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
+const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function isRetryable(err: LlmError): boolean {
   return (
@@ -195,10 +191,7 @@ async function attemptOnce(
   } catch (err) {
     const name = err instanceof Error ? err.name : "";
     if (name === "TimeoutError" || name === "AbortError") {
-      throw new LlmError(
-        "timeout",
-        `LLM request timed out after ${config.timeoutMs}ms.`,
-      );
+      throw new LlmError("timeout", `LLM request timed out after ${config.timeoutMs}ms.`);
     }
     throw new LlmError("network", "Could not reach the LLM provider.");
   }
@@ -219,9 +212,7 @@ async function attemptOnce(
       kind,
       `LLM provider returned HTTP ${response.status}.`,
       response.status,
-      Number.isFinite(retryAfterSec) && retryAfterSec > 0
-        ? retryAfterSec * 1000
-        : undefined,
+      Number.isFinite(retryAfterSec) && retryAfterSec > 0 ? retryAfterSec * 1000 : undefined,
     );
   }
 

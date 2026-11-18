@@ -16,11 +16,7 @@ import {
   resumeFileError,
   validatePhoneNumber,
 } from "@/lib/candidate/resume-form";
-import {
-  ProfileSaveError,
-  saveProfile,
-  type ProfileUpdate,
-} from "@/lib/candidate/profile-client";
+import { ProfileSaveError, saveProfile, type ProfileUpdate } from "@/lib/candidate/profile-client";
 import {
   deleteResume,
   fetchSavedResumes,
@@ -52,9 +48,7 @@ function ResumeStep() {
   const [fullName, setFullName] = useState("");
   const [dialCode, setDialCode] = useState(DEFAULT_DIAL_CODE);
   const [phone, setPhone] = useState("");
-  const [resumeOption, setResumeOption] = useState<"upload" | "saved">(
-    "upload",
-  );
+  const [resumeOption, setResumeOption] = useState<"upload" | "saved">("upload");
   // Every resume the candidate has saved; the chosen one is used for this application.
   const [resumes, setResumes] = useState<SavedResume[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -70,8 +64,7 @@ function ResumeStep() {
   const edited = React.useRef({ name: false, phone: false, country: false, link: false });
   // Errors show once a field was visited (or Continue was tried), not while the form is still empty.
   const [touched, setTouched] = useState({ name: false, phone: false, link: false });
-  const touch = (field: keyof typeof touched) =>
-    setTouched((t) => ({ ...t, [field]: true }));
+  const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }));
 
   useEffect(() => {
     let cancelled = false;
@@ -90,10 +83,7 @@ function ResumeStep() {
           user.user_metadata?.name,
           user.user_metadata?.full_name,
           user.user_metadata?.display_name,
-        ].find(
-          (value): value is string =>
-            typeof value === "string" && value.trim().length > 0,
-        );
+        ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
         if (!edited.current.name && metadataName) {
           setFullName(metadataName.trim());
         }
@@ -115,11 +105,7 @@ function ResumeStep() {
           setPhone(savedPhone.phone);
         }
         if (!edited.current.link) {
-          setPortfolioUrl(
-            profile?.linkedin_url?.trim() ||
-              profile?.portfolio_url?.trim() ||
-              "",
-          );
+          setPortfolioUrl(profile?.linkedin_url?.trim() || profile?.portfolio_url?.trim() || "");
         }
       } catch {
         if (!cancelled) {
@@ -157,9 +143,7 @@ function ResumeStep() {
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Allow digits and spaces only, capped at the selected country's maxDigits
-    const digitsOnly = e.target.value
-      .replace(/[^\d]/g, "")
-      .slice(0, currentCountry.maxDigits);
+    const digitsOnly = e.target.value.replace(/[^\d]/g, "").slice(0, currentCountry.maxDigits);
     edited.current.phone = true;
     setPhone(digitsOnly);
   };
@@ -179,7 +163,9 @@ function ResumeStep() {
       setResumeOption("saved");
     } catch (err) {
       setFileError(
-        err instanceof ResumeUploadError ? err.message : "Could not upload the resume. Please try again.",
+        err instanceof ResumeUploadError
+          ? err.message
+          : "Could not upload the resume. Please try again.",
       );
     } finally {
       setUploading(false);
@@ -198,7 +184,9 @@ function ResumeStep() {
       if (rest.length === 0) setResumeOption("upload");
     } catch (err) {
       setFileError(
-        err instanceof ResumeUploadError ? err.message : "Could not delete the resume. Please try again.",
+        err instanceof ResumeUploadError
+          ? err.message
+          : "Could not delete the resume. Please try again.",
       );
     } finally {
       setDeletingId(null);
@@ -225,9 +213,7 @@ function ResumeStep() {
 
   return (
     <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-sm">
-      <h1 className="mb-6 text-center text-3xl font-bold text-foreground">
-        Add your resume
-      </h1>
+      <h1 className="mb-6 text-center text-3xl font-bold text-foreground">Add your resume</h1>
       <p className="-mt-3 mb-6 text-center text-sm text-muted-foreground">
         This step is optional. You can skip it and continue to consent.
       </p>
@@ -269,8 +255,7 @@ function ResumeStep() {
             if (resumeOption === "saved" && selectedId) await selectResume(selectedId);
           } catch (err) {
             setSubmitError(
-              err instanceof ProfileSaveError ||
-                err instanceof ResumeUploadError
+              err instanceof ProfileSaveError || err instanceof ResumeUploadError
                 ? err.message
                 : "Something went wrong. Please try again.",
             );
@@ -284,9 +269,7 @@ function ResumeStep() {
       >
         {/* Full Name */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-foreground">
-            Full name *
-          </label>
+          <label className="mb-2 block text-sm font-medium text-foreground">Full name *</label>
           <input
             type="text"
             value={fullName}
@@ -308,9 +291,7 @@ function ResumeStep() {
 
         {/* Phone (optional) with Flag + Dial Code Selector */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-foreground">
-            Phone (optional)
-          </label>
+          <label className="mb-2 block text-sm font-medium text-foreground">Phone (optional)</label>
           <div className="flex items-center gap-2">
             <CountrySelect
               value={dialCode}
@@ -344,15 +325,18 @@ function ResumeStep() {
 
         {/* Resume (optional) */}
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-foreground">
-            Resume (optional)
-          </label>
+          <label className="block text-sm font-medium text-foreground">Resume (optional)</label>
 
           {/* Saved resumes: one row each, pick one or delete it */}
           {resumes.length === 0 ? (
             <div className="cursor-not-allowed rounded-2xl border border-border p-4 opacity-60">
               <label className="flex items-center gap-3 text-sm font-medium text-foreground">
-                <input type="radio" name="resumeOption" disabled className="h-4 w-4 accent-primary" />
+                <input
+                  type="radio"
+                  name="resumeOption"
+                  disabled
+                  className="h-4 w-4 accent-primary"
+                />
                 <span>Use saved resume (none saved yet)</span>
               </label>
             </div>
@@ -407,9 +391,7 @@ function ResumeStep() {
           <div
             onClick={() => setResumeOption("upload")}
             className={`rounded-2xl border p-5 transition ${
-              resumeOption === "upload"
-                ? "border-primary"
-                : "border-border"
+              resumeOption === "upload" ? "border-primary" : "border-border"
             }`}
           >
             <label className="flex cursor-pointer items-start gap-3">
@@ -421,12 +403,10 @@ function ResumeStep() {
                 className="mt-1 h-4 w-4 accent-primary"
               />
               <div>
-                <div className="text-sm font-medium text-foreground">
-                  Upload a resume
-                </div>
+                <div className="text-sm font-medium text-foreground">Upload a resume</div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  PDF or DOCX, one file, max 5 MB. It is saved to your profile as
-                  soon as it uploads.
+                  PDF or DOCX, one file, max 5 MB. It is saved to your profile as soon as it
+                  uploads.
                 </p>
               </div>
             </label>
@@ -447,11 +427,7 @@ function ResumeStep() {
                   aria-busy={uploading}
                   className={`flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center ${
                     uploading ? "cursor-wait opacity-70" : "cursor-pointer hover:bg-muted/50"
-                  } ${
-                    dragging
-                      ? "border-primary bg-primary/5"
-                      : "border-input"
-                  }`}
+                  } ${dragging ? "border-primary bg-primary/5" : "border-input"}`}
                 >
                   <span className="rounded-lg bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                     {uploading ? "Uploading..." : "Upload file"}
@@ -474,13 +450,10 @@ function ResumeStep() {
                     }}
                   />
                 </label>
-                {fileError && (
-                  <p className="mt-2 text-xs text-destructive">{fileError}</p>
-                )}
+                {fileError && <p className="mt-2 text-xs text-destructive">{fileError}</p>}
 
                 <p className="mt-4 text-xs text-muted-foreground">
-                  Your resume is kept on your profile and can be reused for
-                  future applications.
+                  Your resume is kept on your profile and can be reused for future applications.
                 </p>
               </div>
             )}
@@ -505,7 +478,9 @@ function ResumeStep() {
             className={fieldClass(touched.link && !!portfolioProblem)}
           />
           {touched.link && portfolioProblem && (
-            <p role="alert" className="mt-1.5 text-xs text-destructive">{portfolioProblem}</p>
+            <p role="alert" className="mt-1.5 text-xs text-destructive">
+              {portfolioProblem}
+            </p>
           )}
         </div>
 
@@ -533,11 +508,7 @@ function ResumeStep() {
             </p>
           )}
           <Link
-            href={
-              roleId
-                ? `/candidate/roles/${encodeURIComponent(roleId)}`
-                : "/candidate/roles"
-            }
+            href={roleId ? `/candidate/roles/${encodeURIComponent(roleId)}` : "/candidate/roles"}
             className="text-xs text-muted-foreground hover:text-foreground hover:underline"
           >
             Back to role

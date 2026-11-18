@@ -45,16 +45,10 @@ export interface SessionTokenPayload {
 }
 
 export type SessionTokenErrorCode =
-  | "missing"
-  | "malformed"
-  | "bad_signature"
-  | "expired"
-  | "not_yet_valid"
-  | "invalid_claims";
+  "missing" | "malformed" | "bad_signature" | "expired" | "not_yet_valid" | "invalid_claims";
 
 export type VerifySessionTokenResult =
-  | { ok: true; payload: SessionTokenPayload }
-  | { ok: false; code: SessionTokenErrorCode };
+  { ok: true; payload: SessionTokenPayload } | { ok: false; code: SessionTokenErrorCode };
 
 export class SessionSecretError extends Error {}
 

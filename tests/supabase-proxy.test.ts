@@ -40,20 +40,17 @@ describe("Supabase proxy login redirect", () => {
   ])("still redirects signed-out %s to /auth/login", async (path) => {
     const res = await updateSession(post(path));
     expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toMatch(
-      /^\/auth\/login\/?$/,
-    );
-  });
-
-  it.each([
-    "/candidate",
-    "/candidate/resume",
-    "/candidate/consent",
-  ])("redirects signed-out %s to /auth/login (candidate pages need a session)", async (path) => {
-    const res = await updateSession(post(path));
-    expect(res.status).toBe(307);
     expect(new URL(res.headers.get("location")!).pathname).toMatch(/^\/auth\/login\/?$/);
   });
+
+  it.each(["/candidate", "/candidate/resume", "/candidate/consent"])(
+    "redirects signed-out %s to /auth/login (candidate pages need a session)",
+    async (path) => {
+      const res = await updateSession(post(path));
+      expect(res.status).toBe(307);
+      expect(new URL(res.headers.get("location")!).pathname).toMatch(/^\/auth\/login\/?$/);
+    },
+  );
 
   it("lets signed-out visitors open a role's details page", async () => {
     const res = await updateSession(post("/candidate/roles/software-engineer"));
@@ -75,13 +72,10 @@ describe("Supabase proxy login redirect", () => {
     "/api/candidate/resume/upload-url",
     "/api/candidate/resume/confirm",
     "/api/candidate/profile",
-  ])(
-    "lets signed-out POST %s through so the route can answer for itself",
-    async (path) => {
-      const res = await updateSession(post(path));
-      expect(res.headers.get("location")).toBeNull();
-    },
-  );
+  ])("lets signed-out POST %s through so the route can answer for itself", async (path) => {
+    const res = await updateSession(post(path));
+    expect(res.headers.get("location")).toBeNull();
+  });
 
   it.each([
     "/api/dograh",

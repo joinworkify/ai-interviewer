@@ -13,7 +13,11 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div className="theme-datasea flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6 [color-scheme:light]">
-      <Link href="/" aria-label="DataSea home" className="flex items-center gap-2 font-semibold tracking-tight">
+      <Link
+        href="/"
+        aria-label="DataSea home"
+        className="flex items-center gap-2 font-semibold tracking-tight"
+      >
         <LogoMark size={40} />
         DataSea
       </Link>

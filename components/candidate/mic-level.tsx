@@ -9,7 +9,10 @@ export function MicLevel({ level }: { level: number }) {
       aria-valuenow={pct}
       className="h-2 w-full overflow-hidden rounded-full bg-muted"
     >
-      <div className="h-full bg-green-600 transition-[width] duration-75" style={{ width: `${pct}%` }} />
+      <div
+        className="h-full bg-green-600 transition-[width] duration-75"
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }

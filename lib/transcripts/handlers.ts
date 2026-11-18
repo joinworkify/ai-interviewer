@@ -71,11 +71,7 @@ export async function handlePutTranscript(
       return fail(404, "not_found", "Session not found.");
     }
     if (outcome.kind === "already_stored") {
-      return fail(
-        409,
-        "transcript_already_stored",
-        "This session already has a transcript.",
-      );
+      return fail(409, "transcript_already_stored", "This session already has a transcript.");
     }
     return jsonResponse(200, {
       success: true,

@@ -12,12 +12,8 @@ import {
 
 describe("floatToPcm16", () => {
   it("scales, rounds and clamps Float32 samples to signed 16-bit", () => {
-    const out = floatToPcm16(
-      new Float32Array([0, 1, -1, 0.5, -0.5, 2, -3, Number.NaN, 1e-6]),
-    );
-    expect(Array.from(out)).toEqual([
-      0, 32767, -32768, 16384, -16384, 32767, -32768, 0, 0,
-    ]);
+    const out = floatToPcm16(new Float32Array([0, 1, -1, 0.5, -0.5, 2, -3, Number.NaN, 1e-6]));
+    expect(Array.from(out)).toEqual([0, 32767, -32768, 16384, -16384, 32767, -32768, 0, 0]);
   });
 });
 
@@ -25,9 +21,7 @@ describe("pcm16 <-> base64", () => {
   it("encodes little-endian bytes", () => {
     // 1 -> 01 00, -2 -> FE FF, 256 -> 00 01
     const b64 = pcm16ToBase64(new Int16Array([1, -2, 256]));
-    expect(Buffer.from(b64, "base64")).toEqual(
-      Buffer.from([0x01, 0x00, 0xfe, 0xff, 0x00, 0x01]),
-    );
+    expect(Buffer.from(b64, "base64")).toEqual(Buffer.from([0x01, 0x00, 0xfe, 0xff, 0x00, 0x01]));
   });
 
   it("round-trips large buffers (chunked string building)", () => {
@@ -45,9 +39,7 @@ describe("pcm16 <-> base64", () => {
   });
 
   it("converts PCM16 back to floats in [-1, 1)", () => {
-    expect(Array.from(pcm16ToFloat(new Int16Array([0, -32768, 16384])))).toEqual(
-      [0, -1, 0.5],
-    );
+    expect(Array.from(pcm16ToFloat(new Int16Array([0, -32768, 16384])))).toEqual([0, -1, 0.5]);
   });
 });
 
@@ -110,18 +102,16 @@ describe("StreamingResampler", () => {
   });
 
   it("keeps the 16 kHz output length proportional for 44.1 kHz and 48 kHz", () => {
-    expect(
-      new StreamingResampler(44100, 16000).process(new Float32Array(44100)).length,
-    ).toBe(16000);
-    expect(
-      new StreamingResampler(48000, 16000).process(new Float32Array(48000)).length,
-    ).toBe(16000);
+    expect(new StreamingResampler(44100, 16000).process(new Float32Array(44100)).length).toBe(
+      16000,
+    );
+    expect(new StreamingResampler(48000, 16000).process(new Float32Array(48000)).length).toBe(
+      16000,
+    );
   });
 
   it("preserves a low-frequency tone after downsampling", () => {
-    const out = new StreamingResampler(48000, 16000).process(
-      sine(440, 48000, 4800),
-    );
+    const out = new StreamingResampler(48000, 16000).process(sine(440, 48000, 4800));
     // Box filter over 3 samples centred at 3i+1 -> phase aligns to i + 1/3.
     for (let i = 10; i < out.length - 10; i++) {
       const expected = 0.5 * Math.sin((2 * Math.PI * 440 * (3 * i + 1)) / 48000);
@@ -142,10 +132,7 @@ describe("MicChunkEncoder", () => {
     const enc = new MicChunkEncoder(48000, 1600);
     // 0.25 s of constant 0.5 at 48 kHz -> 4000 samples at 16 kHz.
     const frames = new Float32Array(12000).fill(0.5);
-    const chunks = [
-      ...enc.push(frames.subarray(0, 5000)),
-      ...enc.push(frames.subarray(5000)),
-    ];
+    const chunks = [...enc.push(frames.subarray(0, 5000)), ...enc.push(frames.subarray(5000))];
     expect(chunks).toHaveLength(2);
     for (const c of chunks) {
       const pcm = base64ToPcm16(c);

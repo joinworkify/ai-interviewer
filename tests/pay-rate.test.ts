@@ -86,7 +86,12 @@ describe("roles seed data", () => {
 
 describe("structured pay migration", () => {
   const sql = readFileSync(
-    fileURLToPath(new URL("../supabase/migrations/20261117000000_roles_structured_pay_rate.sql", import.meta.url)),
+    fileURLToPath(
+      new URL(
+        "../supabase/migrations/20261118100000_roles_structured_pay_rate.sql",
+        import.meta.url,
+      ),
+    ),
     "utf8",
   ).toLowerCase();
 

@@ -6,8 +6,7 @@ import { MAX_QUESTIONS } from "@/lib/interviews/validation";
  * rejected: the owner always comes from the verified session, never the body.
  */
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_RE.test(value);
@@ -27,9 +26,7 @@ function unknownKeys(record: Record<string, unknown>, allowed: string[]) {
     .map((k) => `Unknown field "${k}".`);
 }
 
-export function validateStartSessionBody(
-  body: unknown,
-): Validated<{ interviewId: string }> {
+export function validateStartSessionBody(body: unknown): Validated<{ interviewId: string }> {
   const record = asRecord(body);
   if (!record) return { ok: false, errors: ["Body must be a JSON object."] };
   const errors = unknownKeys(record, ["interviewId"]);
@@ -57,9 +54,7 @@ export function validateFeedbackBody(
   const errors = unknownKeys(record, ["answers"]);
 
   if (options.required === false && !("answers" in record)) {
-    return errors.length > 0
-      ? { ok: false, errors }
-      : { ok: true, data: { answers: [] } };
+    return errors.length > 0 ? { ok: false, errors } : { ok: true, data: { answers: [] } };
   }
 
   const raw = record.answers;
@@ -89,7 +84,10 @@ export function validateFeedbackBody(
     }
     const text =
       typeof entry.answer === "string"
-        ? entry.answer.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim()
+        ? entry.answer
+            .replace(/[\u0000-\u001f\u007f]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
         : "";
     if (typeof entry.answer !== "string" || text.length === 0) {
       errors.push(`answers[${i}].answer must be a non-empty string.`);

@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { Geist, Newsreader, Source_Serif_4 } from "next/font/google";
 import { ThemeProvider } from "next-themes";
@@ -50,9 +49,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            {children}
-          </TooltipProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
 
         <Analytics />

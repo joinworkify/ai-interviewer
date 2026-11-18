@@ -8,8 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getRoles, type Role } from "@/lib/candidate/api";
 import { PayRateFilter } from "@/components/candidate/pay-rate-filter";
-import { EMPTY_PAY_FILTER, filterRolesByPay, formatPayRate, type PayFilter } from "@/lib/candidate/pay";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
+import {
+  EMPTY_PAY_FILTER,
+  filterRolesByPay,
+  formatPayRate,
+  type PayFilter,
+} from "@/lib/candidate/pay";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+} from "@/components/ui/pagination";
 const PAGE_SIZE = 14;
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -67,18 +77,12 @@ export default function RolesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Explore open roles
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight">Explore open roles</h1>
         {results && shown.length > 0 && (
           <p className="-mt-2 text-sm text-muted-foreground" role="status">
             {results.term
-              ? `${shown.length} matching ${
-                  shown.length === 1 ? "role" : "roles"
-                }`
-              : `${shown.length} ${
-                  shown.length === 1 ? "role" : "roles"
-                } open for interviews`}
+              ? `${shown.length} matching ${shown.length === 1 ? "role" : "roles"}`
+              : `${shown.length} ${shown.length === 1 ? "role" : "roles"} open for interviews`}
           </p>
         )}
 
@@ -100,7 +104,13 @@ export default function RolesPage() {
             />
           )}
         </div>
-        <PayRateFilter value={payFilter} onChange={(value) => { setPayFilter(value); setCurrentPage(1); }} />
+        <PayRateFilter
+          value={payFilter}
+          onChange={(value) => {
+            setPayFilter(value);
+            setCurrentPage(1);
+          }}
+        />
       </div>
 
       {failed ? (
@@ -111,10 +121,7 @@ export default function RolesPage() {
           </Button>
         </div>
       ) : results === null ? (
-        <div
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          aria-busy="true"
-        >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="h-32 animate-pulse rounded-xl bg-muted" />
           ))}
@@ -130,8 +137,22 @@ export default function RolesPage() {
             </>
           ) : (
             <>
-              <p role="status">{results.roles.length > 0 ? "No roles match your pay filter." : "No roles available right now."}</p>
-              {results.roles.length > 0 && <Button variant="outline" onClick={() => { setPayFilter(EMPTY_PAY_FILTER); setCurrentPage(1); }}>Clear pay filter</Button>}
+              <p role="status">
+                {results.roles.length > 0
+                  ? "No roles match your pay filter."
+                  : "No roles available right now."}
+              </p>
+              {results.roles.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setPayFilter(EMPTY_PAY_FILTER);
+                    setCurrentPage(1);
+                  }}
+                >
+                  Clear pay filter
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -149,39 +170,24 @@ export default function RolesPage() {
                 className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex flex-col gap-1">
-                  <span className="font-heading text-xl font-semibold leading-snug">
-                    {r.title}
-                  </span>
+                  <span className="font-heading text-xl font-semibold leading-snug">{r.title}</span>
                   <span className="text-sm font-medium text-primary">
                     Pay rate: {formatPayRate(r)}
                   </span>
-                  {r.jobType && (
-                    <span className="text-sm text-muted-foreground">
-                      {r.jobType}
-                    </span>
-                  )}
+                  {r.jobType && <span className="text-sm text-muted-foreground">{r.jobType}</span>}
                 </div>
                 {r.about && (
-                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-                    {r.about}
-                  </p>
+                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{r.about}</p>
                 )}
                 {r.skills.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {r.skills.slice(0, 4).map((skill) => (
-                      <Badge
-                        key={skill}
-                        variant="outline"
-                        className="font-normal"
-                      >
+                      <Badge key={skill} variant="outline" className="font-normal">
                         {skill}
                       </Badge>
                     ))}
                     {r.skills.length > 4 && (
-                      <Badge
-                        variant="outline"
-                        className="font-normal text-muted-foreground"
-                      >
+                      <Badge variant="outline" className="font-normal text-muted-foreground">
                         +{r.skills.length - 4}
                       </Badge>
                     )}
@@ -200,12 +206,31 @@ export default function RolesPage() {
       )}
       {shown.length > 0 && (
         <div className="flex flex-col items-center gap-3">
-          <p className="text-sm text-muted-foreground">Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, shown.length)} of {shown.length} roles</p>
-          {totalPages > 1 && <Pagination><PaginationContent>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-              <PaginationItem key={n}><PaginationLink href="#" aria-label={`Go to page ${n}`} isActive={page === n} onClick={(event) => { event.preventDefault(); setCurrentPage(n); }}>{n}</PaginationLink></PaginationItem>
-            ))}
-          </PaginationContent></Pagination>}
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, shown.length)} of{" "}
+            {shown.length} roles
+          </p>
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                  <PaginationItem key={n}>
+                    <PaginationLink
+                      href="#"
+                      aria-label={`Go to page ${n}`}
+                      isActive={page === n}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setCurrentPage(n);
+                      }}
+                    >
+                      {n}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       )}
     </div>

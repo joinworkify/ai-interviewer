@@ -11,8 +11,7 @@ export interface GeminiLiveConfig {
 }
 
 export type GeminiLiveConfigResult =
-  | ({ ok: true } & GeminiLiveConfig)
-  | { ok: false; missing: string[]; invalid: string[] };
+  ({ ok: true } & GeminiLiveConfig) | { ok: false; missing: string[]; invalid: string[] };
 
 const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{2,79}$/;
 /**

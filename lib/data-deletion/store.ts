@@ -33,9 +33,7 @@ function fail(op: string, error?: { code?: string } | null): never {
   throw new DeletionStoreError(`${op} failed`);
 }
 
-export function createSupabaseDeletionStore(
-  client: SupabaseClient<Database>,
-): DeletionStore {
+export function createSupabaseDeletionStore(client: SupabaseClient<Database>): DeletionStore {
   async function ownsSession(userId: string, sessionId: string, op: string) {
     const { data, error } = await client
       .from("interview_sessions")

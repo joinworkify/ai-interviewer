@@ -9,12 +9,15 @@ vi.mock("next/dynamic", () => ({
   default: () => {
     const Viewer = lazy(async () => {
       if (state.failure === "import") throw new Error("private chunk URL import failure");
-      return { default: () => {
-        if (state.failure === "render") throw new Error("private PDF render failure");
-        return createElement("p", null, "Valid preview");
-      } };
+      return {
+        default: () => {
+          if (state.failure === "render") throw new Error("private PDF render failure");
+          return createElement("p", null, "Valid preview");
+        },
+      };
     });
-    return (props: object) => createElement(Suspense, { fallback: "Loading preview" }, createElement(Viewer, props));
+    return (props: object) =>
+      createElement(Suspense, { fallback: "Loading preview" }, createElement(Viewer, props));
   },
 }));
 let root: Root;
@@ -35,19 +38,25 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 function review(url: string) {
-  return createElement("section", null,
+  return createElement(
+    "section",
+    null,
     createElement("h1", null, "Review interview"),
     createElement(ResumeViewer, { url, fileName: "resume.pdf" }),
-    createElement("a", { href: "/existing-download" }, "Download resume"));
+    createElement("a", { href: "/existing-download" }, "Download resume"),
+  );
 }
-it.each(["render", "import"] as const)("contains a lazy viewer %s failure without losing the review", async (failure) => {
-  state.failure = failure;
-  await act(async () => root.render(review("/bad.pdf")));
-  expect(container.textContent).toContain("Could not show the preview for resume.pdf");
-  expect(container.textContent).not.toContain("private");
-  expect(container.querySelector("h1")?.textContent).toBe("Review interview");
-  expect(container.querySelector("a")?.getAttribute("href")).toBe("/existing-download");
-});
+it.each(["render", "import"] as const)(
+  "contains a lazy viewer %s failure without losing the review",
+  async (failure) => {
+    state.failure = failure;
+    await act(async () => root.render(review("/bad.pdf")));
+    expect(container.textContent).toContain("Could not show the preview for resume.pdf");
+    expect(container.textContent).not.toContain("private");
+    expect(container.querySelector("h1")?.textContent).toBe("Review interview");
+    expect(container.querySelector("a")?.getAttribute("href")).toBe("/existing-download");
+  },
+);
 it("resets the render error boundary for a different resume URL", async () => {
   state.failure = "render";
   await act(async () => root.render(review("/bad.pdf")));

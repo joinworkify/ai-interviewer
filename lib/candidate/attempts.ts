@@ -121,7 +121,9 @@ export interface AttemptHandlerDeps {
  */
 export type AttemptProgress = "processing" | "submitted" | "incomplete";
 
-export function attemptProgress(session: Pick<AttemptSession, "status" | "transcript">): AttemptProgress {
+export function attemptProgress(
+  session: Pick<AttemptSession, "status" | "transcript">,
+): AttemptProgress {
   if (session.status === "abandoned") return "incomplete";
   if (session.transcript == null) return "processing";
   const transcript = normalizeTranscript(session.transcript);

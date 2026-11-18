@@ -18,14 +18,7 @@ import {
 } from "@/lib/dograh/widget-client";
 
 type Phase =
-  | "idle"
-  | "preparing"
-  | "connecting"
-  | "active"
-  | "saving"
-  | "saved"
-  | "save_timeout"
-  | "error";
+  "idle" | "preparing" | "connecting" | "active" | "saving" | "saved" | "save_timeout" | "error";
 
 const STATUS_LABEL: Record<Phase, string> = {
   idle: "Ready",
@@ -176,12 +169,13 @@ export function DograhInterview({ sessionId, widgetSrc }: Props) {
         <p className="font-semibold">Before you start</p>
         <ul className="list-disc pl-5 flex flex-col gap-1">
           <li>
-            Your voice goes to the Dograh service this app is connected to. Dograh keeps its own copy of the
-            call transcript and may keep a recording.
+            Your voice goes to the Dograh service this app is connected to. Dograh keeps its own
+            copy of the call transcript and may keep a recording.
           </li>
           <li>
-            The transcript is saved to your interview session when the call ends. It is machine generated and
-            may be inaccurate. This is practice only, not authoritative hiring evidence.
+            The transcript is saved to your interview session when the call ends. It is machine
+            generated and may be inaccurate. This is practice only, not authoritative hiring
+            evidence.
           </li>
           <li>Headphones are recommended to avoid echo.</li>
         </ul>
@@ -189,8 +183,8 @@ export function DograhInterview({ sessionId, widgetSrc }: Props) {
 
       {!sessionId && (
         <p role="alert" className="text-sm text-destructive">
-          Open this page with a session link (<code>?sessionId=…</code>). The call is tied to one of your
-          interview sessions.
+          Open this page with a session link (<code>?sessionId=…</code>). The call is tied to one of
+          your interview sessions.
         </p>
       )}
 

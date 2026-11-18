@@ -55,11 +55,18 @@ function SetupStep() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 rounded-xl border bg-card p-5 shadow-sm sm:gap-8 sm:p-8">
-      <h1 className="text-center text-2xl font-bold sm:text-3xl tracking-tight">Check your setup</h1>
+      <h1 className="text-center text-2xl font-bold sm:text-3xl tracking-tight">
+        Check your setup
+      </h1>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
         <div className="flex min-w-0 flex-col gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <select aria-label="Microphone (required)" className={SELECT} value={micId} onChange={(e) => setMicId(e.target.value)}>
+            <select
+              aria-label="Microphone (required)"
+              className={SELECT}
+              value={micId}
+              onChange={(e) => setMicId(e.target.value)}
+            >
               <option value="">Microphone (required)</option>
               {mics.map((d, i) => (
                 <option key={d.deviceId || i} value={d.deviceId}>
@@ -67,13 +74,23 @@ function SetupStep() {
                 </option>
               ))}
             </select>
-            <Button size="sm" variant="secondary" className="h-9 w-28 shrink-0" onClick={() => mic.start(micId || undefined)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-9 w-28 shrink-0"
+              onClick={() => mic.start(micId || undefined)}
+            >
               Test mic
             </Button>
           </div>
           <MicLevel level={mic.level} />
           <div className="flex min-w-0 items-center gap-3">
-            <select aria-label="Speaker" className={SELECT} value={speakerId} onChange={(e) => setSpeakerId(e.target.value)}>
+            <select
+              aria-label="Speaker"
+              className={SELECT}
+              value={speakerId}
+              onChange={(e) => setSpeakerId(e.target.value)}
+            >
               <option value="">Speaker</option>
               {speakers.map((d, i) => (
                 <option key={d.deviceId || i} value={d.deviceId}>
@@ -81,7 +98,12 @@ function SetupStep() {
                 </option>
               ))}
             </select>
-            <Button size="sm" variant="secondary" className="h-9 w-28 shrink-0" onClick={() => playTestSound(speakerId || undefined)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-9 w-28 shrink-0"
+              onClick={() => playTestSound(speakerId || undefined)}
+            >
               Play sound
             </Button>
           </div>
@@ -91,8 +113,12 @@ function SetupStep() {
         </div>
         <div className="flex min-w-0 flex-col gap-4">
           {mic.state === "blocked" && (
-            <p role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm">
-              Mic blocked: click the lock icon in the address bar and set Microphone to Allow, then refresh.
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm"
+            >
+              Mic blocked: click the lock icon in the address bar and set Microphone to Allow, then
+              refresh.
             </p>
           )}
           {mic.state === "ok" && (
@@ -119,7 +145,8 @@ function SetupStep() {
         </Button>
         {gate.fix && <p className="text-sm text-destructive">{gate.fix}</p>}
         <p className="text-xs leading-5 text-muted-foreground">
-          Start is enabled only when the mic check passes. Leaving before Start doesn&apos;t use an attempt.
+          Start is enabled only when the mic check passes. Leaving before Start doesn&apos;t use an
+          attempt.
         </p>
         {roleId && (
           <Link

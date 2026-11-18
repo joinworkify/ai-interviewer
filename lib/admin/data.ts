@@ -1,6 +1,10 @@
 import "server-only";
 
-import { createS3Client, createS3ResumeStorage, readResumeS3Config } from "@/lib/candidate/resume-s3";
+import {
+  createS3Client,
+  createS3ResumeStorage,
+  readResumeS3Config,
+} from "@/lib/candidate/resume-s3";
 import { normalizeTranscript, type TranscriptTurn } from "@/lib/sessions/transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -51,7 +55,12 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
     db.from("profiles").select("id, name, email").in("id", userIds),
     db.from("candidate_resumes").select("user_id").eq("status", "uploaded").in("user_id", userIds),
   ]);
-  for (const [op, r] of [["consents", consents], ["reviews", reviews], ["profiles", profiles], ["resumes", resumes]] as const) {
+  for (const [op, r] of [
+    ["consents", consents],
+    ["reviews", reviews],
+    ["profiles", profiles],
+    ["resumes", resumes],
+  ] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -67,9 +76,10 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
         .filter((id): id is string => typeof id === "string" && id.length > 0),
     ),
   ];
-  const roles = roleIds.length > 0
-    ? await db.from("roles").select("id, title").in("id", roleIds)
-    : { data: [], error: null };
+  const roles =
+    roleIds.length > 0
+      ? await db.from("roles").select("id, title").in("id", roleIds)
+      : { data: [], error: null };
   if (roles.error) fail("roles", roles.error);
   const roleTitleById = new Map((roles.data ?? []).map((r) => [r.id, r.title]));
 
@@ -106,16 +116,14 @@ export interface AttemptDetail {
     linkedinUrl: string | null;
     portfolioUrl: string | null;
   };
-  resume:
-    | {
-        fileName: string;
-        size: number;
-        uploadedAt: string | null;
-        downloadUrl: string | null;
-        /** Short-lived inline link for an iframe; only set for PDFs. */
-        previewUrl: string | null;
-      }
-    | null;
+  resume: {
+    fileName: string;
+    size: number;
+    uploadedAt: string | null;
+    downloadUrl: string | null;
+    /** Short-lived inline link for an iframe; only set for PDFs. */
+    previewUrl: string | null;
+  } | null;
   /** The saved interview conversation in order; empty when there is none or it is unreadable. */
   transcript: TranscriptTurn[];
 }
@@ -139,9 +147,17 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
   if (!s) return null;
 
   const [consent, review, profile, resume] = await Promise.all([
-    db.from("candidate_consents").select("role_id, consent_version, accepted_at").eq("session_id", s.id).maybeSingle(),
+    db
+      .from("candidate_consents")
+      .select("role_id, consent_version, accepted_at")
+      .eq("session_id", s.id)
+      .maybeSingle(),
     db.from("interview_reviews").select("status, updated_at").eq("session_id", s.id).maybeSingle(),
-    db.from("profiles").select("name, email, phone, linkedin_url, portfolio_url").eq("id", s.user_id).maybeSingle(),
+    db
+      .from("profiles")
+      .select("name, email, phone, linkedin_url, portfolio_url")
+      .eq("id", s.user_id)
+      .maybeSingle(),
     db
       .from("candidate_resumes")
       .select("s3_key, file_name, size_bytes, uploaded_at")
@@ -153,7 +169,12 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       .limit(1)
       .maybeSingle(),
   ]);
-  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume]] as const) {
+  for (const [op, r] of [
+    ["consent", consent],
+    ["review", review],
+    ["profile", profile],
+    ["resume", resume],
+  ] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -164,13 +185,22 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     const storage = createS3ResumeStorage(createS3Client(s3.config), s3.config.bucket);
     downloadUrl = await storage.presignGet(resume.data.s3_key, resume.data.file_name, 300);
     if (/\.pdf$/i.test(resume.data.file_name)) {
-      previewUrl = await storage.presignGet(resume.data.s3_key, resume.data.file_name, 300, "inline");
+      previewUrl = await storage.presignGet(
+        resume.data.s3_key,
+        resume.data.file_name,
+        300,
+        "inline",
+      );
     }
   }
 
   let roleTitle: string | null = null;
   if (consent.data?.role_id) {
-    const role = await db.from("roles").select("title").eq("id", consent.data.role_id).maybeSingle();
+    const role = await db
+      .from("roles")
+      .select("title")
+      .eq("id", consent.data.role_id)
+      .maybeSingle();
     if (role.error) fail("role", role.error);
     roleTitle = role.data?.title ?? consent.data.role_id;
   }

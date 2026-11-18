@@ -11,8 +11,7 @@ import { execFileSync } from "node:child_process";
  * SUPABASE_DB_CONTAINER.
  */
 
-const CONTAINER =
-  process.env.SUPABASE_DB_CONTAINER ?? "supabase_db_ai-interviewer";
+const CONTAINER = process.env.SUPABASE_DB_CONTAINER ?? "supabase_db_ai-interviewer";
 
 export interface SqlResult {
   ok: boolean;
@@ -24,18 +23,7 @@ export function runSql(sql: string): SqlResult {
   try {
     const stdout = execFileSync(
       "docker",
-      [
-        "exec",
-        "-i",
-        CONTAINER,
-        "psql",
-        "-U",
-        "postgres",
-        "-v",
-        "ON_ERROR_STOP=1",
-        "-X",
-        "-At",
-      ],
+      ["exec", "-i", CONTAINER, "psql", "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-X", "-At"],
       { input: sql, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 30_000 },
     );
     return { ok: true, stdout, stderr: "" };

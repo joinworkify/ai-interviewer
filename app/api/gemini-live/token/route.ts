@@ -3,10 +3,7 @@ import { createGeminiAuthToken } from "@/lib/gemini-live/google-token";
 import { createSessionLinkLookup } from "@/lib/gemini-live/session-link";
 import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { SlidingWindowLimiter } from "@/lib/gemini-live/rate-limit";
-import {
-  handleLiveTokenRequest,
-  type AuthResult,
-} from "@/lib/gemini-live/token-handler";
+import { handleLiveTokenRequest, type AuthResult } from "@/lib/gemini-live/token-handler";
 
 /**
  * Issues a one-use Gemini Live ephemeral token for the signed-in user.
@@ -24,10 +21,7 @@ async function authenticate(): Promise<AuthResult> {
   // at build time); the client throws without these.
   const missing = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
-    [
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ],
+    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
   ]
     .filter(([, value]) => !value?.trim())
     .map(([name]) => name as string);

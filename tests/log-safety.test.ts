@@ -36,7 +36,9 @@ function capture() {
         args
           .map((a) => {
             try {
-              return typeof a === "string" ? a : JSON.stringify(a, Object.getOwnPropertyNames(Object(a)));
+              return typeof a === "string"
+                ? a
+                : JSON.stringify(a, Object.getOwnPropertyNames(Object(a)));
             } catch {
               return String(a);
             }
@@ -146,25 +148,23 @@ describe("handleSubmitFeedback logs no content", () => {
     );
 
   function run(over: Partial<SessionHandlerDeps>, store = new Store(), usage = new Usage()) {
-    return handleSubmitFeedback(
-      new Request("http://localhost/api/x", { method: "POST" }),
-      SID,
-      {
-        env,
-        getUserId: async () => ME,
-        store,
-        usage,
-        now: () => 0,
-        sleep: async () => {},
-        fetch: (async () => goodReply()) as typeof fetch,
-        ...over,
-      },
-    );
+    return handleSubmitFeedback(new Request("http://localhost/api/x", { method: "POST" }), SID, {
+      env,
+      getUserId: async () => ME,
+      store,
+      usage,
+      now: () => 0,
+      sleep: async () => {},
+      fetch: (async () => goodReply()) as typeof fetch,
+      ...over,
+    });
   }
 
   it("provider error whose body echoes the transcript and key", async () => {
     const echo = (async () =>
-      new Response(JSON.stringify({ error: { message: `bad prompt: ${CANARY}` } }), { status: 500 })) as typeof fetch;
+      new Response(JSON.stringify({ error: { message: `bad prompt: ${CANARY}` } }), {
+        status: 500,
+      })) as typeof fetch;
     const res = await run({ fetch: echo });
     expect(res.status).toBeGreaterThanOrEqual(500);
     expect(logged.length).toBeGreaterThan(0); // it still logs the status
@@ -200,7 +200,10 @@ describe("session store logs no row content", () => {
   it("logs the operation and Postgres code, not the error message", async () => {
     const { client } = fakeClient(() => ({
       data: null,
-      error: { message: `invalid input syntax for type json. Token "${CANARY}" is invalid.`, code: "22P02" },
+      error: {
+        message: `invalid input syntax for type json. Token "${CANARY}" is invalid.`,
+        code: "22P02",
+      },
     }));
     const store = createSupabaseSessionStore(client, async () => ME);
     await expect(store.getSession(SID)).rejects.toThrow("getSession failed");

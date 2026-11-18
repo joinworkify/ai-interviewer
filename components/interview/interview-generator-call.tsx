@@ -117,10 +117,7 @@ export function InterviewGeneratorCall({ publicKey, assistantId }: Props) {
         message?: string;
       } | null;
       if (!res.ok || !body?.token) {
-        fail(
-          body?.message ??
-            `Could not start the interview session (HTTP ${res.status}).`,
-        );
+        fail(body?.message ?? `Could not start the interview session (HTTP ${res.status}).`);
         return;
       }
       token = body.token;
@@ -196,9 +193,7 @@ export function InterviewGeneratorCall({ publicKey, assistantId }: Props) {
         variableValues: { generationToken: token },
       });
       if (!call && currentStatus() === "connecting") {
-        fail(
-          "Vapi did not start the call. Check the assistant ID and public key.",
-        );
+        fail("Vapi did not start the call. Check the assistant ID and public key.");
       }
     } catch (err) {
       // Ignore rejections caused by the user ending the call mid-connect.
@@ -230,9 +225,7 @@ export function InterviewGeneratorCall({ publicKey, assistantId }: Props) {
     }
   }, [currentStatus, fail, router, setStatus, teardown]);
 
-  const busy = ["authorizing", "connecting", "active", "ending"].includes(
-    status,
-  );
+  const busy = ["authorizing", "connecting", "active", "ending"].includes(status);
 
   return (
     <div className="flex flex-col gap-4">

@@ -52,13 +52,21 @@ function row(over: Partial<ResumeRow> = {}): ResumeRow {
 }
 
 function deps(
-  over: { userId?: string | null; store?: Partial<ResumeStore>; storage?: Partial<ResumeStorage> } = {},
+  over: {
+    userId?: string | null;
+    store?: Partial<ResumeStore>;
+    storage?: Partial<ResumeStorage>;
+  } = {},
 ) {
   const store: ResumeStore = {
     createPending: vi.fn(async () => ({ id: RESUME })),
     get: vi.fn(async () => row()),
-    markUploaded: vi.fn(async () => row({ status: "uploaded", uploaded_at: "2026-11-14T00:01:00Z" })),
-    listUploaded: vi.fn(async () => [row({ status: "uploaded", uploaded_at: "2026-11-14T00:01:00Z" })]),
+    markUploaded: vi.fn(async () =>
+      row({ status: "uploaded", uploaded_at: "2026-11-14T00:01:00Z" }),
+    ),
+    listUploaded: vi.fn(async () => [
+      row({ status: "uploaded", uploaded_at: "2026-11-14T00:01:00Z" }),
+    ]),
     select: vi.fn(async () => {}),
     remove: vi.fn(async () => {}),
     ...over.store,
@@ -80,14 +88,18 @@ function deps(
 
 describe("validateUploadRequest", () => {
   it("accepts a PDF or .docx up to 5 MB and keeps only the base name", () => {
-    expect(validateUploadRequest({ fileName: "C:\\docs\\cv.pdf", contentType: PDF, size: 10 })).toEqual({
+    expect(
+      validateUploadRequest({ fileName: "C:\\docs\\cv.pdf", contentType: PDF, size: 10 }),
+    ).toEqual({
       ok: true,
       fileName: "cv.pdf",
       contentType: PDF,
       size: 10,
     });
     const docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    expect(validateUploadRequest({ fileName: "cv.docx", contentType: docx, size: MAX_RESUME_BYTES }).ok).toBe(true);
+    expect(
+      validateUploadRequest({ fileName: "cv.docx", contentType: docx, size: MAX_RESUME_BYTES }).ok,
+    ).toBe(true);
   });
 
   it.each([
@@ -134,13 +146,21 @@ describe("handleCreateUploadUrl", () => {
 
   it("rejects a bad request without touching storage", async () => {
     const { d, store } = deps();
-    expect((await handleCreateUploadUrl(post({ ...body, contentType: "text/plain" }), d)).status).toBe(400);
+    expect(
+      (await handleCreateUploadUrl(post({ ...body, contentType: "text/plain" }), d)).status,
+    ).toBe(400);
     expect((await handleCreateUploadUrl(post("{nope"), d)).status).toBe(400);
     expect(store.createPending).not.toHaveBeenCalled();
   });
 
   it("answers storage_failed without details when the database fails", async () => {
-    const { d } = deps({ store: { createPending: vi.fn(async () => { throw new Error("db secret"); }) } });
+    const { d } = deps({
+      store: {
+        createPending: vi.fn(async () => {
+          throw new Error("db secret");
+        }),
+      },
+    });
     const res = await handleCreateUploadUrl(post(body), d);
     expect(res.status).toBe(500);
     expect(JSON.stringify(await res.json())).not.toContain("secret");
@@ -205,7 +225,9 @@ describe("handleGetResume", () => {
   });
 
   it("is 404 with no resume and 401 when signed out", async () => {
-    expect((await handleGetResume(deps({ store: { listUploaded: vi.fn(async () => []) } }).d)).status).toBe(404);
+    expect(
+      (await handleGetResume(deps({ store: { listUploaded: vi.fn(async () => []) } }).d)).status,
+    ).toBe(404);
     expect((await handleGetResume(deps({ userId: null }).d)).status).toBe(401);
   });
 });
@@ -219,8 +241,14 @@ describe("readResumeS3Config", () => {
   };
 
   it("needs the four AWS variables and lists the missing names", () => {
-    expect(readResumeS3Config({ ...env, AWS_S3_BUCKET: " " })).toEqual({ ok: false, missing: ["AWS_S3_BUCKET"] });
-    expect(readResumeS3Config({})).toMatchObject({ ok: false, missing: expect.arrayContaining(["AWS_REGION"]) });
+    expect(readResumeS3Config({ ...env, AWS_S3_BUCKET: " " })).toEqual({
+      ok: false,
+      missing: ["AWS_S3_BUCKET"],
+    });
+    expect(readResumeS3Config({})).toMatchObject({
+      ok: false,
+      missing: expect.arrayContaining(["AWS_REGION"]),
+    });
   });
 
   it("uses an endpoint only when set (local S3)", () => {
@@ -251,7 +279,11 @@ describe("S3 storage", () => {
   it("deletes every file under the user's folder", async () => {
     const send = vi
       .fn()
-      .mockResolvedValueOnce({ Contents: [{ Key: "resumes/u/1.pdf" }], IsTruncated: true, NextContinuationToken: "t" })
+      .mockResolvedValueOnce({
+        Contents: [{ Key: "resumes/u/1.pdf" }],
+        IsTruncated: true,
+        NextContinuationToken: "t",
+      })
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ Contents: [{ Key: "resumes/u/2.pdf" }], IsTruncated: false })
       .mockResolvedValueOnce({});
@@ -266,7 +298,9 @@ describe("S3 storage", () => {
 
 describe("candidate_resumes migration", () => {
   const sql = readFileSync(
-    fileURLToPath(new URL("../supabase/migrations/20261114000000_candidate_resumes.sql", import.meta.url)),
+    fileURLToPath(
+      new URL("../supabase/migrations/20261114000000_candidate_resumes.sql", import.meta.url),
+    ),
     "utf8",
   )
     .split(/\r?\n/)
@@ -277,12 +311,16 @@ describe("candidate_resumes migration", () => {
 
   it("creates the table with RLS and lets browsers only read their own rows", () => {
     expect(sql).toContain("create table if not exists public.candidate_resumes");
-    expect(sql).toContain("user_id uuid not null references public.profiles (id) on delete cascade");
+    expect(sql).toContain(
+      "user_id uuid not null references public.profiles (id) on delete cascade",
+    );
     expect(sql).toContain("alter table public.candidate_resumes enable row level security");
     expect(sql).toContain("revoke all on table public.candidate_resumes from anon, authenticated");
     expect(sql).toContain("grant select on table public.candidate_resumes to authenticated");
     expect(sql).toContain("using (user_id = (select auth.uid()))");
-    expect(sql).not.toMatch(/grant [a-z, ]*(insert|update|delete)[a-z, ]* on table public\.candidate_resumes to (authenticated|anon)/);
+    expect(sql).not.toMatch(
+      /grant [a-z, ]*(insert|update|delete)[a-z, ]* on table public\.candidate_resumes to (authenticated|anon)/,
+    );
   });
 });
 
@@ -330,7 +368,11 @@ describe("handleDeleteResume", () => {
 
   it("keeps the row when the file cannot be deleted, so it can be retried", async () => {
     const { d, store } = deps({
-      storage: { deleteObject: vi.fn(async () => { throw new Error("s3 down secret-detail"); }) },
+      storage: {
+        deleteObject: vi.fn(async () => {
+          throw new Error("s3 down secret-detail");
+        }),
+      },
     });
     const res = await handleDeleteResume(RESUME, d);
     expect(res.status).toBe(500);

@@ -13,12 +13,10 @@ describe("describeVapiError", () => {
   });
 
   it("extracts nested API error messages", () => {
-    expect(
-      describeVapiError({ error: { message: ["assistantId must be a UUID"] } }),
-    ).toBe("assistantId must be a UUID");
-    expect(describeVapiError({ errorMsg: "Meeting has ended" })).toBe(
-      "Meeting has ended",
+    expect(describeVapiError({ error: { message: ["assistantId must be a UUID"] } })).toBe(
+      "assistantId must be a UUID",
     );
+    expect(describeVapiError({ errorMsg: "Meeting has ended" })).toBe("Meeting has ended");
   });
 
   it("hints at the public key on auth failures", () => {

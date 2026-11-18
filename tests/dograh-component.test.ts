@@ -27,8 +27,13 @@ const widget = {
   start: vi.fn(async () => {}),
   end: vi.fn(),
   setContext: vi.fn(),
-  onCallConnected: vi.fn((cb: (info: { workflowRunId?: unknown }) => void) => void (handlers.connected = () => cb({}))),
-  onCallDisconnected: vi.fn((cb: (info: { workflowRunId?: unknown }) => void) => void (handlers.disconnected = () => cb({}))),
+  onCallConnected: vi.fn(
+    (cb: (info: { workflowRunId?: unknown }) => void) => void (handlers.connected = () => cb({})),
+  ),
+  onCallDisconnected: vi.fn(
+    (cb: (info: { workflowRunId?: unknown }) => void) =>
+      void (handlers.disconnected = () => cb({})),
+  ),
   onCallEnd: vi.fn((cb: () => void) => void (handlers.end = cb)),
   onStatusChange: vi.fn((cb: (s: string) => void) => void (handlers.status = cb)),
   onError: vi.fn((cb: (e: unknown) => void) => void (handlers.error = cb)),
@@ -54,7 +59,9 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   for (const f of Object.values(widget)) f.mockClear();
   for (const k of Object.keys(handlers) as (keyof Handlers)[]) delete handlers[k];
-  requestDograhSession.mockReset().mockResolvedValue({ ok: true, contextVariables: { session_token: "tok", role: "SRE" } });
+  requestDograhSession
+    .mockReset()
+    .mockResolvedValue({ ok: true, contextVariables: { session_token: "tok", role: "SRE" } });
   loadDograhWidget.mockReset().mockResolvedValue(widget);
   waitForSessionSaved.mockReset().mockResolvedValue("saved");
   container = document.createElement("div");
@@ -68,9 +75,12 @@ afterEach(async () => {
 });
 
 function setValue(el: HTMLInputElement | HTMLSelectElement, value: string) {
-  const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+  const proto =
+    el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
   Object.getOwnPropertyDescriptor(proto, "value")!.set!.call(el, value);
-  el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
+  el.dispatchEvent(
+    new Event(el instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }),
+  );
 }
 
 function button(label: RegExp): HTMLButtonElement {
@@ -94,10 +104,18 @@ function nativeClick(el: HTMLElement) {
 }
 
 async function settle() {
-  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+  for (let i = 0; i < 6; i++)
+    await act(async () => {
+      await Promise.resolve();
+    });
 }
 
-async function render(props: { sessionId: string | null; widgetSrc: string | null } = { sessionId: SESSION, widgetSrc: SRC }) {
+async function render(
+  props: { sessionId: string | null; widgetSrc: string | null } = {
+    sessionId: SESSION,
+    widgetSrc: SRC,
+  },
+) {
   await act(async () => {
     root.render(createElement(StrictMode, null, createElement(DograhInterview, props)));
   });
@@ -118,7 +136,12 @@ describe("DograhInterview", () => {
     await fillAndStart();
 
     expect(requestDograhSession).toHaveBeenCalledTimes(1);
-    expect(requestDograhSession).toHaveBeenCalledWith({ sessionId: SESSION, role: "SRE", level: "mid", techstack: "Go, Kubernetes" });
+    expect(requestDograhSession).toHaveBeenCalledWith({
+      sessionId: SESSION,
+      role: "SRE",
+      level: "mid",
+      techstack: "Go, Kubernetes",
+    });
     expect(loadDograhWidget).toHaveBeenCalledWith(SRC);
     expect(widget.setContext).toHaveBeenCalledWith({ session_token: "tok", role: "SRE" });
     expect(widget.start).toHaveBeenCalledTimes(1);
@@ -135,7 +158,10 @@ describe("DograhInterview", () => {
 
     await act(async () => handlers.disconnected!());
     await settle();
-    expect(waitForSessionSaved).toHaveBeenCalledWith(SESSION, expect.objectContaining({ signal: expect.anything() }));
+    expect(waitForSessionSaved).toHaveBeenCalledWith(
+      SESSION,
+      expect.objectContaining({ signal: expect.anything() }),
+    );
     expect(container.textContent).toContain("Transcript saved");
     expect(button(/start again/i).type).toBe("submit");
   });
@@ -179,7 +205,11 @@ describe("DograhInterview", () => {
   });
 
   it("shows the server's message and does not touch the widget when the session is refused", async () => {
-    requestDograhSession.mockResolvedValue({ ok: false, status: 409, message: "This interview session is already closed." });
+    requestDograhSession.mockResolvedValue({
+      ok: false,
+      status: 409,
+      message: "This interview session is already closed.",
+    });
     await render();
     await fillAndStart();
     expect(container.querySelector('[role="alert"]')?.textContent).toContain("already closed");
@@ -226,7 +256,9 @@ describe("DograhInterview", () => {
     await render({ sessionId: null, widgetSrc: SRC });
     expect(container.textContent).toContain("sessionId");
     expect(button(/start interview/i).disabled).toBe(true);
-    await act(async () => root.render(createElement(DograhInterview, { sessionId: SESSION, widgetSrc: null })));
+    await act(async () =>
+      root.render(createElement(DograhInterview, { sessionId: SESSION, widgetSrc: null })),
+    );
     expect(button(/start interview/i).disabled).toBe(true);
     expect(requestDograhSession).not.toHaveBeenCalled();
   });

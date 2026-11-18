@@ -15,13 +15,9 @@ const MIN_LIMIT = 1;
 const MAX_LIMIT = 10_000;
 export const QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-export type DailyLimitResult =
-  | { ok: true; limit: number }
-  | { ok: false; invalid: string };
+export type DailyLimitResult = { ok: true; limit: number } | { ok: false; invalid: string };
 
-export function readDailyCallLimit(
-  env: Record<string, string | undefined>,
-): DailyLimitResult {
+export function readDailyCallLimit(env: Record<string, string | undefined>): DailyLimitResult {
   const raw = env.AI_DAILY_CALL_LIMIT?.trim();
   if (!raw) return { ok: true, limit: DEFAULT_DAILY_CALL_LIMIT };
   const n = Number(raw);
@@ -66,9 +62,7 @@ export async function checkQuota(
 }
 
 /** Must be given a service-role client: `ai_usage` writes are server-only. */
-export function createSupabaseUsageStore(
-  client: SupabaseClient<Database>,
-): UsageStore {
+export function createSupabaseUsageStore(client: SupabaseClient<Database>): UsageStore {
   return {
     async countSince(userId, sinceIso) {
       const { count, error } = await client

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createCaptionTracker, MAX_CAPTION_CHARS, type CaptionSpeaker } from "@/lib/dograh/captions";
+import {
+  createCaptionTracker,
+  MAX_CAPTION_CHARS,
+  type CaptionSpeaker,
+} from "@/lib/dograh/captions";
 import { listenToCallMessages, type DograhWidgetApi } from "@/lib/dograh/widget-client";
 
 function setup() {
@@ -10,7 +14,8 @@ function setup() {
     onCaption: (t) => captions.push(t),
     onSpeaker: (s) => speakers.push(s),
   });
-  const send = (type: string, payload: unknown = {}) => tracker.handle(JSON.stringify({ type, payload }));
+  const send = (type: string, payload: unknown = {}) =>
+    tracker.handle(JSON.stringify({ type, payload }));
   return { captions, speakers, tracker, send };
 }
 
@@ -91,8 +96,12 @@ describe("createCaptionTracker", () => {
 function fakeSocket() {
   const listeners = new Set<(e: { data?: unknown }) => void>();
   return {
-    addEventListener: vi.fn((_t: string, fn: (e: { data?: unknown }) => void) => void listeners.add(fn)),
-    removeEventListener: vi.fn((_t: string, fn: (e: { data?: unknown }) => void) => void listeners.delete(fn)),
+    addEventListener: vi.fn(
+      (_t: string, fn: (e: { data?: unknown }) => void) => void listeners.add(fn),
+    ),
+    removeEventListener: vi.fn(
+      (_t: string, fn: (e: { data?: unknown }) => void) => void listeners.delete(fn),
+    ),
     emit: (data: unknown) => listeners.forEach((fn) => fn({ data })),
     count: () => listeners.size,
   };
@@ -151,7 +160,10 @@ describe("listenToCallMessages", () => {
   it("gives up quietly after the timeout", () => {
     vi.useFakeTimers();
     const getState = vi.fn(() => ({ ws: null }));
-    listenToCallMessages({ getState } as unknown as DograhWidgetApi, () => {}, { intervalMs: 100, timeoutMs: 1000 });
+    listenToCallMessages({ getState } as unknown as DograhWidgetApi, () => {}, {
+      intervalMs: 100,
+      timeoutMs: 1000,
+    });
     vi.advanceTimersByTime(5000);
     const calls = getState.mock.calls.length;
     vi.advanceTimersByTime(5000);
@@ -159,7 +171,9 @@ describe("listenToCallMessages", () => {
   });
 
   it("does nothing, without throwing, when the widget has no getState or it throws", () => {
-    expect(() => listenToCallMessages({} as DograhWidgetApi, () => {}, { timeoutMs: 0 })).not.toThrow();
+    expect(() =>
+      listenToCallMessages({} as DograhWidgetApi, () => {}, { timeoutMs: 0 }),
+    ).not.toThrow();
     const throwing = {
       getState: () => {
         throw new Error("boom");

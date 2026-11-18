@@ -20,9 +20,10 @@ describe("readGeminiLiveConfig", () => {
       missing: ["GEMINI_API_KEY", "GEMINI_LIVE_MODEL"],
       invalid: [],
     });
-    expect(
-      readGeminiLiveConfig({ GEMINI_API_KEY: "  ", GEMINI_LIVE_MODEL: " " }),
-    ).toMatchObject({ ok: false, missing: ["GEMINI_API_KEY", "GEMINI_LIVE_MODEL"] });
+    expect(readGeminiLiveConfig({ GEMINI_API_KEY: "  ", GEMINI_LIVE_MODEL: " " })).toMatchObject({
+      ok: false,
+      missing: ["GEMINI_API_KEY", "GEMINI_LIVE_MODEL"],
+    });
   });
 
   it.each(["gemini-2.5-flash", "gemini-3-flash", "gpt-4o", "gemini live", "x/../y"])(
@@ -37,20 +38,27 @@ describe("readGeminiLiveConfig", () => {
   it.each([
     ["gemini-3.8-live", "gemini-3.8-live"],
     ["models/gemini-3.8-live", "gemini-3.8-live"],
-    ["gemini-2.5-flash-native-audio-preview-09-2025", "gemini-2.5-flash-native-audio-preview-09-2025"],
+    [
+      "gemini-2.5-flash-native-audio-preview-09-2025",
+      "gemini-2.5-flash-native-audio-preview-09-2025",
+    ],
     ["gemini-live-2.5-flash-preview", "gemini-live-2.5-flash-preview"],
   ])("accepts Live model %s", (raw, model) => {
     // (GEMINI_LIVE_APP_ORIGIN unset here.)
-    expect(
-      readGeminiLiveConfig({ GEMINI_API_KEY: " key ", GEMINI_LIVE_MODEL: raw }),
-    ).toEqual({ ok: true, apiKey: "key", model });
+    expect(readGeminiLiveConfig({ GEMINI_API_KEY: " key ", GEMINI_LIVE_MODEL: raw })).toEqual({
+      ok: true,
+      apiKey: "key",
+      model,
+    });
   });
 });
 
 describe("readGeminiLiveConfig GEMINI_LIVE_APP_ORIGIN", () => {
   const base = { GEMINI_API_KEY: "k", GEMINI_LIVE_MODEL: "gemini-3.8-live" };
   it("accepts a valid public origin and blank values", () => {
-    expect(readGeminiLiveConfig({ ...base, GEMINI_LIVE_APP_ORIGIN: "https://app.example.com" }).ok).toBe(true);
+    expect(
+      readGeminiLiveConfig({ ...base, GEMINI_LIVE_APP_ORIGIN: "https://app.example.com" }).ok,
+    ).toBe(true);
     expect(readGeminiLiveConfig({ ...base, GEMINI_LIVE_APP_ORIGIN: " " }).ok).toBe(true);
   });
   it("reports an invalid origin by name only", () => {
@@ -71,9 +79,10 @@ describe("validateLiveInterviewBody", () => {
       ok: true,
       data: { role: "Backend Engineer", level: "senior", techstack: ["Go", "PostgreSQL"] },
     });
-    expect(
-      validateLiveInterviewBody({ ...valid, techstack: [" Rust ", "Tokio"] }),
-    ).toMatchObject({ ok: true, data: { techstack: ["Rust", "Tokio"] } });
+    expect(validateLiveInterviewBody({ ...valid, techstack: [" Rust ", "Tokio"] })).toMatchObject({
+      ok: true,
+      data: { techstack: ["Rust", "Tokio"] },
+    });
   });
 
   it.each([
@@ -152,9 +161,7 @@ describe("buildEphemeralTokenConfig", () => {
     expect(String(c.systemInstruction)).toContain('"SRE"');
     expect(c.tools).toEqual([
       {
-        functionDeclarations: [
-          expect.objectContaining({ name: END_INTERVIEW_TOOL }),
-        ],
+        functionDeclarations: [expect.objectContaining({ name: END_INTERVIEW_TOOL })],
       },
     ]);
   });

@@ -83,14 +83,18 @@ interface WebhookFields {
 }
 
 function isEmpty(v: unknown): boolean {
-  return v === undefined || v === null || (typeof v === "string" && /^\s*(none|null)?\s*$/i.test(v));
+  return (
+    v === undefined || v === null || (typeof v === "string" && /^\s*(none|null)?\s*$/i.test(v))
+  );
 }
 
 /**
  * Strict about shape and unknown keys, lenient about how Dograh renders the
  * template values: numbers can arrive as strings, and missing values as "".
  */
-function parseFields(value: unknown): { ok: true; data: WebhookFields } | { ok: false; errors: string[] } {
+function parseFields(
+  value: unknown,
+): { ok: true; data: WebhookFields } | { ok: false; errors: string[] } {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { ok: false, errors: ["Body must be a JSON object."] };
   }

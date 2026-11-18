@@ -108,8 +108,6 @@ describe("parseSessionEvaluation", () => {
   it("collapses control characters in model text", () => {
     const g = good();
     g.finalAssessment = "Line one\n\nLine\ttwo";
-    expect(parseSessionEvaluation(g, items).finalAssessment).toBe(
-      "Line one Line two",
-    );
+    expect(parseSessionEvaluation(g, items).finalAssessment).toBe("Line one Line two");
   });
 });

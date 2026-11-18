@@ -31,10 +31,7 @@ export interface LiveTokenDeps {
   /** Verifies the Supabase session (claims) — the only source of identity. */
   authenticate: () => Promise<AuthResult>;
   /** Calls Google `authTokens.create` with the server API key. */
-  createAuthToken: (
-    apiKey: string,
-    config: CreateAuthTokenConfig,
-  ) => Promise<{ name?: string }>;
+  createAuthToken: (apiKey: string, config: CreateAuthTokenConfig) => Promise<{ name?: string }>;
   limiter: SlidingWindowLimiter;
   /**
    * Resolves `sessionId` to the user's own interview session. Required to
@@ -202,10 +199,7 @@ export async function handleLiveTokenRequest(
     now: issuedAt,
   });
   const controller = new AbortController();
-  const timer = setTimeout(
-    () => controller.abort(),
-    deps.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS,
-  );
+  const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? DEFAULT_PROVIDER_TIMEOUT_MS);
   let token: { name?: string };
   try {
     token = await deps.createAuthToken(config.apiKey, {

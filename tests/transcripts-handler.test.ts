@@ -172,8 +172,14 @@ describe("handlePutTranscript", () => {
     });
 
     it("lets exactly one of two parallel writes win", async () => {
-      const a = payload({ entries: [{ speaker: "candidate", text: "from A" }], durationSeconds: 1 });
-      const b = payload({ entries: [{ speaker: "candidate", text: "from B" }], durationSeconds: 2 });
+      const a = payload({
+        entries: [{ speaker: "candidate", text: "from A" }],
+        durationSeconds: 1,
+      });
+      const b = payload({
+        entries: [{ speaker: "candidate", text: "from B" }],
+        durationSeconds: 2,
+      });
       const [ra, rb] = await Promise.all([
         handlePutTranscript(put(valid(a)), SID, deps()),
         handlePutTranscript(put(valid(b)), SID, deps()),
@@ -214,7 +220,10 @@ describe("handlePutTranscript", () => {
     });
 
     it("answers 404 for a missing session and for a malformed id", async () => {
-      expect((await handlePutTranscript(put(valid()), "99999999-9999-4999-8999-999999999999", deps())).status).toBe(404);
+      expect(
+        (await handlePutTranscript(put(valid()), "99999999-9999-4999-8999-999999999999", deps()))
+          .status,
+      ).toBe(404);
       store.calls.length = 0;
       const res = await handlePutTranscript(put(valid()), "not-a-uuid", deps());
       expect(res.status).toBe(404);
@@ -252,7 +261,9 @@ describe("handlePutTranscript", () => {
 
     it("returns 413 for an oversized body", async () => {
       const big = valid(
-        payload({ entries: [{ speaker: "candidate", text: "x".repeat(MAX_TRANSCRIPT_BODY_BYTES) }] }),
+        payload({
+          entries: [{ speaker: "candidate", text: "x".repeat(MAX_TRANSCRIPT_BODY_BYTES) }],
+        }),
       );
       const res = await handlePutTranscript(put(big), SID, deps());
       expect(res.status).toBe(413);
@@ -265,7 +276,10 @@ describe("handlePutTranscript", () => {
       expect(r1.status).toBe(400);
       expect(JSON.stringify((await r1.json()).details)).toContain("entries");
 
-      const long = Array.from({ length: 4 }, () => ({ speaker: "candidate", text: "x".repeat(7_000) }));
+      const long = Array.from({ length: 4 }, () => ({
+        speaker: "candidate",
+        text: "x".repeat(7_000),
+      }));
       const r2 = await handlePutTranscript(put(valid(payload({ entries: long }))), SID, deps());
       expect(r2.status).toBe(400);
       expect(store.calls).toHaveLength(0);
@@ -304,7 +318,11 @@ describe("handlePutTranscript", () => {
           ok: true as const,
           value: {
             transcript: [{ role: "candidate" as const, text: "from another provider" }],
-            metadata: { source: "client_gemini_live" as const, durationSeconds: 3, endedReason: "error" as const },
+            metadata: {
+              source: "client_gemini_live" as const,
+              durationSeconds: 3,
+              endedReason: "error" as const,
+            },
           },
         };
       },

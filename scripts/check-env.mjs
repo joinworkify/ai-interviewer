@@ -101,7 +101,9 @@ for (const p of PROVIDERS) {
   let ok = true;
   for (const name of p.minLength) {
     if (get(name).length < MIN_SECRET_LENGTH) {
-      problems.push(`${name} must be at least ${MIN_SECRET_LENGTH} characters (npm run setup:secret)`);
+      problems.push(
+        `${name} must be at least ${MIN_SECRET_LENGTH} characters (npm run setup:secret)`,
+      );
       ok = false;
     }
   }
@@ -112,7 +114,10 @@ for (const p of PROVIDERS) {
   if (ok) configured.push(p.name);
 }
 
-if (configured.length === 0 && !problems.some((p) => /is partly configured|at least|must differ/.test(p))) {
+if (
+  configured.length === 0 &&
+  !problems.some((p) => /is partly configured|at least|must differ/.test(p))
+) {
   problems.push(
     `No voice provider is configured. Set up at least one of: ${PROVIDERS.map((p) => p.name).join(", ")}`,
   );

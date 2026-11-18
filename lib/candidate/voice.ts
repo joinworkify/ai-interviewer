@@ -41,7 +41,10 @@ interface FakeOptions {
 }
 
 /** shortcut: scripted fake with no audio; replace with SHH's WebSocket client. */
-export function createFakeVoiceSession(handlers: VoiceHandlers, opts: FakeOptions = {}): VoiceSession {
+export function createFakeVoiceSession(
+  handlers: VoiceHandlers,
+  opts: FakeOptions = {},
+): VoiceSession {
   const { script = FAKE_SCRIPT, dropOnce = false, turnMs = 4000 } = opts;
   const timers: ReturnType<typeof setTimeout>[] = [];
   let at = 0;
@@ -103,7 +106,11 @@ export function createDograhVoiceSession(
   handlers: VoiceHandlers,
   options: DograhVoiceOptions,
 ): VoiceSession {
-  const { widgetSrc, requestSession = requestDograhSession, loadWidget = loadDograhWidget } = options;
+  const {
+    widgetSrc,
+    requestSession = requestDograhSession,
+    loadWidget = loadDograhWidget,
+  } = options;
   let stopped = false;
   let finished = false;
   let connected = false;

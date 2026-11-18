@@ -124,10 +124,7 @@ function closeTurn(state: TranscriptState, interrupted: boolean): TranscriptStat
   return next;
 }
 
-export function reduceTranscript(
-  state: TranscriptState,
-  event: TranscriptEvent,
-): TranscriptState {
+export function reduceTranscript(state: TranscriptState, event: TranscriptEvent): TranscriptState {
   switch (event.type) {
     case "input":
       return append(state, "candidate", event.text, event.finished);

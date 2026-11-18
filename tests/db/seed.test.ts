@@ -86,7 +86,9 @@ describe("seed.sql file", () => {
       .replace(/'(?:[^']|'')*'/g, "''")
       .toLowerCase();
     expect(sql).not.toMatch(/\b(begin|commit|rollback)\b\s*;/);
-    expect(sql).not.toMatch(/\b(create|alter|drop|truncate)\s+(or\s+replace\s+)?(table|schema|index|function|trigger|policy|type|extension)\b/);
+    expect(sql).not.toMatch(
+      /\b(create|alter|drop|truncate)\s+(or\s+replace\s+)?(table|schema|index|function|trigger|policy|type|extension)\b/,
+    );
     expect(sql).not.toMatch(/\bdelete\s+from\b/);
   });
 

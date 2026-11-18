@@ -1,22 +1,9 @@
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  Power,
-  X,
-  Loader2,
-} from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Power, X, Loader2 } from "lucide-react";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { formatPayRate, validatePayRate, type PayType } from "@/lib/candidate/pay";
 
@@ -82,9 +69,7 @@ const emptyForm: RoleForm = {
 function bulletsToText(items: Bullet[] | null | undefined) {
   if (!Array.isArray(items)) return "";
 
-  return items
-    .map((item) => `${item.title ?? ""}|${item.text ?? ""}`)
-    .join("\n");
+  return items.map((item) => `${item.title ?? ""}|${item.text ?? ""}`).join("\n");
 }
 
 function textToBullets(value: string): Bullet[] {
@@ -162,9 +147,7 @@ export function RolesManager() {
 
       setRoles(result.roles ?? []);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to load roles.",
-      );
+      setError(err instanceof Error ? err.message : "Unable to load roles.");
     } finally {
       setLoading(false);
     }
@@ -217,10 +200,7 @@ export function RolesManager() {
     setForm(emptyForm);
   }
 
-  function updateForm<K extends keyof RoleForm>(
-    field: K,
-    value: RoleForm[K],
-  ) {
+  function updateForm<K extends keyof RoleForm>(field: K, value: RoleForm[K]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -229,7 +209,12 @@ export function RolesManager() {
     setError("");
     setSuccess("");
 
-    if (!form.title.trim() || Object.keys(validatePayRate({ min: form.pay_min, max: form.pay_max, type: form.pay_type })).length > 0 || !form.job_type.trim()) {
+    if (
+      !form.title.trim() ||
+      Object.keys(validatePayRate({ min: form.pay_min, max: form.pay_max, type: form.pay_type }))
+        .length > 0 ||
+      !form.job_type.trim()
+    ) {
       setError("Please complete the title, pay rate, and job type.");
       return;
     }
@@ -261,9 +246,7 @@ export function RolesManager() {
 
     try {
       const response = await fetch(
-        editingId
-          ? `/api/admin/roles/${encodeURIComponent(editingId)}`
-          : "/api/admin/roles",
+        editingId ? `/api/admin/roles/${encodeURIComponent(editingId)}` : "/api/admin/roles",
         {
           method: editingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -277,11 +260,7 @@ export function RolesManager() {
         throw new Error(result.message || "Unable to save role.");
       }
 
-      setSuccess(
-        editingId
-          ? "Role updated successfully."
-          : "Role created successfully.",
-      );
+      setSuccess(editingId ? "Role updated successfully." : "Role created successfully.");
       setShowForm(false);
       setEditingId(null);
       setForm(emptyForm);
@@ -306,14 +285,11 @@ export function RolesManager() {
     setSuccess("");
 
     try {
-      const response = await fetch(
-        `/api/admin/roles/${encodeURIComponent(role.id)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ is_active: !role.is_active }),
-        },
-      );
+      const response = await fetch(`/api/admin/roles/${encodeURIComponent(role.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: !role.is_active }),
+      });
 
       const result: ApiResponse = await response.json();
 
@@ -342,10 +318,9 @@ export function RolesManager() {
     setSuccess("");
 
     try {
-      const response = await fetch(
-        `/api/admin/roles/${encodeURIComponent(role.id)}`,
-        { method: "DELETE" },
-      );
+      const response = await fetch(`/api/admin/roles/${encodeURIComponent(role.id)}`, {
+        method: "DELETE",
+      });
 
       const result: ApiResponse = await response.json();
 
@@ -425,9 +400,7 @@ export function RolesManager() {
               <h2 className="text-lg font-semibold">
                 {editingId ? "Edit role" : "Create new role"}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                Enter the role details below.
-              </p>
+              <p className="text-sm text-muted-foreground">Enter the role details below.</p>
             </div>
 
             <button
@@ -481,9 +454,36 @@ export function RolesManager() {
                   Pay rate *
                 </label>
                 <div className="flex gap-2">
-                  <input id="role-pay" aria-label="Minimum pay" type="number" min="0" step="0.01" required value={form.pay_min} onChange={(event) => updateForm("pay_min", event.target.value)} className="h-10 w-24 rounded-md border px-3 text-sm" />
-                  <input aria-label="Maximum pay" type="number" min="0" step="0.01" required value={form.pay_max} onChange={(event) => updateForm("pay_max", event.target.value)} className="h-10 w-24 rounded-md border px-3 text-sm" />
-                  <select aria-label="Pay type" value={form.pay_type} onChange={(event) => updateForm("pay_type", event.target.value as PayType)} className="h-10 rounded-md border px-3 text-sm"><option value="hour">Per hour</option><option value="task">Per task</option></select>
+                  <input
+                    id="role-pay"
+                    aria-label="Minimum pay"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={form.pay_min}
+                    onChange={(event) => updateForm("pay_min", event.target.value)}
+                    className="h-10 w-24 rounded-md border px-3 text-sm"
+                  />
+                  <input
+                    aria-label="Maximum pay"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={form.pay_max}
+                    onChange={(event) => updateForm("pay_max", event.target.value)}
+                    className="h-10 w-24 rounded-md border px-3 text-sm"
+                  />
+                  <select
+                    aria-label="Pay type"
+                    value={form.pay_type}
+                    onChange={(event) => updateForm("pay_type", event.target.value as PayType)}
+                    className="h-10 rounded-md border px-3 text-sm"
+                  >
+                    <option value="hour">Per hour</option>
+                    <option value="task">Per task</option>
+                  </select>
                 </div>
               </div>
 
@@ -513,9 +513,7 @@ export function RolesManager() {
                   placeholder="Python, Java, TypeScript"
                   className="h-10 w-full rounded-md border bg-white px-3 text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Separate each skill with a comma.
-                </p>
+                <p className="text-xs text-muted-foreground">Separate each skill with a comma.</p>
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
@@ -540,10 +538,10 @@ export function RolesManager() {
                   id="role-responsibilities"
                   rows={5}
                   value={form.responsibilities}
-                  onChange={(event) =>
-                    updateForm("responsibilities", event.target.value)
+                  onChange={(event) => updateForm("responsibilities", event.target.value)}
+                  placeholder={
+                    "Feature Development|Build and maintain features.\nBug Fixing|Identify and resolve bugs."
                   }
-                  placeholder={"Feature Development|Build and maintain features.\nBug Fixing|Identify and resolve bugs."}
                   className="w-full rounded-md border bg-white px-3 py-2 text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -559,10 +557,10 @@ export function RolesManager() {
                   id="role-requirements"
                   rows={5}
                   value={form.requirements}
-                  onChange={(event) =>
-                    updateForm("requirements", event.target.value)
+                  onChange={(event) => updateForm("requirements", event.target.value)}
+                  placeholder={
+                    "Programming Foundations|Understand programming basics.\nCommunication|Communicate clearly with the team."
                   }
-                  placeholder={"Programming Foundations|Understand programming basics.\nCommunication|Communicate clearly with the team."}
                   className="w-full rounded-md border bg-white px-3 py-2 text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -579,9 +577,7 @@ export function RolesManager() {
                   type="number"
                   step={1}
                   value={form.sort_order}
-                  onChange={(event) =>
-                    updateForm("sort_order", Number(event.target.value))
-                  }
+                  onChange={(event) => updateForm("sort_order", Number(event.target.value))}
                   className="h-10 w-full rounded-md border bg-white px-3 text-sm"
                 />
               </div>
@@ -590,9 +586,7 @@ export function RolesManager() {
                 <input
                   type="checkbox"
                   checked={form.is_active}
-                  onChange={(event) =>
-                    updateForm("is_active", event.target.checked)
-                  }
+                  onChange={(event) => updateForm("is_active", event.target.checked)}
                   className="size-4 accent-primary"
                 />
                 Active role
@@ -686,17 +680,18 @@ export function RolesManager() {
               </tr>
             ) : (
               filteredRoles.map((role) => (
-                <tr
-                  key={role.id}
-                  className="border-b last:border-0 hover:bg-muted/30"
-                >
+                <tr key={role.id} className="border-b last:border-0 hover:bg-muted/30">
                   <td className="px-4 py-3">
                     <div className="font-medium">{role.title}</div>
                     <div className="text-xs text-muted-foreground">{role.id}</div>
                   </td>
 
                   <td className="whitespace-nowrap px-4 py-3">
-                    {formatPayRate({ payMin: role.pay_min, payMax: role.pay_max, payType: role.pay_type })}
+                    {formatPayRate({
+                      payMin: role.pay_min,
+                      payMax: role.pay_max,
+                      payType: role.pay_type,
+                    })}
                   </td>
 
                   <td className="px-4 py-3">{role.job_type}</td>
@@ -704,9 +699,7 @@ export function RolesManager() {
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2 py-1 text-xs font-medium ${
-                        role.is_active
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
+                        role.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
                       }`}
                     >
                       {role.is_active ? "Active" : "Inactive"}

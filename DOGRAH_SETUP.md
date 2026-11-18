@@ -105,12 +105,12 @@ Rules:
 
 Add a **Webhook node** that runs after the call:
 
-| Field | Value |
-| --- | --- |
-| URL | `http://host.docker.internal:3000/api/dograh/webhook` (use your public HTTPS URL in production) |
-| Method | `POST` |
-| Credential | type `BEARER_TOKEN`, value = your `DOGRAH_WEBHOOK_SECRET` |
-| Payload template | see below |
+| Field            | Value                                                                                           |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| URL              | `http://host.docker.internal:3000/api/dograh/webhook` (use your public HTTPS URL in production) |
+| Method           | `POST`                                                                                          |
+| Credential       | type `BEARER_TOKEN`, value = your `DOGRAH_WEBHOOK_SECRET`                                       |
+| Payload template | see below                                                                                       |
 
 ```json
 {
@@ -131,13 +131,13 @@ Embed the widget: agent settings, **Add to Website**, **Configure Widget**. Enab
 
 Add to `.env.local` (names are in `.env.example`):
 
-| Variable | Value |
-| --- | --- |
-| `DOGRAH_API_URL` | `http://localhost:8000` |
-| `DOGRAH_STORAGE_URL` | `http://localhost:9000` (Dograh's MinIO; a transcript download redirects there) |
-| `DOGRAH_WEBHOOK_SECRET` | 32+ random characters, same value as the webhook credential |
-| `DOGRAH_SESSION_SIGNING_SECRET` | 32+ random characters, different from the webhook secret |
-| `NEXT_PUBLIC_DOGRAH_WIDGET_SRC` | the widget script URL from step 2 |
+| Variable                        | Value                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `DOGRAH_API_URL`                | `http://localhost:8000`                                                         |
+| `DOGRAH_STORAGE_URL`            | `http://localhost:9000` (Dograh's MinIO; a transcript download redirects there) |
+| `DOGRAH_WEBHOOK_SECRET`         | 32+ random characters, same value as the webhook credential                     |
+| `DOGRAH_SESSION_SIGNING_SECRET` | 32+ random characters, different from the webhook secret                        |
+| `NEXT_PUBLIC_DOGRAH_WIDGET_SRC` | the widget script URL from step 2                                               |
 
 Generate secrets with `openssl rand -base64 48`. `npm run check:env` validates them when any `DOGRAH_*` variable is set. Restart `npm run dev` afterwards.
 

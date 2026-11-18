@@ -15,8 +15,7 @@ import type { Database } from "@/types/database";
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key =
-    process.env.SUPABASE_SECRET_KEY?.trim() ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    process.env.SUPABASE_SECRET_KEY?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key) {
     throw new Error(
       "Supabase admin client needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY.",

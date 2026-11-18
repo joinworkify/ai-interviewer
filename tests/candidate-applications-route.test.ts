@@ -80,7 +80,13 @@ describe("GET /api/candidate/applications", () => {
   it("returns empty applications list when candidate has consents but no valid interviews", async () => {
     getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });
     consentsData = [
-      { id: "c-1", user_id: USER, session_id: SESSION_1, role_id: "software-engineer", accepted_at: "2026-11-18T10:00:00Z" },
+      {
+        id: "c-1",
+        user_id: USER,
+        session_id: SESSION_1,
+        role_id: "software-engineer",
+        accepted_at: "2026-11-18T10:00:00Z",
+      },
     ];
     sessionsData = [];
     const res = await GET(new Request("http://localhost:3000/api/candidate/applications"));
@@ -91,20 +97,42 @@ describe("GET /api/candidate/applications", () => {
   it("returns applications mapped with role titles from public.roles", async () => {
     getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });
     consentsData = [
-      { id: "c-1", user_id: USER, session_id: SESSION_1, role_id: "software-engineer", accepted_at: "2026-11-18T10:00:00Z" },
-      { id: "c-2", user_id: USER, session_id: SESSION_2, role_id: "deactivated-role", accepted_at: "2026-11-17T10:00:00Z" },
+      {
+        id: "c-1",
+        user_id: USER,
+        session_id: SESSION_1,
+        role_id: "software-engineer",
+        accepted_at: "2026-11-18T10:00:00Z",
+      },
+      {
+        id: "c-2",
+        user_id: USER,
+        session_id: SESSION_2,
+        role_id: "deactivated-role",
+        accepted_at: "2026-11-17T10:00:00Z",
+      },
     ];
     sessionsData = [
-      { id: SESSION_1, user_id: USER, interview_id: "iv-1", status: "completed", transcript: [{ role: "candidate", text: "Answer" }] },
-      { id: SESSION_2, user_id: USER, interview_id: "iv-2", status: "in_progress", transcript: null },
+      {
+        id: SESSION_1,
+        user_id: USER,
+        interview_id: "iv-1",
+        status: "completed",
+        transcript: [{ role: "candidate", text: "Answer" }],
+      },
+      {
+        id: SESSION_2,
+        user_id: USER,
+        interview_id: "iv-2",
+        status: "in_progress",
+        transcript: null,
+      },
     ];
     interviewsData = [
       { id: "iv-1", user_id: USER },
       { id: "iv-2", user_id: USER },
     ];
-    rolesData = [
-      { id: "software-engineer", title: "Software Engineer" },
-    ];
+    rolesData = [{ id: "software-engineer", title: "Software Engineer" }];
 
     const res = await GET(new Request("http://localhost:3000/api/candidate/applications"));
     expect(res.status).toBe(200);

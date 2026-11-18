@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  describeCloseEvent,
-  describeMicError,
-  TokenRequestError,
-} from "@/lib/gemini-live/errors";
+import { describeCloseEvent, describeMicError, TokenRequestError } from "@/lib/gemini-live/errors";
 import { requestLiveToken } from "@/lib/gemini-live/token-client";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -89,12 +85,20 @@ describe("requestLiveToken", () => {
   });
 
   it("rejects malformed grants", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ token: "AIza-key", model: "m" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ token: "AIza-key", model: "m" })),
+    );
     await expect(requestLiveToken(details)).rejects.toBeInstanceOf(TokenRequestError);
   });
 
   it("wraps network errors", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
     await expect(requestLiveToken(details)).rejects.toThrow(/reach the server/i);
   });
 });

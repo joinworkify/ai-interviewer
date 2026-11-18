@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  MAX_QUESTIONS,
-  validateGenerateInterviewBody,
-} from "@/lib/interviews/validation";
+import { MAX_QUESTIONS, validateGenerateInterviewBody } from "@/lib/interviews/validation";
 
 const valid = {
   role: "Frontend Developer",

@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  checkSameOrigin,
-  parseAppOrigin,
-  parseHostHeader,
-} from "@/lib/gemini-live/origin";
+import { checkSameOrigin, parseAppOrigin, parseHostHeader } from "@/lib/gemini-live/origin";
 
 /**
  * CSRF protection for POST /api/gemini-live/token (identity is still the
@@ -11,10 +7,7 @@ import {
  * http://localhost:3190 while the browser's Host/Origin is 127.0.0.1:3190.
  */
 
-function req(
-  url: string,
-  headers: Record<string, string | undefined>,
-): Request {
+function req(url: string, headers: Record<string, string | undefined>): Request {
   const h = new Headers();
   for (const [k, v] of Object.entries(headers)) if (v !== undefined) h.set(k, v);
   return new Request(url, { method: "POST", headers: h });
@@ -103,10 +96,16 @@ describe("checkSameOrigin", () => {
 
   it("rejects scheme or port mismatches", () => {
     expect(
-      checkSameOrigin(req(URL_LOCAL, { host: "localhost:3190", origin: "https://localhost:3190" }), {}).ok,
+      checkSameOrigin(
+        req(URL_LOCAL, { host: "localhost:3190", origin: "https://localhost:3190" }),
+        {},
+      ).ok,
     ).toBe(false);
     expect(
-      checkSameOrigin(req(URL_LOCAL, { host: "localhost:3190", origin: "http://localhost:3191" }), {}).ok,
+      checkSameOrigin(
+        req(URL_LOCAL, { host: "localhost:3190", origin: "http://localhost:3191" }),
+        {},
+      ).ok,
     ).toBe(false);
   });
 
@@ -132,8 +131,14 @@ describe("checkSameOrigin", () => {
     ["Origin with userinfo", { host: "localhost:3190", origin: "http://u@localhost:3190" }],
     ["non-http Origin", { host: "localhost:3190", origin: "javascript:alert(1)" }],
     ["malformed Host", { host: "localhost:3190/evil", origin: "http://localhost:3190" }],
-    ["cross-site fetch metadata", { host: "localhost:3190", origin: "http://localhost:3190", "sec-fetch-site": "cross-site" }],
-    ["same-site fetch metadata", { host: "localhost:3190", origin: "http://localhost:3190", "sec-fetch-site": "same-site" }],
+    [
+      "cross-site fetch metadata",
+      { host: "localhost:3190", origin: "http://localhost:3190", "sec-fetch-site": "cross-site" },
+    ],
+    [
+      "same-site fetch metadata",
+      { host: "localhost:3190", origin: "http://localhost:3190", "sec-fetch-site": "same-site" },
+    ],
   ])("rejects %s", (_label, headers) => {
     expect(checkSameOrigin(req(URL_LOCAL, headers), {}).ok).toBe(false);
   });

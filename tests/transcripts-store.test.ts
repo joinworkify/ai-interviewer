@@ -3,10 +3,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import {
-  TranscriptStoreError,
-  createSupabaseTranscriptStore,
-} from "@/lib/transcripts/store";
+import { TranscriptStoreError, createSupabaseTranscriptStore } from "@/lib/transcripts/store";
 
 const ME = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const SID = "22222222-2222-4222-8222-222222222222";
@@ -118,9 +115,7 @@ describe("20261111000003_ai_transcript_persistence.sql", () => {
   });
 
   it("constrains transcript_source with a named, re-creatable check", () => {
-    expect(sql).toContain(
-      "drop constraint if exists interview_sessions_transcript_source_check",
-    );
+    expect(sql).toContain("drop constraint if exists interview_sessions_transcript_source_check");
     expect(sql).toContain(
       "add constraint interview_sessions_transcript_source_check check (transcript_source in ('client_gemini_live'))",
     );
@@ -142,12 +137,18 @@ describe("20261111000003_ai_transcript_persistence.sql", () => {
   });
 
   it("is executable by the service role only", () => {
-    expect(sql).toMatch(/revoke all on function public\.store_session_transcript\( uuid, uuid, jsonb, text, int, text, timestamptz \) from public, anon, authenticated/);
-    expect(sql).toMatch(/grant execute on function public\.store_session_transcript\( uuid, uuid, jsonb, text, int, text, timestamptz \) to service_role/);
+    expect(sql).toMatch(
+      /revoke all on function public\.store_session_transcript\( uuid, uuid, jsonb, text, int, text, timestamptz \) from public, anon, authenticated/,
+    );
+    expect(sql).toMatch(
+      /grant execute on function public\.store_session_transcript\( uuid, uuid, jsonb, text, int, text, timestamptz \) to service_role/,
+    );
     expect(sql.match(/grant execute/g)).toHaveLength(1);
   });
 
   it("changes no RLS, policy or table grant", () => {
-    expect(sql).not.toMatch(/create policy|drop policy|enable row level security|grant (select|insert|update|delete|all) on table/);
+    expect(sql).not.toMatch(
+      /create policy|drop policy|enable row level security|grant (select|insert|update|delete|all) on table/,
+    );
   });
 });

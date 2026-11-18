@@ -64,12 +64,18 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         </CardHeader>
         <CardContent>
           {expired && (
-            <p role="alert" className="mb-4 rounded-md bg-secondary p-3 text-sm text-secondary-foreground">
+            <p
+              role="alert"
+              className="mb-4 rounded-md bg-secondary p-3 text-sm text-secondary-foreground"
+            >
               Your session expired. Please log in again.
             </p>
           )}
           {oauthError && (
-            <p role="alert" className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <p
+              role="alert"
+              className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+            >
               {oauthError}
             </p>
           )}
@@ -77,7 +83,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             <SocialAuthButtons next={next} />
             <div className="flex items-center gap-3" aria-hidden="true">
               <div className="h-px flex-1 bg-border" />
-              <span className="font-ui text-xs font-medium uppercase tracking-wider text-muted-foreground">Or continue with email</span>
+              <span className="font-ui text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Or continue with email
+              </span>
               <div className="h-px flex-1 bg-border" />
             </div>
           </div>
@@ -125,7 +133,11 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           <p className="mt-5 text-center text-sm">
             Don&apos;t have an account?{" "}
             <Link
-              href={next === DEFAULT_NEXT ? "/auth/sign-up" : `/auth/sign-up?next=${encodeURIComponent(next)}`}
+              href={
+                next === DEFAULT_NEXT
+                  ? "/auth/sign-up"
+                  : `/auth/sign-up?next=${encodeURIComponent(next)}`
+              }
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Sign up

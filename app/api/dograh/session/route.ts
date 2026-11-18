@@ -22,10 +22,7 @@ async function authenticate(): Promise<AuthResult> {
   // build time); the client throws without these.
   const missing = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
-    [
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ],
+    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
   ]
     .filter(([, value]) => !value?.trim())
     .map(([name]) => name as string);

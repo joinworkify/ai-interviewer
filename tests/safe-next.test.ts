@@ -46,7 +46,12 @@ describe("safeNextPath", () => {
   it("rejects dot segments that normalize into a protocol-relative URL", () => {
     // The URL parser resolves these to "//evil.example", which a redirect
     // would follow off-site.
-    for (const c of ["/..//evil.example", "/.//evil.example", "/a/..//evil.example", "/a/../..//evil.example"]) {
+    for (const c of [
+      "/..//evil.example",
+      "/.//evil.example",
+      "/a/..//evil.example",
+      "/a/../..//evil.example",
+    ]) {
       expect(safeNextPath(c), c).toBe("/");
     }
   });

@@ -47,7 +47,9 @@ describe("session token", () => {
   it("rejects a tampered payload (swapped user) with the old signature", () => {
     const token = makeToken({ nowMs: NOW });
     const [v, , sig] = token.split(".");
-    const forged = Buffer.from(JSON.stringify({ ...goodPayload(), sub: OTHER_USER })).toString("base64url");
+    const forged = Buffer.from(JSON.stringify({ ...goodPayload(), sub: OTHER_USER })).toString(
+      "base64url",
+    );
     expect(verifySessionToken(`${v}.${forged}.${sig}`, SESSION_SECRET, NOW)).toEqual({
       ok: false,
       code: "bad_signature",
@@ -56,7 +58,10 @@ describe("session token", () => {
 
   it("rejects an expired token and one not yet valid", () => {
     const token = makeToken({ nowMs: NOW, ttlSeconds: 60 });
-    expect(verifySessionToken(token, SESSION_SECRET, NOW + 61_000)).toEqual({ ok: false, code: "expired" });
+    expect(verifySessionToken(token, SESSION_SECRET, NOW + 61_000)).toEqual({
+      ok: false,
+      code: "expired",
+    });
     expect(verifySessionToken(token, SESSION_SECRET, NOW - 120_000)).toEqual({
       ok: false,
       code: "not_yet_valid",
@@ -100,7 +105,9 @@ describe("session token", () => {
     expect(() => issueSessionToken("bob", SESSION, SESSION_SECRET)).toThrow();
     expect(() => issueSessionToken(USER, "x", SESSION_SECRET)).toThrow();
     expect(() =>
-      issueSessionToken(USER, SESSION, SESSION_SECRET, { ttlSeconds: SESSION_TOKEN_MAX_TTL_SECONDS + 1 }),
+      issueSessionToken(USER, SESSION, SESSION_SECRET, {
+        ttlSeconds: SESSION_TOKEN_MAX_TTL_SECONDS + 1,
+      }),
     ).toThrow();
   });
 });

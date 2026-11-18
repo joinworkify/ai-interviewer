@@ -16,13 +16,18 @@ export function ApplicationStepper() {
   if (position === null) return null;
 
   // The role page has its id in the path; the step pages have it in ?role=.
-  const roleId = params.get("role") ?? (position === "role" ? decodeURIComponent(pathname.split("/").pop() ?? "") : null);
+  const roleId =
+    params.get("role") ??
+    (position === "role" ? decodeURIComponent(pathname.split("/").pop() ?? "") : null);
   const attemptId = params.get("attempt");
 
   const total = APPLICATION_STEPS.length;
-  const currentIndex = position === "done" ? total : APPLICATION_STEPS.findIndex((s) => s.id === position);
+  const currentIndex =
+    position === "done" ? total : APPLICATION_STEPS.findIndex((s) => s.id === position);
   const current = APPLICATION_STEPS[currentIndex];
-  const summary = current ? `Step ${currentIndex + 1} of ${total}: ${current.label}` : "All steps complete";
+  const summary = current
+    ? `Step ${currentIndex + 1} of ${total}: ${current.label}`
+    : "All steps complete";
 
   return (
     <nav aria-label="Application progress" className="mx-auto mb-8 w-full max-w-3xl font-ui">
@@ -51,7 +56,8 @@ export function ApplicationStepper() {
           const complete = i < currentIndex;
           const isCurrent = i === currentIndex;
           // Only finished steps link back, and never once the interview is over.
-          const href = complete && position !== "done" ? stepHref(step.id, roleId, attemptId) : null;
+          const href =
+            complete && position !== "done" ? stepHref(step.id, roleId, attemptId) : null;
           const content = (
             <>
               <span
@@ -72,7 +78,13 @@ export function ApplicationStepper() {
               >
                 {step.label}
                 <span className="sr-only">
-                  {complete ? (href ? " (completed, go back to this step)" : " (completed)") : isCurrent ? " (current step)" : ""}
+                  {complete
+                    ? href
+                      ? " (completed, go back to this step)"
+                      : " (completed)"
+                    : isCurrent
+                      ? " (current step)"
+                      : ""}
                 </span>
               </span>
             </>

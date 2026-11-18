@@ -14,8 +14,8 @@ function SetupIncomplete({ items, title }: { items: string[]; title: string }) {
     >
       <p className="font-semibold">{title}</p>
       <p>
-        Set these environment variables (see <code>.env.example</code> and <code>DOGRAH_SETUP.md</code>),
-        then restart the dev server or redeploy:
+        Set these environment variables (see <code>.env.example</code> and{" "}
+        <code>DOGRAH_SETUP.md</code>), then restart the dev server or redeploy:
       </p>
       <ul className="list-disc pl-5 font-mono text-xs">
         {items.map((name) => (
@@ -40,7 +40,10 @@ async function DograhContent({
     .map(([name]) => name as string);
   if (missingSupabase.length > 0) {
     return (
-      <SetupIncomplete title="Setup incomplete: Supabase is not configured" items={missingSupabase} />
+      <SetupIncomplete
+        title="Setup incomplete: Supabase is not configured"
+        items={missingSupabase}
+      />
     );
   }
 
@@ -95,8 +98,8 @@ export default function DograhInterviewPage({
           Practice voice interview (Dograh)
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
-          Enter the role, level and tech stack, then press Start. A Dograh voice agent asks the questions
-          stored with your interview. Press End or say goodbye to finish.
+          Enter the role, level and tech stack, then press Start. A Dograh voice agent asks the
+          questions stored with your interview. Press End or say goodbye to finish.
         </p>
       </header>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>

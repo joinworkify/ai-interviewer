@@ -46,10 +46,7 @@ export function CountrySelect({
       </PopoverTrigger>
       {/* The popover renders in a portal outside the themed layout, so re-apply the
           theme and a light colour scheme (keeps the scrollbar light on a dark OS). */}
-      <PopoverContent
-        className="theme-datasea w-[280px] p-0 [color-scheme:light]"
-        align="start"
-      >
+      <PopoverContent className="theme-datasea w-[280px] p-0 [color-scheme:light]" align="start">
         <Command>
           <CommandInput placeholder="Search country or code" />
           <CommandList>

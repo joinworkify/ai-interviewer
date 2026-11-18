@@ -61,7 +61,9 @@ async function submit(email = "candidate@example.test", password = "test-only-pa
     }
   });
   await act(async () =>
-    container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
+    container
+      .querySelector("form")!
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
   );
 }
 

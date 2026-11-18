@@ -23,8 +23,10 @@ export class ResumePreviewBoundary extends Component<
   }
 
   render() {
-    return this.state.failed
-      ? <ResumePreviewFallback fileName={this.props.fileName} />
-      : this.props.children;
+    return this.state.failed ? (
+      <ResumePreviewFallback fileName={this.props.fileName} />
+    ) : (
+      this.props.children
+    );
   }
 }

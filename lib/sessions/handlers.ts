@@ -1,9 +1,4 @@
-import {
-  readLlmConfig,
-  LlmError,
-  type ChatMessage,
-  type TokenUsage,
-} from "@/lib/ai/client";
+import { readLlmConfig, LlmError, type ChatMessage, type TokenUsage } from "@/lib/ai/client";
 import { chatJson } from "@/lib/ai/json";
 import { describeLlmError } from "@/lib/ai/errors";
 import {
@@ -15,11 +10,7 @@ import {
   buildEvaluateTranscriptMessages,
   parseTranscriptEvaluation,
 } from "@/lib/ai/prompts/evaluate-transcript";
-import {
-  checkQuota,
-  readDailyCallLimit,
-  type UsageStore,
-} from "@/lib/ai/usage";
+import { checkQuota, readDailyCallLimit, type UsageStore } from "@/lib/ai/usage";
 import { jsonResponse, readJsonBody } from "@/lib/http/json";
 
 import {
@@ -30,11 +21,7 @@ import {
   type SessionStore,
 } from "./store";
 import { normalizeTranscript, type TranscriptTurn } from "./transcript";
-import {
-  isUuid,
-  validateFeedbackBody,
-  validateStartSessionBody,
-} from "./validation";
+import { isUuid, validateFeedbackBody, validateStartSessionBody } from "./validation";
 import { describeError } from "@/lib/log/safe-error";
 
 /**
@@ -87,11 +74,9 @@ function fail(
   return jsonResponse(status, { success: false, error, message, ...extra });
 }
 
-const unauthorized = () =>
-  fail(401, "unauthorized", "Sign in to use interview sessions.");
+const unauthorized = () => fail(401, "unauthorized", "Sign in to use interview sessions.");
 const notFound = () => fail(404, "not_found", "Session or interview not found.");
-const storageFailed = () =>
-  fail(500, "storage_failed", "Could not access interview storage.");
+const storageFailed = () => fail(500, "storage_failed", "Could not access interview storage.");
 
 function sessionJson(s: SessionRecord) {
   return {
@@ -180,10 +165,7 @@ interface EvaluationPlan {
   };
 }
 
-function planFromTranscript(
-  questions: string[],
-  turns: TranscriptTurn[],
-): EvaluationPlan {
+function planFromTranscript(questions: string[], turns: TranscriptTurn[]): EvaluationPlan {
   const asked = questions.map((question, questionIndex) => ({
     questionIndex,
     question,
@@ -291,11 +273,7 @@ export async function handleSubmitFeedback(
   if (transcript.ok) {
     plan = planFromTranscript(questions, transcript.turns);
   } else if (transcript.reason === "too_large") {
-    return fail(
-      422,
-      "transcript_too_large",
-      "The stored transcript is too long to evaluate.",
-    );
+    return fail(422, "transcript_too_large", "The stored transcript is too long to evaluate.");
   } else {
     if (parsed.data.answers.length === 0) {
       return fail(
@@ -332,12 +310,9 @@ export async function handleSubmitFeedback(
       ...(limit.ok ? [] : [limit.invalid]),
     ];
     console.error(`[sessions] missing/invalid server config: ${missing.join(", ")}`);
-    return fail(
-      503,
-      "server_misconfigured",
-      "AI feedback is not configured on the server.",
-      { missing },
-    );
+    return fail(503, "server_misconfigured", "AI feedback is not configured on the server.", {
+      missing,
+    });
   }
 
   try {

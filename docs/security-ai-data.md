@@ -18,17 +18,17 @@ The service-role client is imported only from server-only modules
 
 Every table holding user data, and what happens when it is deleted.
 
-| Table | Personal data | Link to the user | Removed by |
-| --- | --- | --- | --- |
-| `auth.users` | email, auth metadata | is the user | `deleteUser` (admin API) |
-| `profiles` | name, email, phone, LinkedIn and portfolio links (written by `POST /api/candidate/profile`; links are http(s) only, enforced by CHECK constraints) | `id` -> `auth.users` **cascade** | account deletion |
-| `interviews` | generated questions | `user_id` -> `profiles` **cascade** | account deletion |
-| `interview_sessions` | transcript, recording URL, call id | `user_id` -> `profiles` **cascade**; `interview_id` -> `interviews` **cascade** | session delete, account deletion |
-| `feedback` | scores, assessment, per-answer text | `user_id` -> `profiles` **cascade**; `session_id` -> `interview_sessions` **cascade** | session delete, account deletion |
-| `candidate_consents` | role id, consent wording version, time of agreement | `user_id` -> `profiles` **cascade**; `session_id` -> `interview_sessions` **cascade** | session delete, account deletion (the proof of consent goes with the session; see the open decision below) |
-| `capability_uses` | token id only | `user_id` -> `profiles` **cascade**; no FK to `interviews` | account deletion only |
-| `ai_usage` | feature, model, token counts | `user_id` -> `profiles` **cascade** | account deletion |
-| `vapi_events` | webhook payloads (can hold transcripts) | **none**: no user column, no FK. Linked only by `vapi_call_id` to `interview_sessions` | `purge_vapi_events(user, session?)`, called **before** the session or user is deleted |
+| Table                | Personal data                                                                                                                                      | Link to the user                                                                       | Removed by                                                                                                 |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `auth.users`         | email, auth metadata                                                                                                                               | is the user                                                                            | `deleteUser` (admin API)                                                                                   |
+| `profiles`           | name, email, phone, LinkedIn and portfolio links (written by `POST /api/candidate/profile`; links are http(s) only, enforced by CHECK constraints) | `id` -> `auth.users` **cascade**                                                       | account deletion                                                                                           |
+| `interviews`         | generated questions                                                                                                                                | `user_id` -> `profiles` **cascade**                                                    | account deletion                                                                                           |
+| `interview_sessions` | transcript, recording URL, call id                                                                                                                 | `user_id` -> `profiles` **cascade**; `interview_id` -> `interviews` **cascade**        | session delete, account deletion                                                                           |
+| `feedback`           | scores, assessment, per-answer text                                                                                                                | `user_id` -> `profiles` **cascade**; `session_id` -> `interview_sessions` **cascade**  | session delete, account deletion                                                                           |
+| `candidate_consents` | role id, consent wording version, time of agreement                                                                                                | `user_id` -> `profiles` **cascade**; `session_id` -> `interview_sessions` **cascade**  | session delete, account deletion (the proof of consent goes with the session; see the open decision below) |
+| `capability_uses`    | token id only                                                                                                                                      | `user_id` -> `profiles` **cascade**; no FK to `interviews`                             | account deletion only                                                                                      |
+| `ai_usage`           | feature, model, token counts                                                                                                                       | `user_id` -> `profiles` **cascade**                                                    | account deletion                                                                                           |
+| `vapi_events`        | webhook payloads (can hold transcripts)                                                                                                            | **none**: no user column, no FK. Linked only by `vapi_call_id` to `interview_sessions` | `purge_vapi_events(user, session?)`, called **before** the session or user is deleted                      |
 
 Notes:
 
@@ -47,11 +47,11 @@ Notes:
 
 All require a signed-in user and a same-origin request, and answer JSON.
 
-| Route | Effect |
-| --- | --- |
-| `DELETE /api/sessions/{id}/transcript` | Clears `transcript` and `recording_url`; purges `vapi_events`; **keeps** the session and its feedback. |
-| `DELETE /api/sessions/{id}` | Purges `vapi_events`, then deletes the session; its feedback cascades. |
-| `DELETE /api/account/data` | Body `{"confirm":"delete-my-data"}`. Purges `vapi_events`, then deletes the auth user; everything above cascades. |
+| Route                                  | Effect                                                                                                            |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `DELETE /api/sessions/{id}/transcript` | Clears `transcript` and `recording_url`; purges `vapi_events`; **keeps** the session and its feedback.            |
+| `DELETE /api/sessions/{id}`            | Purges `vapi_events`, then deletes the session; its feedback cascades.                                            |
+| `DELETE /api/account/data`             | Body `{"confirm":"delete-my-data"}`. Purges `vapi_events`, then deletes the auth user; everything above cascades. |
 
 A session that does not exist or belongs to someone else is a `404` in both
 cases. If the purge fails, nothing else is deleted and the route answers `500`.

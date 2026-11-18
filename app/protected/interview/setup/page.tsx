@@ -3,13 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function SetupPage() {
@@ -21,7 +15,7 @@ export default function SetupPage() {
     setMicStatus("testing");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setMicStatus("success");
     } catch {
       setMicStatus("error");
@@ -38,20 +32,19 @@ export default function SetupPage() {
     const audioCtx = new AudioContextConstructor();
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    
-    oscillator.type = 'sine';
+
+    oscillator.type = "sine";
     oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
     gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    
+
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + 0.5);
-    
+
     setTimeout(() => setSpeakerStatus("success"), 1000);
   };
-  
 
   const handleStartInterview = () => {
     router.push("/protected/interview/gemini");
@@ -75,12 +68,13 @@ export default function SetupPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
             <div className="flex-1 flex flex-col gap-6">
-              
               {/* Mic Test */}
               <div className="flex items-center gap-4">
-                <div className={`flex-1 border rounded-md p-4 text-sm flex items-center justify-between ${micStatus === 'success' ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                <div
+                  className={`flex-1 border rounded-md p-4 text-sm flex items-center justify-between ${micStatus === "success" ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted text-muted-foreground"}`}
+                >
                   <span className="font-medium text-base">Microphone</span>
-                  {micStatus === 'success' && <CheckCircle2 className="w-5 h-5" />}
+                  {micStatus === "success" && <CheckCircle2 className="w-5 h-5" />}
                 </div>
                 <Button onClick={testMicrophone} variant="outline" className="w-36 h-12">
                   {micStatus === "testing" ? "Testing..." : "Test mic"}
@@ -89,9 +83,11 @@ export default function SetupPage() {
 
               {/* Speaker Test */}
               <div className="flex items-center gap-4">
-                <div className={`flex-1 border rounded-md p-4 text-sm flex items-center justify-between ${speakerStatus === 'success' ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                <div
+                  className={`flex-1 border rounded-md p-4 text-sm flex items-center justify-between ${speakerStatus === "success" ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted text-muted-foreground"}`}
+                >
                   <span className="font-medium text-base">Speaker</span>
-                  {speakerStatus === 'success' && <CheckCircle2 className="w-5 h-5" />}
+                  {speakerStatus === "success" && <CheckCircle2 className="w-5 h-5" />}
                 </div>
                 <Button onClick={testSpeaker} variant="outline" className="w-36 h-12">
                   {speakerStatus === "playing" ? "Playing..." : "Play sound"}
@@ -100,30 +96,40 @@ export default function SetupPage() {
 
               {/* Read Aloud */}
               <div className="border border-dashed rounded-md p-4 text-center text-sm text-muted-foreground mt-2 bg-muted/20">
-                Read aloud: <span className="font-medium text-foreground">&quot;The quick brown fox jumps over the lazy dog.&quot;</span>
+                Read aloud:{" "}
+                <span className="font-medium text-foreground">
+                  &quot;The quick brown fox jumps over the lazy dog.&quot;
+                </span>
               </div>
             </div>
 
-             {/* Right Column (Status & Restart) */}
+            {/* Right Column (Status & Restart) */}
             <div className="flex-1 flex flex-col gap-6">
               {micStatus === "error" ? (
                 <div className="bg-destructive/10 border border-destructive/20 text-destructive p-5 rounded-md text-sm flex gap-3 h-full items-center">
                   <AlertCircle className="w-6 h-6 shrink-0" />
-                  <p className="leading-relaxed">Mic blocked: click the lock icon in the address bar and set Microphone to Allow, then refresh the page.</p>
+                  <p className="leading-relaxed">
+                    Mic blocked: click the lock icon in the address bar and set Microphone to Allow,
+                    then refresh the page.
+                  </p>
                 </div>
               ) : (
                 <div className="bg-muted/50 border p-6 rounded-md text-sm text-muted-foreground flex flex-col items-center justify-center h-full min-h-[120px] text-center gap-2">
-                  
                   {micStatus === "idle" && (
                     <>
                       <p className="font-semibold text-foreground text-base">Device Status: Idle</p>
-                      <p>Click the <strong>&quot;Test mic&quot;</strong> or <strong>&quot;Play sound&quot;</strong> buttons to check your devices.</p>
+                      <p>
+                        Click the <strong>&quot;Test mic&quot;</strong> or{" "}
+                        <strong>&quot;Play sound&quot;</strong> buttons to check your devices.
+                      </p>
                     </>
                   )}
 
                   {micStatus === "testing" && (
                     <>
-                      <p className="font-semibold text-primary text-base animate-pulse">Testing...</p>
+                      <p className="font-semibold text-primary text-base animate-pulse">
+                        Testing...
+                      </p>
                       <p>Please allow microphone access in your browser if prompted.</p>
                     </>
                   )}
@@ -135,13 +141,22 @@ export default function SetupPage() {
                         Microphone Ready
                       </div>
                       <p>Your microphone is working perfectly. You can now start the interview.</p>
-                      <p className="text-xs mt-2">Tip: Wear headphones to avoid echo during the interview.</p>
+                      <p className="text-xs mt-2">
+                        Tip: Wear headphones to avoid echo during the interview.
+                      </p>
                     </>
                   )}
                 </div>
               )}
-              
-              <Button variant="outline" className="w-full h-12" onClick={() => { setMicStatus("idle"); setSpeakerStatus("idle"); }}>
+
+              <Button
+                variant="outline"
+                className="w-full h-12"
+                onClick={() => {
+                  setMicStatus("idle");
+                  setSpeakerStatus("idle");
+                }}
+              >
                 Restart devices
               </Button>
             </div>
@@ -149,17 +164,17 @@ export default function SetupPage() {
 
           {/* Action Button */}
           <div className="flex flex-col items-center mt-12">
-            <Button 
-              onClick={handleStartInterview} 
+            <Button
+              onClick={handleStartInterview}
               disabled={!isSetupComplete}
               className="w-full sm:w-80 text-base py-6"
             >
               Start Interview
             </Button>
             {!isSetupComplete && (
-               <p className="text-sm text-destructive mt-3">
-                 Fix: allow microphone and speaker access to start.
-               </p>
+              <p className="text-sm text-destructive mt-3">
+                Fix: allow microphone and speaker access to start.
+              </p>
             )}
           </div>
         </CardContent>

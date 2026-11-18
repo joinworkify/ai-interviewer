@@ -43,7 +43,12 @@ const VAPI = {
 function run(vars: Record<string, string>) {
   const dir = mkdtempSync(join(tmpdir(), "check-env-"));
   dirs.push(dir);
-  writeFileSync(join(dir, ".env.local"), Object.entries(vars).map(([k, v]) => `${k}=${v}`).join("\n"));
+  writeFileSync(
+    join(dir, ".env.local"),
+    Object.entries(vars)
+      .map(([k, v]) => `${k}=${v}`)
+      .join("\n"),
+  );
   const r = spawnSync(process.execPath, [SCRIPT], {
     cwd: dir,
     env: { PATH: process.env.PATH ?? "" } as unknown as NodeJS.ProcessEnv,
@@ -119,7 +124,13 @@ describe("scripts/check-env.mjs", () => {
 
   it("never prints a variable value", () => {
     const secret = "super-secret-value-0123456789-abcdefghijkl";
-    const r = run({ ...BASE, ...DOGRAH, LLM_API_KEY: secret, DOGRAH_WEBHOOK_SECRET: secret, DOGRAH_SESSION_SIGNING_SECRET: secret });
+    const r = run({
+      ...BASE,
+      ...DOGRAH,
+      LLM_API_KEY: secret,
+      DOGRAH_WEBHOOK_SECRET: secret,
+      DOGRAH_SESSION_SIGNING_SECRET: secret,
+    });
     expect(r.out).not.toContain(secret);
   });
 });

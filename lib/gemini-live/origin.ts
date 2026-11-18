@@ -1,7 +1,4 @@
-import {
-  checkSameOrigin as checkSameOriginFor,
-  type OriginCheck,
-} from "@/lib/http/origin";
+import { checkSameOrigin as checkSameOriginFor, type OriginCheck } from "@/lib/http/origin";
 
 /**
  * The same-origin check now lives in lib/http/origin.ts so non-Gemini routes

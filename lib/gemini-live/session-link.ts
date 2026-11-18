@@ -5,14 +5,9 @@ import type { SessionStore } from "@/lib/sessions/store";
  * so the interviewer asks what was stored and feedback scores that.
  */
 export type LinkedSession =
-  | { kind: "ok"; questions: string[] }
-  | { kind: "not_found" }
-  | { kind: "closed" };
+  { kind: "ok"; questions: string[] } | { kind: "not_found" } | { kind: "closed" };
 
-export type SessionLinkLookup = (
-  userId: string,
-  sessionId: string,
-) => Promise<LinkedSession>;
+export type SessionLinkLookup = (userId: string, sessionId: string) => Promise<LinkedSession>;
 
 export function createSessionLinkLookup(
   store: Pick<SessionStore, "getSession" | "getInterview">,

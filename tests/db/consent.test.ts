@@ -54,7 +54,12 @@ insert into public.candidate_consents (user_id, session_id, role_id, consent_ver
   });
 
   it("rejects blank or overlong values", () => {
-    for (const [role, version] of [["", "v1"], ["generalist", ""], ["x".repeat(81), "v1"], ["generalist", "v".repeat(41)]]) {
+    for (const [role, version] of [
+      ["", "v1"],
+      ["generalist", ""],
+      ["x".repeat(81), "v1"],
+      ["generalist", "v".repeat(41)],
+    ]) {
       const r = runSql(
         asServiceRole(`insert into public.candidate_consents (user_id, session_id, role_id, consent_version)
   values ('${A}', '${IDS.sessionA}', '${role}', '${version}');`),

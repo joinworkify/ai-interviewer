@@ -2,10 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import {
-  createSupabaseTranscriptStore,
-  type StoreTranscriptInput,
-} from "@/lib/transcripts/store";
+import { createSupabaseTranscriptStore, type StoreTranscriptInput } from "@/lib/transcripts/store";
 
 /**
  * Runs against a real Supabase project, so it is skipped unless both variables
@@ -46,7 +43,10 @@ describe.skipIf(!URL_ || !KEY)("createSupabaseTranscriptStore (real database)", 
     return data.id;
   }
 
-  const input = (sessionId: string, over: Partial<StoreTranscriptInput> = {}): StoreTranscriptInput => ({
+  const input = (
+    sessionId: string,
+    over: Partial<StoreTranscriptInput> = {},
+  ): StoreTranscriptInput => ({
     sessionId,
     userId: owner,
     transcript: [
@@ -107,7 +107,11 @@ describe.skipIf(!URL_ || !KEY)("createSupabaseTranscriptStore (real database)", 
     const sid = await newSession();
     expect(await store.storeOnce(input(sid, { userId: stranger }))).toEqual({ kind: "not_found" });
     expect(await store.storeOnce(input(randomUUID()))).toEqual({ kind: "not_found" });
-    const { data } = await admin.from("interview_sessions").select("transcript").eq("id", sid).single();
+    const { data } = await admin
+      .from("interview_sessions")
+      .select("transcript")
+      .eq("id", sid)
+      .single();
     expect(data?.transcript).toBeNull();
   });
 

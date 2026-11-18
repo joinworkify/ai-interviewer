@@ -36,14 +36,7 @@ import {
  */
 
 export type SessionPhase =
-  | "idle"
-  | "microphone"
-  | "authorizing"
-  | "connecting"
-  | "active"
-  | "closing"
-  | "ended"
-  | "error";
+  "idle" | "microphone" | "authorizing" | "connecting" | "active" | "closing" | "ended" | "error";
 
 export interface ControllerState {
   phase: SessionPhase;
@@ -134,8 +127,7 @@ export const WRAP_UP_LEAD_MS = 30_000;
 const CLOSING_GRACE_MS = 1_200;
 const CLOSING_MAX_MS = 10_000;
 
-const KICKOFF_TEXT =
-  "The candidate has joined and is ready. Begin the interview now.";
+const KICKOFF_TEXT = "The candidate has joined and is ready. Begin the interview now.";
 const WRAP_UP_TEXT =
   "Time notice: about 30 seconds remain in this session. Do not ask a new question. Give one short polite closing sentence now, then call end_interview.";
 
@@ -254,9 +246,7 @@ export class LiveInterviewController {
     } catch (err) {
       if (!stale()) {
         this.fail(
-          err instanceof TokenRequestError
-            ? err.message
-            : "Could not start the interview session.",
+          err instanceof TokenRequestError ? err.message : "Could not start the interview session.",
         );
       }
       return false;

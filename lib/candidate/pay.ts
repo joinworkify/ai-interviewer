@@ -70,7 +70,8 @@ export function validatePayFilter(f: PayFilter): PayRateErrors {
   if (isSet(f.min) && isSet(f.max) && !errors.min && !errors.max && max <= min) {
     errors.max = "Maximum must be greater than minimum.";
   }
-  if (isSet(f.type) && f.type !== "hour" && f.type !== "task") errors.type = "Select per hour or per task.";
+  if (isSet(f.type) && f.type !== "hour" && f.type !== "task")
+    errors.type = "Select per hour or per task.";
   return errors;
 }
 

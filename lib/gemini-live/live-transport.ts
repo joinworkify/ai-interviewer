@@ -61,9 +61,7 @@ export function buildSetupMessage(model: string) {
     throw new Error("Invalid model id.");
   }
   const name =
-    model.startsWith("models/") || model.startsWith("tunedModels/")
-      ? model
-      : `models/${model}`;
+    model.startsWith("models/") || model.startsWith("tunedModels/") ? model : `models/${model}`;
   return {
     setup: {
       model: name,
@@ -118,9 +116,7 @@ async function decodeFrame(data: unknown): Promise<string> {
   if (typeof Blob !== "undefined" && data instanceof Blob) return data.text();
   if (data instanceof ArrayBuffer) return new TextDecoder().decode(data);
   if (ArrayBuffer.isView(data)) {
-    return new TextDecoder().decode(
-      new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-    );
+    return new TextDecoder().decode(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
   }
   throw new Error("Unsupported frame type.");
 }
@@ -305,9 +301,7 @@ export function connectLiveTransport(args: {
     signal.addEventListener("abort", onAbort);
     const timeoutMs = args.setupTimeoutMs ?? DEFAULT_SETUP_TIMEOUT_MS;
     timer = setTimeout(() => {
-      failSetup(
-        new Error(`Gemini Live setup timed out after ${Math.round(timeoutMs / 1000)}s.`),
-      );
+      failSetup(new Error(`Gemini Live setup timed out after ${Math.round(timeoutMs / 1000)}s.`));
     }, timeoutMs);
   });
 }

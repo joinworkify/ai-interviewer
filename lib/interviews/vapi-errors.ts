@@ -36,9 +36,7 @@ function extractMessage(value: unknown, depth: number): string | null {
   for (const key of ["errorMsg", "message", "error", "msg"]) {
     const nested = v[key];
     if (Array.isArray(nested)) {
-      const parts = nested
-        .map((n) => extractMessage(n, depth + 1))
-        .filter(Boolean);
+      const parts = nested.map((n) => extractMessage(n, depth + 1)).filter(Boolean);
       if (parts.length) return parts.join("; ");
     } else {
       const found = extractMessage(nested, depth + 1);

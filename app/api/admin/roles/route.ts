@@ -1,12 +1,10 @@
-﻿
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { describeError } from "@/lib/log/safe-error";
 import { isRoleBullets, isRolePay } from "@/lib/admin/role-validation";
 
 import { requireAdmin } from "@/lib/admin/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { guardSameOrigin } from "@/lib/http/origin-guard";
-
 
 export async function GET() {
   await requireAdmin();
@@ -25,10 +23,7 @@ export async function GET() {
   } catch (error) {
     console.error("[admin-roles] GET failed:", describeError(error));
 
-    return NextResponse.json(
-      { success: false, message: "Unable to load roles." },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: "Unable to load roles." }, { status: 500 });
   }
 }
 
@@ -42,16 +37,15 @@ export async function POST(request: Request) {
     const body: unknown = await request.json();
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return NextResponse.json(
-        { success: false, message: "Invalid role data." },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Invalid role data." }, { status: 400 });
     }
 
     const {
       id,
       title,
-      pay_min, pay_max, pay_type,
+      pay_min,
+      pay_max,
+      pay_type,
       job_type,
       skills = [],
       about = "",
@@ -79,10 +73,7 @@ export async function POST(request: Request) {
       typeof is_active !== "boolean" ||
       !Number.isInteger(sort_order)
     ) {
-      return NextResponse.json(
-        { success: false, message: "Invalid role data." },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Invalid role data." }, { status: 400 });
     }
 
     const supabase = createAdminClient();

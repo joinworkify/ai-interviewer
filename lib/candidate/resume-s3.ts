@@ -93,7 +93,9 @@ export function createS3ResumeStorage(client: S3Client, bucket: string): ResumeS
         const out = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
         return { size: out.ContentLength ?? 0, contentType: out.ContentType ?? "" };
       } catch (err) {
-        if ((err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) {
+        if (
+          (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404
+        ) {
           return null;
         }
         throw err;

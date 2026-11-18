@@ -4,47 +4,41 @@
 // Regenerate with `supabase gen types typescript --local > types/database.ts`
 // once the Supabase CLI is available.
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   public: {
     Tables: {
       profiles: {
-  Row: {
-    id: string;
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-    linkedin_url: string | null;
-    portfolio_url: string | null;
-    created_at: string;
-  };
-  Insert: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    phone?: string | null;
-    linkedin_url?: string | null;
-    portfolio_url?: string | null;
-    created_at?: string;
-  };
-  Update: {
-    id?: string;
-    name?: string | null;
-    email?: string | null;
-    phone?: string | null;
-    linkedin_url?: string | null;
-    portfolio_url?: string | null;
-    created_at?: string;
-  };
-  Relationships: [];
-};
+        Row: {
+          id: string;
+          name: string | null;
+          email: string | null;
+          phone: string | null;
+          linkedin_url: string | null;
+          portfolio_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          linkedin_url?: string | null;
+          portfolio_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          linkedin_url?: string | null;
+          portfolio_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       interviews: {
         Row: {
           id: string;

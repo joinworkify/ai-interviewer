@@ -10,10 +10,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const FILE = fileURLToPath(
-  new URL(
-    "../supabase/migrations/20261112000004_ai_security_hardening.sql",
-    import.meta.url,
-  ),
+  new URL("../supabase/migrations/20261112000004_ai_security_hardening.sql", import.meta.url),
 );
 
 const raw = readFileSync(FILE, "utf8");
@@ -44,9 +41,7 @@ describe("ai security hardening migration", () => {
       ["feedback_insert_own", "feedback"],
       ["feedback_delete_own", "feedback"],
     ]) {
-      expect(sql).toContain(
-        `drop policy if exists "${policy}" on public.${table}`,
-      );
+      expect(sql).toContain(`drop policy if exists "${policy}" on public.${table}`);
     }
     expect(sql).not.toMatch(/drop policy if exists "(sessions|feedback)_select_own"/);
     expect(sql).not.toMatch(/create policy/);

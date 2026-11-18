@@ -22,10 +22,7 @@ const CONTROL_OR_BACKSLASH = /[\u0000-\u001f\u007f\\]/;
 // Any origin works as a probe; only whether the result stays on it matters.
 const PROBE_ORIGIN = "http://next.invalid";
 
-export function safeNextPath(
-  value: string | null | undefined,
-  fallback = "/",
-): string {
+export function safeNextPath(value: string | null | undefined, fallback = "/"): string {
   if (typeof value !== "string" || value.length === 0 || value.length > MAX_LENGTH) {
     return fallback;
   }

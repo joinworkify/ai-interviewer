@@ -36,7 +36,10 @@ export function missingSupabaseEnv(): string[] {
   return [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
     ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
-    ["SUPABASE_SECRET_KEY", process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY],
+    [
+      "SUPABASE_SECRET_KEY",
+      process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+    ],
   ]
     .filter(([, value]) => !value?.trim())
     .map(([name]) => name as string);
@@ -91,6 +94,10 @@ export async function runReviewRoute(
     });
   } catch (err) {
     console.error("[admin-review] unhandled error", describeError(err));
-    return jsonResponse(500, { success: false, error: "internal_error", message: "Internal error." });
+    return jsonResponse(500, {
+      success: false,
+      error: "internal_error",
+      message: "Internal error.",
+    });
   }
 }

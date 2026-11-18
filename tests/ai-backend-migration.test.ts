@@ -18,12 +18,17 @@ const sql = readFileSync(FILE, "utf8")
   .join(" ")
   .replace(/\s+/g, " ")
   .toLowerCase();
-const stmts = sql.split(";").map((s) => s.trim()).filter(Boolean);
+const stmts = sql
+  .split(";")
+  .map((s) => s.trim())
+  .filter(Boolean);
 const BROWSER = /\b(anon|authenticated|public)\b/;
 
 describe("capability_uses (single-use token record)", () => {
   it("is keyed by generation_id with RLS on", () => {
-    expect(sql).toMatch(/create table if not exists public\.capability_uses \( generation_id uuid primary key/);
+    expect(sql).toMatch(
+      /create table if not exists public\.capability_uses \( generation_id uuid primary key/,
+    );
     expect(sql).toMatch(/alter table public\.capability_uses enable row level security/);
   });
 
@@ -60,9 +65,13 @@ describe("save_generated_interview", () => {
   });
 
   it("is executable by the service role only", () => {
-    const revoke = stmts.find((s) => /^revoke all on function public\.save_generated_interview/.test(s))!;
+    const revoke = stmts.find((s) =>
+      /^revoke all on function public\.save_generated_interview/.test(s),
+    )!;
     expect(revoke).toMatch(/from public, anon, authenticated$/);
-    const grants = stmts.filter((s) => /^grant execute on function public\.save_generated_interview/.test(s));
+    const grants = stmts.filter((s) =>
+      /^grant execute on function public\.save_generated_interview/.test(s),
+    );
     expect(grants).toHaveLength(1);
     expect(grants[0]).toMatch(/ to service_role$/);
   });
@@ -72,7 +81,8 @@ describe("ai_usage", () => {
   it("lets users read only their own rows and write nothing", () => {
     expect(sql).toMatch(/alter table public\.ai_usage enable row level security/);
     const browserGrants = stmts.filter(
-      (s) => /^grant /.test(s) && /public\.ai_usage/.test(s) && BROWSER.test(s.split(" to ")[1] ?? ""),
+      (s) =>
+        /^grant /.test(s) && /public\.ai_usage/.test(s) && BROWSER.test(s.split(" to ")[1] ?? ""),
     );
     expect(browserGrants).toEqual(["grant select on table public.ai_usage to authenticated"]);
 
@@ -85,6 +95,8 @@ describe("ai_usage", () => {
 
 describe("feedback", () => {
   it("allows at most one feedback row per session", () => {
-    expect(sql).toMatch(/create unique index if not exists feedback_session_id_key on public\.feedback \(session_id\)/);
+    expect(sql).toMatch(
+      /create unique index if not exists feedback_session_id_key on public\.feedback \(session_id\)/,
+    );
   });
 });

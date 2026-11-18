@@ -109,7 +109,14 @@ interface Rig {
 
 function rig(opts: { micError?: boolean } = {}): Rig {
   const db = new Db();
-  const r = { db, callbacks: [], fetchCalls: [], outcomes: [], sends: 0, micStarts: 0 } as unknown as Rig;
+  const r = {
+    db,
+    callbacks: [],
+    fetchCalls: [],
+    outcomes: [],
+    sends: 0,
+    micStarts: 0,
+  } as unknown as Rig;
   let clock = NOW;
   const session: LiveSessionLike = {
     sendRealtimeInput: () => {},
@@ -142,11 +149,12 @@ function rig(opts: { micError?: boolean } = {}): Rig {
   const fakeFetch = (async (url: string, init: RequestInit) => {
     r.fetchCalls.push({ url, init });
     r.sends++;
-    return handlePutTranscript(
-      new Request(`http://localhost${url}`, init),
-      url.split("/")[3],
-      { getUserId: async () => ME, store: db, adapters: defaultAdapters, now: () => NOW },
-    );
+    return handlePutTranscript(new Request(`http://localhost${url}`, init), url.split("/")[3], {
+      getUserId: async () => ME,
+      store: db,
+      adapters: defaultAdapters,
+      now: () => NOW,
+    });
   }) as unknown as typeof fetch;
 
   attachTranscriptSync(r.controller, {
@@ -202,7 +210,14 @@ function llmFetch(captured: { body?: string }) {
           {
             message: {
               content: JSON.stringify({
-                perAnswer: [{ questionIndex: 0, answerSummary: "Said indexes speed up reads.", score: 70, feedback: "Good." }],
+                perAnswer: [
+                  {
+                    questionIndex: 0,
+                    answerSummary: "Said indexes speed up reads.",
+                    score: 70,
+                    feedback: "Good.",
+                  },
+                ],
                 strengths: ["Clear"],
                 areasForImprovement: ["Depth"],
                 finalAssessment: "Fine.",
@@ -319,7 +334,11 @@ describe("feedback from the stored Gemini transcript", () => {
     );
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body).toMatchObject({ success: true, source: "transcript", transcriptSource: "client_gemini_live" });
+    expect(body).toMatchObject({
+      success: true,
+      source: "transcript",
+      transcriptSource: "client_gemini_live",
+    });
     expect(body.feedback.perAnswer[0]).toMatchObject({ questionIndex: 0, source: "transcript" });
 
     // The model saw the real turns with canonical roles.
@@ -337,10 +356,16 @@ describe("feedback from the stored Gemini transcript", () => {
     const d = feedbackDeps(r.db, never as unknown as typeof fetch);
 
     r.db.session = { ...r.db.session, status: "abandoned", transcript: [] };
-    expect((await handleSubmitFeedback(new Request("http://localhost/x", { method: "POST" }), SID, d)).status).toBe(409);
+    expect(
+      (await handleSubmitFeedback(new Request("http://localhost/x", { method: "POST" }), SID, d))
+        .status,
+    ).toBe(409);
 
     r.db.session = { ...r.db.session, status: "completed", transcript: null };
-    expect((await handleSubmitFeedback(new Request("http://localhost/x", { method: "POST" }), SID, d)).status).toBe(409);
+    expect(
+      (await handleSubmitFeedback(new Request("http://localhost/x", { method: "POST" }), SID, d))
+        .status,
+    ).toBe(409);
     expect(never).not.toHaveBeenCalled();
   });
 
@@ -351,7 +376,9 @@ describe("feedback from the stored Gemini transcript", () => {
       new Request("http://localhost/x", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ answers: [{ questionIndex: 0, answer: "An index speeds up reads." }] }),
+        body: JSON.stringify({
+          answers: [{ questionIndex: 0, answer: "An index speeds up reads." }],
+        }),
       }),
       SID,
       feedbackDeps(r.db, llmFetch(captured)),

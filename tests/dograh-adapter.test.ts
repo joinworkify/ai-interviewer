@@ -20,9 +20,21 @@ const payload = (over: Record<string, unknown> = {}) => ({
 describe("parseDograhTranscriptText", () => {
   it("maps user to candidate and assistant to interviewer, keeping ISO timestamps", () => {
     expect(parseDograhTranscriptText(TRANSCRIPT_TEXT)).toEqual([
-      { role: "interviewer", text: "Tell me about database indexes.", at: "2026-11-12T10:00:01.000Z" },
-      { role: "candidate", text: "An index speeds up reads at the cost of writes.", at: "2026-11-12T10:00:09.000Z" },
-      { role: "interviewer", text: "Good. When would you avoid one?", at: "2026-11-12T10:00:15.000Z" },
+      {
+        role: "interviewer",
+        text: "Tell me about database indexes.",
+        at: "2026-11-12T10:00:01.000Z",
+      },
+      {
+        role: "candidate",
+        text: "An index speeds up reads at the cost of writes.",
+        at: "2026-11-12T10:00:09.000Z",
+      },
+      {
+        role: "interviewer",
+        text: "Good. When would you avoid one?",
+        at: "2026-11-12T10:00:15.000Z",
+      },
     ]);
   });
 
@@ -37,11 +49,15 @@ describe("parseDograhTranscriptText", () => {
   });
 
   it("drops a timestamp label that is not a date", () => {
-    expect(parseDograhTranscriptText("[00:01.5] user: hi")).toEqual([{ role: "candidate", text: "hi" }]);
+    expect(parseDograhTranscriptText("[00:01.5] user: hi")).toEqual([
+      { role: "candidate", text: "hi" },
+    ]);
   });
 
   it("merges consecutive lines from the same speaker into one turn", () => {
-    const turns = parseDograhTranscriptText("assistant: One.\nassistant: Two.\nuser: Yes.\nuser: Really.\n");
+    const turns = parseDograhTranscriptText(
+      "assistant: One.\nassistant: Two.\nuser: Yes.\nuser: Really.\n",
+    );
     expect(turns).toEqual([
       { role: "interviewer", text: "One. Two." },
       { role: "candidate", text: "Yes. Really." },
@@ -65,7 +81,9 @@ describe("parseDograhTranscriptText", () => {
   });
 
   it("collapses control characters and whitespace inside a turn", () => {
-    expect(parseDograhTranscriptText("user: a\t\u0007  b   c")).toEqual([{ role: "candidate", text: "a b c" }]);
+    expect(parseDograhTranscriptText("user: a\t\u0007  b   c")).toEqual([
+      { role: "candidate", text: "a b c" },
+    ]);
   });
 
   it("does not let a spoken line start a new speaker mid-text", () => {
@@ -98,7 +116,13 @@ describe("dograhWebhookAdapter", () => {
     const r = dograhWebhookAdapter.parse(payload());
     expect(r).toMatchObject({
       ok: true,
-      value: { metadata: { source: "dograh_webhook", durationSeconds: 42, endedReason: "interviewer_ended" } },
+      value: {
+        metadata: {
+          source: "dograh_webhook",
+          durationSeconds: 42,
+          endedReason: "interviewer_ended",
+        },
+      },
     });
     if (r.ok) expect(r.value.transcript).toHaveLength(3);
   });

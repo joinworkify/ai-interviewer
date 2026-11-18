@@ -20,16 +20,10 @@ const MAX_URL_LENGTH = 2048;
 const MAX_REDIRECTS = 1;
 
 export type TranscriptFetchFailure =
-  | "invalid_url"
-  | "foreign_origin"
-  | "http_error"
-  | "too_large"
-  | "timeout"
-  | "network";
+  "invalid_url" | "foreign_origin" | "http_error" | "too_large" | "timeout" | "network";
 
 export type TranscriptFetchResult =
-  | { ok: true; text: string }
-  | { ok: false; reason: TranscriptFetchFailure };
+  { ok: true; text: string } | { ok: false; reason: TranscriptFetchFailure };
 
 export interface TranscriptFetchOptions {
   apiOrigin: string;

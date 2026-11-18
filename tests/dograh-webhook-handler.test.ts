@@ -36,7 +36,10 @@ interface Harness {
   fetchImpl: ReturnType<typeof vi.fn>;
 }
 
-function harness(over: Partial<DograhWebhookDeps> = {}, storeResult: unknown = { kind: "stored", status: "completed" }): Harness {
+function harness(
+  over: Partial<DograhWebhookDeps> = {},
+  storeResult: unknown = { kind: "stored", status: "completed" },
+): Harness {
   const store = {
     storeOnce: vi.fn<(input: StoreTranscriptInput) => Promise<unknown>>(async () => storeResult),
   };
@@ -111,7 +114,10 @@ describe("handleDograhWebhook: authentication", () => {
 
   it("does not use the session signing secret as a Bearer secret", async () => {
     const { deps } = harness();
-    const res = await handleDograhWebhook(post(body(), { authorization: `Bearer ${SESSION_SECRET}` }), deps);
+    const res = await handleDograhWebhook(
+      post(body(), { authorization: `Bearer ${SESSION_SECRET}` }),
+      deps,
+    );
     expect(res.status).toBe(401);
   });
 
@@ -176,7 +182,10 @@ describe("handleDograhWebhook: body", () => {
 
 describe("handleDograhWebhook: session token", () => {
   it.each([
-    ["a token signed with another secret", () => makeToken({ secret: "another-secret-0123456789-abcdefghijklmnopq", nowMs: NOW })],
+    [
+      "a token signed with another secret",
+      () => makeToken({ secret: "another-secret-0123456789-abcdefghijklmnopq", nowMs: NOW }),
+    ],
     ["an expired token", () => makeToken({ nowMs: NOW - 3_600_000, ttlSeconds: 60 })],
     ["garbage", () => "not-a-token"],
   ])("answers 401 for %s without downloading or storing", async (_name, make) => {
@@ -190,7 +199,11 @@ describe("handleDograhWebhook: session token", () => {
 
   it("takes the user and session from the token only", async () => {
     const { deps, store } = harness();
-    const token = makeToken({ userId: OTHER_USER, sessionId: "44444444-4444-4444-8444-444444444444", nowMs: NOW });
+    const token = makeToken({
+      userId: OTHER_USER,
+      sessionId: "44444444-4444-4444-8444-444444444444",
+      nowMs: NOW,
+    });
     const res = await handleDograhWebhook(post(body({ session_token: token })), deps);
     expect(res.status).toBe(200);
     expect(store.storeOnce.mock.calls[0][0]).toMatchObject({
@@ -272,7 +285,11 @@ describe("handleDograhWebhook: storing", () => {
       endedAtIso: new Date(NOW).toISOString(),
       metadata: { source: "dograh_webhook", durationSeconds: 42, endedReason: "user_ended" },
     });
-    expect(input.transcript.map((t) => t.role)).toEqual(["interviewer", "candidate", "interviewer"]);
+    expect(input.transcript.map((t) => t.role)).toEqual([
+      "interviewer",
+      "candidate",
+      "interviewer",
+    ]);
   });
 
   it("answers 200 duplicate when Dograh delivers the same webhook again", async () => {
@@ -335,7 +352,14 @@ describe("handleDograhWebhook: post-store hook", () => {
 
   it("does not call it when the session is not found or the write fails", async () => {
     const notFound = vi.fn();
-    expect((await handleDograhWebhook(post(body()), harness({ onStored: notFound }, { kind: "not_found" }).deps)).status).toBe(404);
+    expect(
+      (
+        await handleDograhWebhook(
+          post(body()),
+          harness({ onStored: notFound }, { kind: "not_found" }).deps,
+        )
+      ).status,
+    ).toBe(404);
     expect(notFound).not.toHaveBeenCalled();
 
     const failed = vi.fn();
@@ -360,6 +384,8 @@ describe("handleDograhWebhook: post-store hook", () => {
     });
     const res = await handleDograhWebhook(post(body()), deps);
     expect(res.status).toBe(200);
-    expect((console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" ")).not.toContain("SECRET-HOOK-DETAIL");
+    expect(
+      (console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" "),
+    ).not.toContain("SECRET-HOOK-DETAIL");
   });
 });

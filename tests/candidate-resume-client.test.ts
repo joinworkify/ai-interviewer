@@ -29,7 +29,11 @@ describe("uploadResume", () => {
   const createdBody = {
     success: true,
     resumeId: "r1",
-    upload: { url: "https://s3.test/put", method: "PUT", headers: { "Content-Type": "application/pdf" } },
+    upload: {
+      url: "https://s3.test/put",
+      method: "PUT",
+      headers: { "Content-Type": "application/pdf" },
+    },
   };
 
   it("asks for a URL, PUTs the file to it, then confirms", async () => {
@@ -44,16 +48,28 @@ describe("uploadResume", () => {
 
     const [first, second, third] = fetchImpl.mock.calls;
     expect(first[0]).toBe("/api/candidate/resume/upload-url");
-    expect(JSON.parse(first[1].body)).toEqual({ fileName: "cv.pdf", contentType: "application/pdf", size: file.size });
+    expect(JSON.parse(first[1].body)).toEqual({
+      fileName: "cv.pdf",
+      contentType: "application/pdf",
+      size: file.size,
+    });
     expect(second[0]).toBe("https://s3.test/put");
-    expect(second[1]).toMatchObject({ method: "PUT", headers: { "Content-Type": "application/pdf" }, body: file });
+    expect(second[1]).toMatchObject({
+      method: "PUT",
+      headers: { "Content-Type": "application/pdf" },
+      body: file,
+    });
     expect(third[0]).toBe("/api/candidate/resume/confirm");
     expect(JSON.parse(third[1].body)).toEqual({ resumeId: "r1" });
   });
 
   it("shows the server's message when the upload cannot start, and never touches S3", async () => {
-    const fetchImpl = vi.fn().mockResolvedValueOnce(json(401, { message: "Sign in to upload a resume." }));
-    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toThrow("Sign in to upload a resume.");
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(json(401, { message: "Sign in to upload a resume." }));
+    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toThrow(
+      "Sign in to upload a resume.",
+    );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
@@ -62,7 +78,9 @@ describe("uploadResume", () => {
       .fn()
       .mockResolvedValueOnce(json(201, createdBody))
       .mockResolvedValueOnce(new Response(null, { status: 403 }));
-    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toBeInstanceOf(ResumeUploadError);
+    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toBeInstanceOf(
+      ResumeUploadError,
+    );
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
@@ -71,7 +89,9 @@ describe("uploadResume", () => {
       .fn()
       .mockResolvedValueOnce(json(201, createdBody))
       .mockRejectedValueOnce(new TypeError("Failed to fetch"));
-    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toThrow(/connection/);
+    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toThrow(
+      /connection/,
+    );
   });
 
   it("surfaces a confirm mismatch message", async () => {
@@ -79,16 +99,25 @@ describe("uploadResume", () => {
       .fn()
       .mockResolvedValueOnce(json(201, createdBody))
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
-      .mockResolvedValueOnce(json(422, { message: "The uploaded file does not match. Please upload it again." }));
-    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toThrow(/does not match/);
+      .mockResolvedValueOnce(
+        json(422, { message: "The uploaded file does not match. Please upload it again." }),
+      );
+    await expect(uploadResume(pdf(), fetchImpl as unknown as typeof fetch)).rejects.toThrow(
+      /does not match/,
+    );
   });
 });
 
 describe("fetchSavedResumes", () => {
   it("returns every saved resume, the one in use first", async () => {
     const other = { id: "r2", fileName: "old.pdf", size: 9 };
-    const fetchImpl = vi.fn().mockResolvedValue(json(200, { success: true, resume: RESUME, resumes: [RESUME, other] }));
-    await expect(fetchSavedResumes(fetchImpl as unknown as typeof fetch)).resolves.toEqual([RESUME, other]);
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(json(200, { success: true, resume: RESUME, resumes: [RESUME, other] }));
+    await expect(fetchSavedResumes(fetchImpl as unknown as typeof fetch)).resolves.toEqual([
+      RESUME,
+      other,
+    ]);
   });
 
   it("returns an empty list when there is none, when signed out, or when the request fails", async () => {
@@ -115,8 +144,12 @@ describe("selectResume and deleteResume", () => {
 
   it("throw the server's message, or a friendly one when offline", async () => {
     const notFound = vi.fn().mockResolvedValue(json(404, { message: "Resume not found." }));
-    await expect(deleteResume("r1", notFound as unknown as typeof fetch)).rejects.toThrow("Resume not found.");
+    await expect(deleteResume("r1", notFound as unknown as typeof fetch)).rejects.toThrow(
+      "Resume not found.",
+    );
     const offline = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
-    await expect(selectResume("r1", offline as unknown as typeof fetch)).rejects.toThrow(/connection/);
+    await expect(selectResume("r1", offline as unknown as typeof fetch)).rejects.toThrow(
+      /connection/,
+    );
   });
 });

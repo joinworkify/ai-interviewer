@@ -28,8 +28,7 @@ const MAX_BODY_BYTES = 1024;
 /** Allowed types and the file extension each one is stored under. */
 export const RESUME_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-    "docx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
 };
 
 export interface ResumeRow {
@@ -67,12 +66,7 @@ export interface ResumeStore {
 }
 
 export interface ResumeStorage {
-  presignPut(
-    key: string,
-    contentType: string,
-    size: number,
-    ttlSeconds: number,
-  ): Promise<string>;
+  presignPut(key: string, contentType: string, size: number, ttlSeconds: number): Promise<string>;
   presignGet(
     key: string,
     fileName: string,
@@ -112,10 +106,8 @@ function fail(
   return jsonResponse(status, { success: false, error, message, ...extra });
 }
 
-const unauthorized = () =>
-  fail(401, "unauthorized", "Sign in to upload a resume.");
-const storageFailed = () =>
-  fail(500, "storage_failed", "Could not store the resume.");
+const unauthorized = () => fail(401, "unauthorized", "Sign in to upload a resume.");
+const storageFailed = () => fail(500, "storage_failed", "Could not store the resume.");
 
 export function resumeKey(userId: string, contentType: string): string {
   return `resumes/${userId}/${randomUUID()}.${RESUME_TYPES[contentType]}`;
@@ -123,9 +115,7 @@ export function resumeKey(userId: string, contentType: string): string {
 
 /** Keeps only the base name and drops control characters. */
 export function cleanFileName(name: string): string {
-  return (name.split(/[\\/]/).pop() ?? "")
-    .replace(/[\u0000-\u001f\u007f]/g, "")
-    .trim();
+  return (name.split(/[\\/]/).pop() ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim();
 }
 
 export function validateUploadRequest(
@@ -147,12 +137,7 @@ export function validateUploadRequest(
       message: "Only PDF or Word (.docx) files are allowed.",
     };
   }
-  if (
-    typeof size !== "number" ||
-    !Number.isInteger(size) ||
-    size < 1 ||
-    size > MAX_RESUME_BYTES
-  ) {
+  if (typeof size !== "number" || !Number.isInteger(size) || size < 1 || size > MAX_RESUME_BYTES) {
     return { ok: false, message: "The file must be between 1 byte and 5 MB." };
   }
   return { ok: true, fileName: name, contentType, size };
@@ -223,11 +208,7 @@ export async function handleConfirmUpload(
   if (!body.ok) return fail(body.status, body.error, body.message);
   const resumeId = (body.value as Record<string, unknown> | null)?.resumeId;
   if (!isUuid(resumeId))
-    return fail(
-      400,
-      "invalid_request",
-      "Send the resumeId from the upload step.",
-    );
+    return fail(400, "invalid_request", "Send the resumeId from the upload step.");
 
   try {
     const row = await deps.store.get(userId, resumeId);
@@ -240,10 +221,7 @@ export async function handleConfirmUpload(
     if (!object) {
       return fail(409, "upload_missing", "The file has not been uploaded yet.");
     }
-    if (
-      object.size !== row.size_bytes ||
-      object.contentType !== row.content_type
-    ) {
+    if (object.size !== row.size_bytes || object.contentType !== row.content_type) {
       await deps.storage.deleteObject(row.s3_key);
       return fail(
         422,
@@ -263,9 +241,7 @@ export async function handleConfirmUpload(
  * GET /api/candidate/resume: the caller's own resumes. `resume` is the one in
  * use (with a download link); `resumes` lists all of them, that one first.
  */
-export async function handleGetResume(
-  deps: ResumeHandlerDeps,
-): Promise<Response> {
+export async function handleGetResume(deps: ResumeHandlerDeps): Promise<Response> {
   const userId = await deps.getUserId();
   if (!userId) return unauthorized();
 

@@ -26,8 +26,7 @@ export interface DograhConfig {
 }
 
 export type DograhConfigResult =
-  | ({ ok: true } & DograhConfig)
-  | { ok: false; missing: string[]; invalid: string[] };
+  ({ ok: true } & DograhConfig) | { ok: false; missing: string[]; invalid: string[] };
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
@@ -48,9 +47,7 @@ export function parseDograhOrigin(value: string): string | null {
   return null;
 }
 
-export function readDograhConfig(
-  env: Record<string, string | undefined>,
-): DograhConfigResult {
+export function readDograhConfig(env: Record<string, string | undefined>): DograhConfigResult {
   const missing: string[] = [];
   const invalid: string[] = [];
 
@@ -68,7 +65,9 @@ export function readDograhConfig(
   if (storageRaw) {
     storageOrigin = parseDograhOrigin(storageRaw);
     if (!storageOrigin) {
-      invalid.push("DOGRAH_STORAGE_URL (optional; an https origin, or http://localhost:<port> for local use)");
+      invalid.push(
+        "DOGRAH_STORAGE_URL (optional; an https origin, or http://localhost:<port> for local use)",
+      );
     }
   }
 
@@ -81,7 +80,9 @@ export function readDograhConfig(
   const sessionSecret = env.DOGRAH_SESSION_SIGNING_SECRET ?? "";
   if (!sessionSecret) missing.push("DOGRAH_SESSION_SIGNING_SECRET");
   else if (sessionSecret.length < MIN_SIGNING_SECRET_LENGTH) {
-    invalid.push(`DOGRAH_SESSION_SIGNING_SECRET (at least ${MIN_SIGNING_SECRET_LENGTH} characters)`);
+    invalid.push(
+      `DOGRAH_SESSION_SIGNING_SECRET (at least ${MIN_SIGNING_SECRET_LENGTH} characters)`,
+    );
   } else if (sessionSecret === webhookSecret) {
     invalid.push("DOGRAH_SESSION_SIGNING_SECRET (must differ from DOGRAH_WEBHOOK_SECRET)");
   }
@@ -91,8 +92,7 @@ export function readDograhConfig(
 }
 
 export type DograhWidgetConfig =
-  | { ok: true; src: string }
-  | { ok: false; missing: string[]; invalid: string[] };
+  { ok: true; src: string } | { ok: false; missing: string[]; invalid: string[] };
 
 /** The one public value: where the browser loads the Dograh widget script from. */
 export function readDograhWidgetConfig(

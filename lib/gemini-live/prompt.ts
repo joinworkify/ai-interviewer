@@ -113,13 +113,9 @@ export function buildEphemeralTokenConfig(args: {
   return {
     // One-use: a leaked token cannot open a second session.
     uses: 1,
-    newSessionExpireTime: new Date(
-      now + NEW_SESSION_WINDOW_SECONDS * 1000,
-    ).toISOString(),
+    newSessionExpireTime: new Date(now + NEW_SESSION_WINDOW_SECONDS * 1000).toISOString(),
     expireTime: new Date(
-      now +
-        (NEW_SESSION_WINDOW_SECONDS + MAX_SESSION_SECONDS + EXPIRY_GRACE_SECONDS) *
-          1000,
+      now + (NEW_SESSION_WINDOW_SECONDS + MAX_SESSION_SECONDS + EXPIRY_GRACE_SECONDS) * 1000,
     ).toISOString(),
     // `lockAdditionalFields` is intentionally omitted: with constraints set
     // and no field mask, the API locks the entire constrained config.

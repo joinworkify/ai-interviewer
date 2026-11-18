@@ -15,11 +15,16 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("guardSameOrigin", () => {
   it("returns null for a same-origin request", () => {
-    expect(guardSameOrigin(post({ origin: "https://app.example.test", host: "app.example.test" }), {})).toBeNull();
+    expect(
+      guardSameOrigin(post({ origin: "https://app.example.test", host: "app.example.test" }), {}),
+    ).toBeNull();
   });
 
   it("blocks a foreign origin with a no-store JSON 403", async () => {
-    const res = guardSameOrigin(post({ origin: "https://evil.example", host: "app.example.test" }), {});
+    const res = guardSameOrigin(
+      post({ origin: "https://evil.example", host: "app.example.test" }),
+      {},
+    );
     expect(res?.status).toBe(403);
     expect(res?.headers.get("cache-control")).toBe("no-store");
     expect(await res?.json()).toEqual({

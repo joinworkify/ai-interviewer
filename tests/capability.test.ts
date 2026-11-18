@@ -14,9 +14,7 @@ const NOW = 1_800_000_000_000;
 
 function forge(payload: object, secret = SECRET): string {
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = createHmac("sha256", secret)
-    .update(`v1.${body}`)
-    .digest("base64url");
+  const sig = createHmac("sha256", secret).update(`v1.${body}`).digest("base64url");
   return `v1.${body}.${sig}`;
 }
 

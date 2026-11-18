@@ -20,7 +20,8 @@ describe("evaluateStoredSession", () => {
   it("evaluates as the given user, for the given session, with no request body", async () => {
     const submit = submitReturning(Response.json({ success: true }, { status: 201 }));
     expect(await evaluateStoredSession(USER, SESSION, deps, submit)).toEqual({ kind: "evaluated" });
-    const [request, sessionId, handlerDeps] = (submit as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [request, sessionId, handlerDeps] = (submit as unknown as ReturnType<typeof vi.fn>).mock
+      .calls[0];
     expect(sessionId).toBe(SESSION);
     expect(await handlerDeps.getUserId()).toBe(USER);
     expect(request.method).toBe("POST");
@@ -29,7 +30,9 @@ describe("evaluateStoredSession", () => {
 
   it("treats an existing feedback as done, not as a failure", async () => {
     const submit = submitReturning(Response.json({ error: "already_evaluated" }, { status: 409 }));
-    expect(await evaluateStoredSession(USER, SESSION, deps, submit)).toEqual({ kind: "already_evaluated" });
+    expect(await evaluateStoredSession(USER, SESSION, deps, submit)).toEqual({
+      kind: "already_evaluated",
+    });
     expect(console.error).not.toHaveBeenCalled();
   });
 
@@ -39,18 +42,30 @@ describe("evaluateStoredSession", () => {
     [502, "llm_failed"],
     [409, "session_closed"],
   ])("reports status %i %s as a failure with its code only", async (status, code) => {
-    const submit = submitReturning(Response.json({ error: code, message: "model said SECRET-TEXT" }, { status }));
-    expect(await evaluateStoredSession(USER, SESSION, deps, submit)).toEqual({ kind: "failed", status, code });
-    const logged = (console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" ");
+    const submit = submitReturning(
+      Response.json({ error: code, message: "model said SECRET-TEXT" }, { status }),
+    );
+    expect(await evaluateStoredSession(USER, SESSION, deps, submit)).toEqual({
+      kind: "failed",
+      status,
+      code,
+    });
+    const logged = (console.error as unknown as ReturnType<typeof vi.fn>).mock.calls
+      .flat()
+      .join(" ");
     expect(logged).toContain(code);
     expect(logged).not.toContain("SECRET-TEXT");
   });
 
   it("falls back to an unknown code for an unreadable or unsafe error body", async () => {
     const html = submitReturning(new Response("<html>", { status: 500 }));
-    expect(await evaluateStoredSession(USER, SESSION, deps, html)).toMatchObject({ code: "unknown" });
+    expect(await evaluateStoredSession(USER, SESSION, deps, html)).toMatchObject({
+      code: "unknown",
+    });
     const weird = submitReturning(Response.json({ error: "has spaces & <tags>" }, { status: 500 }));
-    expect(await evaluateStoredSession(USER, SESSION, deps, weird)).toMatchObject({ code: "unknown" });
+    expect(await evaluateStoredSession(USER, SESSION, deps, weird)).toMatchObject({
+      code: "unknown",
+    });
   });
 
   it("never throws, and logs no message from the thrown error", async () => {
@@ -60,6 +75,8 @@ describe("evaluateStoredSession", () => {
       status: 0,
       code: "exception",
     });
-    expect((console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" ")).not.toContain("SECRET-ROW");
+    expect(
+      (console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" "),
+    ).not.toContain("SECRET-ROW");
   });
 });

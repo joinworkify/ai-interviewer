@@ -66,7 +66,13 @@ export function StepGate({ step, children }: { step: GuardedStep; children: Reac
     );
   }
   if (state === "checking") {
-    return <div className="h-40 animate-pulse rounded-lg bg-muted" aria-busy="true" aria-label="Checking your progress" />;
+    return (
+      <div
+        className="h-40 animate-pulse rounded-lg bg-muted"
+        aria-busy="true"
+        aria-label="Checking your progress"
+      />
+    );
   }
   return <>{children}</>;
 }

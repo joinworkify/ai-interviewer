@@ -26,9 +26,7 @@ export default function AdminFilters() {
 
       params.delete("page");
 
-      const nextUrl = params.toString()
-        ? `${pathname}?${params.toString()}`
-        : pathname;
+      const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
 
       const currentUrl = searchParams.toString()
         ? `${pathname}?${searchParams.toString()}`
@@ -53,9 +51,7 @@ export default function AdminFilters() {
 
     params.delete("page");
 
-    const nextUrl = params.toString()
-      ? `${pathname}?${params.toString()}`
-      : pathname;
+    const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
 
     startTransition(() => router.push(nextUrl, { scroll: false }));
   }

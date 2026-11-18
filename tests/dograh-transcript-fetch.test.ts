@@ -100,7 +100,9 @@ describe("fetchTranscriptText", () => {
 
   it("fails on a non-200 answer", async () => {
     const fetchImpl = vi.fn(async () => new Response("nope", { status: 404 }));
-    expect(await fetchTranscriptText(TRANSCRIPT_URL, { ...base, fetchImpl: fetchImpl as never })).toEqual({
+    expect(
+      await fetchTranscriptText(TRANSCRIPT_URL, { ...base, fetchImpl: fetchImpl as never }),
+    ).toEqual({
       ok: false,
       reason: "http_error",
     });
@@ -111,12 +113,20 @@ describe("fetchTranscriptText", () => {
       async () => new Response("x", { headers: { "content-length": "999999" } }),
     );
     expect(
-      await fetchTranscriptText(TRANSCRIPT_URL, { ...base, maxBytes: 1000, fetchImpl: declared as never }),
+      await fetchTranscriptText(TRANSCRIPT_URL, {
+        ...base,
+        maxBytes: 1000,
+        fetchImpl: declared as never,
+      }),
     ).toEqual({ ok: false, reason: "too_large" });
 
     const streamed = vi.fn(async () => new Response("y".repeat(5000)));
     expect(
-      await fetchTranscriptText(TRANSCRIPT_URL, { ...base, maxBytes: 1000, fetchImpl: streamed as never }),
+      await fetchTranscriptText(TRANSCRIPT_URL, {
+        ...base,
+        maxBytes: 1000,
+        fetchImpl: streamed as never,
+      }),
     ).toEqual({ ok: false, reason: "too_large" });
   });
 
@@ -127,7 +137,11 @@ describe("fetchTranscriptText", () => {
           init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
         }),
     );
-    const r = await fetchTranscriptText(TRANSCRIPT_URL, { ...base, timeoutMs: 20, fetchImpl: fetchImpl as never });
+    const r = await fetchTranscriptText(TRANSCRIPT_URL, {
+      ...base,
+      timeoutMs: 20,
+      fetchImpl: fetchImpl as never,
+    });
     expect(r).toEqual({ ok: false, reason: "timeout" });
   });
 

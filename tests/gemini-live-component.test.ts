@@ -61,9 +61,12 @@ afterEach(async () => {
 });
 
 function setValue(el: HTMLInputElement | HTMLSelectElement, value: string) {
-  const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+  const proto =
+    el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
   Object.getOwnPropertyDescriptor(proto, "value")!.set!.call(el, value);
-  el.dispatchEvent(new Event(el instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
+  el.dispatchEvent(
+    new Event(el instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }),
+  );
 }
 
 function button(label: RegExp): HTMLButtonElement {
@@ -96,13 +99,18 @@ function nativeClick(el: HTMLElement) {
 }
 
 async function settle() {
-  for (let i = 0; i < 5; i++) await act(async () => { await Promise.resolve(); });
+  for (let i = 0; i < 5; i++)
+    await act(async () => {
+      await Promise.resolve();
+    });
 }
 
 describe("GeminiLiveInterview (DOM, StrictMode)", () => {
   it("End interview ends the session and never submits the form / restarts", async () => {
     await act(async () => {
-      root.render(createElement(StrictMode, null, createElement(GeminiLiveInterview, { configured: true })));
+      root.render(
+        createElement(StrictMode, null, createElement(GeminiLiveInterview, { configured: true })),
+      );
     });
     await act(async () => {
       setValue(container.querySelector<HTMLInputElement>("#gl-role")!, "Backend Engineer");
@@ -134,7 +142,9 @@ describe("GeminiLiveInterview (DOM, StrictMode)", () => {
 
   it("Start again after End starts exactly one new session", async () => {
     await act(async () => {
-      root.render(createElement(StrictMode, null, createElement(GeminiLiveInterview, { configured: true })));
+      root.render(
+        createElement(StrictMode, null, createElement(GeminiLiveInterview, { configured: true })),
+      );
     });
     await act(async () => {
       setValue(container.querySelector<HTMLInputElement>("#gl-role")!, "SRE");

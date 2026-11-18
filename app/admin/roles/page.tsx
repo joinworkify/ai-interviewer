@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 
 import { RolesManager } from "@/components/admin/roles-manager";

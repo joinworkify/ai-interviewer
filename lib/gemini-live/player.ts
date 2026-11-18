@@ -66,10 +66,7 @@ export class PcmPlayer {
     source.buffer = buffer;
     source.connect(this.ctx.destination as never);
 
-    const startAt = Math.max(
-      this.nextStartTime,
-      this.ctx.currentTime + START_LEAD_SECONDS,
-    );
+    const startAt = Math.max(this.nextStartTime, this.ctx.currentTime + START_LEAD_SECONDS);
     source.start(startAt);
     this.nextStartTime = startAt + buffer.duration;
 

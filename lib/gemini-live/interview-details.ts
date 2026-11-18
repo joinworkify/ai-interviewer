@@ -31,8 +31,7 @@ export interface LiveInterviewDetails {
 }
 
 export type LiveDetailsValidation =
-  | { ok: true; data: LiveInterviewDetails }
-  | { ok: false; errors: string[] };
+  { ok: true; data: LiveInterviewDetails } | { ok: false; errors: string[] };
 
 export const MAX_ROLE_LENGTH = 80;
 export const MAX_TECH_ITEMS = 8;
@@ -92,13 +91,9 @@ export function validateLiveInterviewBody(body: unknown): LiveDetailsValidation 
   }
 
   const level =
-    typeof record.level === "string"
-      ? LEVELS.get(record.level.trim().toLowerCase())
-      : undefined;
+    typeof record.level === "string" ? LEVELS.get(record.level.trim().toLowerCase()) : undefined;
   if (!level) {
-    errors.push(
-      `level must be one of: ${INTERVIEW_LEVELS.map((l) => l.value).join(", ")}.`,
-    );
+    errors.push(`level must be one of: ${INTERVIEW_LEVELS.map((l) => l.value).join(", ")}.`);
   }
 
   let techstack: string[] | undefined;
@@ -127,9 +122,7 @@ export function validateLiveInterviewBody(body: unknown): LiveDetailsValidation 
       const t = normalize(item);
       if (!t) continue;
       if (t.length > MAX_TECH_ITEM_LENGTH) {
-        errors.push(
-          `techstack items must be at most ${MAX_TECH_ITEM_LENGTH} characters.`,
-        );
+        errors.push(`techstack items must be at most ${MAX_TECH_ITEM_LENGTH} characters.`);
         bad = true;
         break;
       }

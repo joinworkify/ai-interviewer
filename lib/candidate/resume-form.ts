@@ -9,26 +9,103 @@ export interface CountryPhoneConfig {
 }
 
 export const COUNTRY_PHONE_CONFIGS: CountryPhoneConfig[] = [
-  { iso: "MM", name: "Myanmar", flag: "🇲🇲", dialCode: "+95", minDigits: 7, maxDigits: 10, example: "912345678" },
-  { iso: "TH", name: "Thailand", flag: "🇹🇭", dialCode: "+66", minDigits: 8, maxDigits: 9, example: "812345678" },
-  { iso: "SG", name: "Singapore", flag: "🇸🇬", dialCode: "+65", minDigits: 8, maxDigits: 8, example: "81234567" },
-  { iso: "MY", name: "Malaysia", flag: "🇲🇾", dialCode: "+60", minDigits: 9, maxDigits: 10, example: "123456789" },
-  { iso: "US", name: "United States", flag: "🇺🇸", dialCode: "+1", minDigits: 10, maxDigits: 10, example: "2015550123" },
-  { iso: "GB", name: "United Kingdom", flag: "🇬🇧", dialCode: "+44", minDigits: 10, maxDigits: 10, example: "7911123456" },
-  { iso: "IN", name: "India", flag: "🇮🇳", dialCode: "+91", minDigits: 10, maxDigits: 10, example: "9876543210" },
-  { iso: "JP", name: "Japan", flag: "🇯🇵", dialCode: "+81", minDigits: 9, maxDigits: 10, example: "9012345678" },
-  { iso: "AU", name: "Australia", flag: "🇦🇺", dialCode: "+61", minDigits: 9, maxDigits: 9, example: "412345678" },
-  { iso: "NL", name: "Netherlands", flag: "🇳🇱", dialCode: "+31", minDigits: 9, maxDigits: 9, example: "612345678" },
+  {
+    iso: "MM",
+    name: "Myanmar",
+    flag: "🇲🇲",
+    dialCode: "+95",
+    minDigits: 7,
+    maxDigits: 10,
+    example: "912345678",
+  },
+  {
+    iso: "TH",
+    name: "Thailand",
+    flag: "🇹🇭",
+    dialCode: "+66",
+    minDigits: 8,
+    maxDigits: 9,
+    example: "812345678",
+  },
+  {
+    iso: "SG",
+    name: "Singapore",
+    flag: "🇸🇬",
+    dialCode: "+65",
+    minDigits: 8,
+    maxDigits: 8,
+    example: "81234567",
+  },
+  {
+    iso: "MY",
+    name: "Malaysia",
+    flag: "🇲🇾",
+    dialCode: "+60",
+    minDigits: 9,
+    maxDigits: 10,
+    example: "123456789",
+  },
+  {
+    iso: "US",
+    name: "United States",
+    flag: "🇺🇸",
+    dialCode: "+1",
+    minDigits: 10,
+    maxDigits: 10,
+    example: "2015550123",
+  },
+  {
+    iso: "GB",
+    name: "United Kingdom",
+    flag: "🇬🇧",
+    dialCode: "+44",
+    minDigits: 10,
+    maxDigits: 10,
+    example: "7911123456",
+  },
+  {
+    iso: "IN",
+    name: "India",
+    flag: "🇮🇳",
+    dialCode: "+91",
+    minDigits: 10,
+    maxDigits: 10,
+    example: "9876543210",
+  },
+  {
+    iso: "JP",
+    name: "Japan",
+    flag: "🇯🇵",
+    dialCode: "+81",
+    minDigits: 9,
+    maxDigits: 10,
+    example: "9012345678",
+  },
+  {
+    iso: "AU",
+    name: "Australia",
+    flag: "🇦🇺",
+    dialCode: "+61",
+    minDigits: 9,
+    maxDigits: 9,
+    example: "412345678",
+  },
+  {
+    iso: "NL",
+    name: "Netherlands",
+    flag: "🇳🇱",
+    dialCode: "+31",
+    minDigits: 9,
+    maxDigits: 9,
+    example: "612345678",
+  },
 ];
 
 /** Calling code preselected on the resume step. */
 export const DEFAULT_DIAL_CODE = "+1";
 
 export function getCountryConfig(dialCode: string): CountryPhoneConfig {
-  return (
-    COUNTRY_PHONE_CONFIGS.find((c) => c.dialCode === dialCode) ??
-    COUNTRY_PHONE_CONFIGS[0]
-  );
+  return COUNTRY_PHONE_CONFIGS.find((c) => c.dialCode === dialCode) ?? COUNTRY_PHONE_CONFIGS[0];
 }
 
 export function phoneInputFromProfile(phone: string | null | undefined): {
@@ -45,15 +122,13 @@ export function phoneInputFromProfile(phone: string | null | undefined): {
 
   return {
     dialCode: country?.dialCode ?? DEFAULT_DIAL_CODE,
-    phone: country
-      ? digits.slice(country.dialCode.replace(/\D/g, "").length)
-      : digits,
+    phone: country ? digits.slice(country.dialCode.replace(/\D/g, "").length) : digits,
   };
 }
 
 export function validatePhoneNumber(
   rawPhone: string,
-  dialCode: string = DEFAULT_DIAL_CODE
+  dialCode: string = DEFAULT_DIAL_CODE,
 ): { valid: boolean; error?: string } {
   const trimmed = rawPhone.trim();
   // Phone is optional: empty input is valid

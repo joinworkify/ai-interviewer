@@ -132,13 +132,15 @@ function harness(opts: { micError?: unknown } = {}): Harness {
     return GRANT;
   });
   h.connectSignals = [];
-  h.connect = vi.fn(async ({ callbacks, signal }: { callbacks: LiveCallbacksLike; signal: AbortSignal }) => {
-    h.connectSignals.push(signal);
-    const session = new FakeSession(callbacks);
-    h.sessions.push(session);
-    if (h.connectGate) await h.connectGate.promise;
-    return session;
-  });
+  h.connect = vi.fn(
+    async ({ callbacks, signal }: { callbacks: LiveCallbacksLike; signal: AbortSignal }) => {
+      h.connectSignals.push(signal);
+      const session = new FakeSession(callbacks);
+      h.sessions.push(session);
+      if (h.connectGate) await h.connectGate.promise;
+      return session;
+    },
+  );
   h.deps = {
     startMicrophone,
     requestToken: h.requestToken as unknown as ControllerDeps["requestToken"],
@@ -474,7 +476,9 @@ describe("errors", () => {
 
   it("connect failure -> error, mic released", async () => {
     const h = harness();
-    h.connect.mockRejectedValueOnce(new Error("Live connection closed before setup completed (code 1008): bad"));
+    h.connect.mockRejectedValueOnce(
+      new Error("Live connection closed before setup completed (code 1008): bad"),
+    );
     await h.controller.start(DETAILS);
     expect(h.controller.getSnapshot().phase).toBe("error");
     expect(h.controller.getSnapshot().error).toMatch(/connect/i);

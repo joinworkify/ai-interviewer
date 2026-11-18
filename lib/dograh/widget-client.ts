@@ -12,7 +12,9 @@ export interface DograhWidgetApi {
   end: () => unknown;
   setContext: (context: Record<string, string>) => unknown;
   onCallConnected?: (cb: (info: { workflowRunId?: unknown }) => void) => unknown;
-  onCallDisconnected?: (cb: (info: { workflowRunId?: unknown; durationSeconds?: unknown }) => void) => unknown;
+  onCallDisconnected?: (
+    cb: (info: { workflowRunId?: unknown; durationSeconds?: unknown }) => void,
+  ) => unknown;
   onCallEnd?: (cb: () => void) => unknown;
   onStatusChange?: (cb: (status: string) => void) => unknown;
   onError?: (cb: (error: unknown) => void) => unknown;

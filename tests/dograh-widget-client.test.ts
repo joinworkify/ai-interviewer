@@ -13,16 +13,25 @@ import { SESSION } from "./helpers/dograh";
 const body = { sessionId: SESSION, role: "Backend Engineer", level: "senior", techstack: "Go" };
 
 function jsonRes(status: number, value: unknown) {
-  return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
 }
 
 describe("requestDograhSession", () => {
   it("returns the context variables from a successful answer", async () => {
     const fetchImpl = vi.fn(async () =>
-      jsonRes(200, { success: true, contextVariables: { session_token: "t", role: "Backend Engineer" } }),
+      jsonRes(200, {
+        success: true,
+        contextVariables: { session_token: "t", role: "Backend Engineer" },
+      }),
     );
     const r = await requestDograhSession(body, fetchImpl as never);
-    expect(r).toEqual({ ok: true, contextVariables: { session_token: "t", role: "Backend Engineer" } });
+    expect(r).toEqual({
+      ok: true,
+      contextVariables: { session_token: "t", role: "Backend Engineer" },
+    });
     expect(fetchImpl).toHaveBeenCalledWith(
       "/api/dograh/session",
       expect.objectContaining({ method: "POST", credentials: "same-origin" }),
@@ -30,7 +39,9 @@ describe("requestDograhSession", () => {
   });
 
   it("shows the server's message for an error answer", async () => {
-    const fetchImpl = vi.fn(async () => jsonRes(409, { success: false, message: "This interview session is already closed." }));
+    const fetchImpl = vi.fn(async () =>
+      jsonRes(409, { success: false, message: "This interview session is already closed." }),
+    );
     expect(await requestDograhSession(body, fetchImpl as never)).toEqual({
       ok: false,
       status: 409,
@@ -63,7 +74,9 @@ describe("waitForSessionSaved", () => {
     const statuses = ["in_progress", "in_progress", "completed"];
     const fetchImpl = vi.fn(async () => jsonRes(200, { session: { status: statuses.shift() } }));
     const sleep = vi.fn(async () => {});
-    expect(await waitForSessionSaved(SESSION, { fetchImpl: fetchImpl as never, sleep })).toBe("saved");
+    expect(await waitForSessionSaved(SESSION, { fetchImpl: fetchImpl as never, sleep })).toBe(
+      "saved",
+    );
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(fetchImpl.mock.calls[0]).toEqual([`/api/sessions/${SESSION}`, expect.anything()]);
   });
@@ -93,7 +106,12 @@ describe("waitForSessionSaved", () => {
     const controller = new AbortController();
     controller.abort();
     const fetchImpl = vi.fn();
-    expect(await waitForSessionSaved(SESSION, { fetchImpl: fetchImpl as never, signal: controller.signal })).toBe("timeout");
+    expect(
+      await waitForSessionSaved(SESSION, {
+        fetchImpl: fetchImpl as never,
+        signal: controller.signal,
+      }),
+    ).toBe("timeout");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

@@ -22,7 +22,16 @@ vi.mock("@/lib/supabase/server", () => ({ createClient }));
 const { POST: webhookPost } = await import("@/app/api/dograh/webhook/route");
 const { POST: sessionPost } = await import("@/app/api/dograh/session/route");
 
-import { API_ORIGIN, ENV, SESSION, TRANSCRIPT_TEXT, TRANSCRIPT_URL, USER, WEBHOOK_SECRET, makeToken } from "./helpers/dograh";
+import {
+  API_ORIGIN,
+  ENV,
+  SESSION,
+  TRANSCRIPT_TEXT,
+  TRANSCRIPT_URL,
+  USER,
+  WEBHOOK_SECRET,
+  makeToken,
+} from "./helpers/dograh";
 
 function stubDograhEnv() {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.test");
@@ -35,7 +44,11 @@ function webhook(payload: unknown, headers: Record<string, string> = {}) {
   return webhookPost(
     new Request("http://localhost:3000/api/dograh/webhook", {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${WEBHOOK_SECRET}`, ...headers },
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${WEBHOOK_SECRET}`,
+        ...headers,
+      },
       body: JSON.stringify(payload),
     }),
   );
@@ -143,13 +156,23 @@ describe("POST /api/dograh/webhook", () => {
 });
 
 describe("POST /api/dograh/session", () => {
-  const details = { sessionId: SESSION, role: "Backend Engineer", level: "senior", techstack: "Go" };
+  const details = {
+    sessionId: SESSION,
+    role: "Backend Engineer",
+    level: "senior",
+    techstack: "Go",
+  };
 
   function session(headers: Record<string, string> = {}, payload: unknown = details) {
     return sessionPost(
       new Request("http://localhost:3000/api/dograh/session", {
         method: "POST",
-        headers: { "content-type": "application/json", host: "localhost:3000", origin: "http://localhost:3000", ...headers },
+        headers: {
+          "content-type": "application/json",
+          host: "localhost:3000",
+          origin: "http://localhost:3000",
+          ...headers,
+        },
         body: JSON.stringify(payload),
       }),
     );
@@ -218,6 +241,8 @@ describe("POST /api/dograh/webhook: AI evaluation after the response", () => {
       throw new Error("SECRET-KEY-DETAIL");
     });
     await expect(afterCallbacks[0]()).resolves.toBeUndefined();
-    expect((console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" ")).not.toContain("SECRET-KEY-DETAIL");
+    expect(
+      (console.error as unknown as ReturnType<typeof vi.fn>).mock.calls.flat().join(" "),
+    ).not.toContain("SECRET-KEY-DETAIL");
   });
 });

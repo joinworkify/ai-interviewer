@@ -74,7 +74,10 @@ export function createSupabaseAttemptStore(client: SupabaseClient<Database>): At
         .select("id")
         .single();
       if (interview.error || !interview.data) {
-        console.error("[candidate-attempts] insert interview failed:", describeError(interview.error));
+        console.error(
+          "[candidate-attempts] insert interview failed:",
+          describeError(interview.error),
+        );
         throw new Error("createAttempt failed");
       }
 
@@ -113,7 +116,9 @@ function parseRequirements(v: unknown): RoleRequirement[] {
   return v
     .filter(
       (item): item is { title: string; text?: string } =>
-        item != null && typeof item === "object" && typeof (item as { title?: unknown }).title === "string",
+        item != null &&
+        typeof item === "object" &&
+        typeof (item as { title?: unknown }).title === "string",
     )
     .map((item) => ({
       title: item.title,

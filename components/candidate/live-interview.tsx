@@ -146,7 +146,6 @@ export function LiveInterview({ widgetSrc }: Props) {
         {STATUS_LABEL[status]}
       </Badge>
 
-
       <div className="grid gap-4 md:grid-cols-[1fr_240px]">
         <div className="flex flex-col items-center gap-6 rounded-xl border bg-card p-8 shadow-sm">
           <div
@@ -179,7 +178,12 @@ export function LiveInterview({ widgetSrc }: Props) {
             {mic.muted ? "Unmute" : "Mute"}
           </Button>
           {/* shortcut: no help page yet, link it when support has one */}
-          <Button variant="outline" onClick={() => alert("Help: if audio stops, check your mic and wait for the reconnect.")}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              alert("Help: if audio stops, check your mic and wait for the reconnect.")
+            }
+          >
             Help
           </Button>
           <Button
@@ -196,8 +200,12 @@ export function LiveInterview({ widgetSrc }: Props) {
       </div>
       {/* shortcut: auto-reconnect is the fake session's; SHH's voice socket drives it later */}
       {status === "reconnecting" && (
-        <p role="alert" className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm">
-          Connection lost, reconnecting... {formatCountdown(secondsLeft)} left (your answers are saved)
+        <p
+          role="alert"
+          className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm"
+        >
+          Connection lost, reconnecting... {formatCountdown(secondsLeft)} left (your answers are
+          saved)
         </p>
       )}
     </div>

@@ -6,10 +6,7 @@ import { runSessionRoute } from "@/lib/sessions/route-deps";
 export const maxDuration = 60;
 
 /** Evaluate the submitted answers and save the AI feedback for the session. */
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const blocked = guardSameOrigin(request, process.env);
   if (blocked) return blocked;
   const { id } = await params;

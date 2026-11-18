@@ -31,9 +31,7 @@ export interface SessionEvaluation<T extends AnswerEvaluation = AnswerEvaluation
   finalAssessment: string;
 }
 
-export function buildEvaluateAnswersMessages(
-  items: AnswerToEvaluate[],
-): ChatMessage[] {
+export function buildEvaluateAnswersMessages(items: AnswerToEvaluate[]): ChatMessage[] {
   const system = [
     "You are a fair, specific interview coach evaluating a candidate's answers.",
     'The user message is a JSON object {"items": [{"questionIndex", "question", "answer"}]}.',
@@ -134,37 +132,21 @@ export function finishEvaluation<T extends AnswerEvaluation>(
   if (perAnswerIn.length === 0) {
     throw new LlmError("bad_output", "perAnswer was empty.");
   }
-  const perAnswer = [...perAnswerIn].sort(
-    (a, b) => a.questionIndex - b.questionIndex,
-  );
-  const totalScore = Math.round(
-    perAnswer.reduce((sum, a) => sum + a.score, 0) / perAnswer.length,
-  );
+  const perAnswer = [...perAnswerIn].sort((a, b) => a.questionIndex - b.questionIndex);
+  const totalScore = Math.round(perAnswer.reduce((sum, a) => sum + a.score, 0) / perAnswer.length);
 
   return {
     perAnswer,
     totalScore,
     strengths: cleanList(obj.strengths, "strengths"),
-    areasForImprovement: cleanList(
-      obj.areasForImprovement,
-      "areasForImprovement",
-    ),
-    finalAssessment: cleanText(
-      obj.finalAssessment,
-      MAX_ASSESSMENT_LENGTH,
-      "finalAssessment",
-    ),
+    areasForImprovement: cleanList(obj.areasForImprovement, "areasForImprovement"),
+    finalAssessment: cleanText(obj.finalAssessment, MAX_ASSESSMENT_LENGTH, "finalAssessment"),
   };
 }
 
 /** Validates a 0-100 score and rounds it. */
 export function parseScore(score: unknown): number {
-  if (
-    typeof score !== "number" ||
-    !Number.isFinite(score) ||
-    score < 0 ||
-    score > 100
-  ) {
+  if (typeof score !== "number" || !Number.isFinite(score) || score < 0 || score > 100) {
     throw new LlmError("bad_output", "perAnswer score must be 0-100.");
   }
   return Math.round(score);

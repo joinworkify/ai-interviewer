@@ -70,7 +70,8 @@ function downloadSession(state: ControllerState) {
 
 const SAVE_STATUS_LABEL: Record<SaveTranscriptOutcome, string> = {
   stored: "Transcript saved to your interview session.",
-  already_stored: "This interview session already has a saved transcript, so this one was not saved.",
+  already_stored:
+    "This interview session already has a saved transcript, so this one was not saved.",
   failed:
     "Could not save the transcript to your interview session. Download the session JSON to keep a copy.",
 };
@@ -150,9 +151,7 @@ export function GeminiLiveInterview({
   }, [controller, level, linkedSessionId, role, techstack]);
 
   const elapsedMs =
-    state.startedAt === null
-      ? 0
-      : (timing ? now : (state.endedAt ?? now)) - state.startedAt;
+    state.startedAt === null ? 0 : (timing ? now : (state.endedAt ?? now)) - state.startedAt;
 
   return (
     <div className="flex flex-col gap-6">
@@ -163,21 +162,18 @@ export function GeminiLiveInterview({
         <p className="font-semibold">Prototype</p>
         <ul className="list-disc pl-5 flex flex-col gap-1">
           <li>
-            Audio streams directly from your browser to Google Gemini Live.
-            Usage is billed to this app&apos;s Google API key; direct Google
-            costs apply.
+            Audio streams directly from your browser to Google Gemini Live. Usage is billed to this
+            app&apos;s Google API key; direct Google costs apply.
           </li>
           <li>
-            Sessions are capped at {MAX_SESSION_SECONDS / 60} minutes. No audio is
-            recorded.{" "}
+            Sessions are capped at {MAX_SESSION_SECONDS / 60} minutes. No audio is recorded.{" "}
             {linkedSessionId
               ? "The transcript is saved to your interview session when the interview ends, and the interviewer asks that interview's stored questions."
               : "Nothing is saved: the transcript exists only in this tab until you leave or start again."}
           </li>
           <li>
-            Transcripts are machine-generated and may be inaccurate. This is
-            practice only, not authoritative hiring evidence. No scoring or
-            feedback is produced.
+            Transcripts are machine-generated and may be inaccurate. This is practice only, not
+            authoritative hiring evidence. No scoring or feedback is produced.
           </li>
           <li>Headphones are recommended to avoid echo.</li>
         </ul>

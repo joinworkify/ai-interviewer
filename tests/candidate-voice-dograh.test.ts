@@ -27,14 +27,23 @@ function fakeWidget(start: () => unknown = () => undefined) {
   return { widget: widget as unknown as DograhWidgetApi & typeof widget, cb };
 }
 
-function setup(over: { session?: unknown; widget?: ReturnType<typeof fakeWidget>["widget"]; loadError?: boolean } = {}) {
+function setup(
+  over: {
+    session?: unknown;
+    widget?: ReturnType<typeof fakeWidget>["widget"];
+    loadError?: boolean;
+  } = {},
+) {
   const statuses: VoiceStatus[] = [];
   const captions: string[] = [];
   const speakers: unknown[] = [];
   const widget = over.widget ?? fakeWidget().widget;
   const requestSession = vi.fn(
     async () =>
-      (over.session ?? { ok: true, contextVariables: { session_token: "tok", questions: "[]" } }) as never,
+      (over.session ?? {
+        ok: true,
+        contextVariables: { session_token: "tok", questions: "[]" },
+      }) as never,
   );
   const loadWidget = vi.fn(async () => {
     if (over.loadError) throw new Error("widget_unavailable");
@@ -58,10 +67,12 @@ function widgetWithSocket() {
   const listeners = new Set<(e: { data?: unknown }) => void>();
   const ws = {
     addEventListener: (_t: string, fn: (e: { data?: unknown }) => void) => void listeners.add(fn),
-    removeEventListener: (_t: string, fn: (e: { data?: unknown }) => void) => void listeners.delete(fn),
+    removeEventListener: (_t: string, fn: (e: { data?: unknown }) => void) =>
+      void listeners.delete(fn),
   };
   const f = fakeWidget();
-  const widget = { ...f.widget, getState: () => ({ ws }) } as unknown as DograhWidgetApi & typeof f.widget;
+  const widget = { ...f.widget, getState: () => ({ ws }) } as unknown as DograhWidgetApi &
+    typeof f.widget;
   const push = (type: string, payload: unknown = {}) =>
     listeners.forEach((fn) => fn({ data: JSON.stringify({ type, payload }) }));
   return { widget, cb: f.cb, push, listenerCount: () => listeners.size };
@@ -147,7 +158,9 @@ describe("createDograhVoiceSession", () => {
   });
 
   it("fails with the server's message when the session cannot be prepared", async () => {
-    const t = setup({ session: { ok: false, status: 429, message: "Too many interview sessions." } });
+    const t = setup({
+      session: { ok: false, status: 429, message: "Too many interview sessions." },
+    });
     await flush();
     expect(t.statuses).toEqual(["connecting", "failed"]);
     expect(t.captions).toEqual(["Too many interview sessions."]);

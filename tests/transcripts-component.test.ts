@@ -71,13 +71,20 @@ function button(label: RegExp): HTMLButtonElement {
 }
 
 async function settle() {
-  for (let i = 0; i < 8; i++) await act(async () => { await Promise.resolve(); });
+  for (let i = 0; i < 8; i++)
+    await act(async () => {
+      await Promise.resolve();
+    });
 }
 
 async function startInterview(sessionId?: string) {
   await act(async () => {
     root.render(
-      createElement(StrictMode, null, createElement(GeminiLiveInterview, { configured: true, sessionId })),
+      createElement(
+        StrictMode,
+        null,
+        createElement(GeminiLiveInterview, { configured: true, sessionId }),
+      ),
     );
   });
   await act(async () => {
@@ -87,7 +94,9 @@ async function startInterview(sessionId?: string) {
   await act(async () => button(/start interview/i).click());
   await settle();
   await act(async () => {
-    sessionCallbacks!.onmessage({ serverContent: { outputTranscription: { text: "Hello." }, turnComplete: true } });
+    sessionCallbacks!.onmessage({
+      serverContent: { outputTranscription: { text: "Hello." }, turnComplete: true },
+    });
     sessionCallbacks!.onmessage({ serverContent: { inputTranscription: { text: "Hi there." } } });
   });
 }

@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  isUuid,
-  validateFeedbackBody,
-  validateStartSessionBody,
-} from "@/lib/sessions/validation";
+import { isUuid, validateFeedbackBody, validateStartSessionBody } from "@/lib/sessions/validation";
 
 const UUID = "11111111-1111-4111-8111-111111111111";
 
@@ -40,14 +36,25 @@ describe("validateFeedbackBody", () => {
   it.each([
     ["missing answers", {}],
     ["empty list", { answers: [] }],
-    ["too many", { answers: Array.from({ length: 11 }, (_, i) => ({ questionIndex: i, answer: "a" })) }],
+    [
+      "too many",
+      { answers: Array.from({ length: 11 }, (_, i) => ({ questionIndex: i, answer: "a" })) },
+    ],
     ["negative index", { answers: [{ questionIndex: -1, answer: "a" }] }],
     ["fractional index", { answers: [{ questionIndex: 0.5, answer: "a" }] }],
     ["string index", { answers: [{ questionIndex: "0", answer: "a" }] }],
     ["blank answer", { answers: [{ questionIndex: 0, answer: "   " }] }],
     ["non-string answer", { answers: [{ questionIndex: 0, answer: 5 }] }],
     ["oversized answer", { answers: [{ questionIndex: 0, answer: "a".repeat(4001) }] }],
-    ["duplicate index", { answers: [{ questionIndex: 1, answer: "a" }, { questionIndex: 1, answer: "b" }] }],
+    [
+      "duplicate index",
+      {
+        answers: [
+          { questionIndex: 1, answer: "a" },
+          { questionIndex: 1, answer: "b" },
+        ],
+      },
+    ],
     ["extra key on item", { answers: [{ questionIndex: 0, answer: "a", score: 100 }] }],
     ["extra top-level key", { answers: [{ questionIndex: 0, answer: "a" }], userId: UUID }],
   ])("rejects %s", (_name, body) => {
@@ -74,7 +81,10 @@ describe("validateFeedbackBody with answers optional", () => {
   it("still validates answers when present", () => {
     expect(validateFeedbackBody({ answers: [] }, { required: false }).ok).toBe(false);
     expect(
-      validateFeedbackBody({ answers: [{ questionIndex: 0, answer: " hi " }] }, { required: false }),
+      validateFeedbackBody(
+        { answers: [{ questionIndex: 0, answer: " hi " }] },
+        { required: false },
+      ),
     ).toEqual({ ok: true, data: { answers: [{ questionIndex: 0, answer: "hi" }] } });
   });
 

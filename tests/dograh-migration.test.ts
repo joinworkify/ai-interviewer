@@ -18,7 +18,10 @@ const sql = readFileSync(DIR + FILE, "utf8")
   .join(" ")
   .replace(/\s+/g, " ")
   .toLowerCase();
-const stmts = sql.split(";").map((s) => s.trim()).filter(Boolean);
+const stmts = sql
+  .split(";")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 describe("dograh transcript source migration", () => {
   it("only re-creates the source check, and can run twice", () => {
@@ -37,12 +40,16 @@ describe("dograh transcript source migration", () => {
   it("sorts after the migration that creates the source check", () => {
     // Later migrations may follow it; it only has to come after the check exists.
     const CREATES_CHECK = "20261111000003_ai_transcript_persistence.sql";
-    const names = readdirSync(DIR).filter((f) => f.endsWith(".sql")).sort();
+    const names = readdirSync(DIR)
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
     expect(names).toContain(CREATES_CHECK);
     expect(names.indexOf(FILE)).toBeGreaterThan(names.indexOf(CREATES_CHECK));
   });
 
   it("changes no table, grant, policy or function", () => {
-    expect(sql).not.toMatch(/\b(create table|drop table|drop column|grant|revoke|create policy|create or replace function|security definer)\b/);
+    expect(sql).not.toMatch(
+      /\b(create table|drop table|drop column|grant|revoke|create policy|create or replace function|security definer)\b/,
+    );
   });
 });

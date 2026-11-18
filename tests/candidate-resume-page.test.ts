@@ -92,14 +92,14 @@ describe("candidate resume step profile prefill", () => {
 
     await renderPage();
 
-    expect(container.querySelector<HTMLInputElement>('input[placeholder="Full name"]')?.value)
-      .toBe("Saved Candidate");
-    expect(container.querySelector<HTMLInputElement>('input[type="tel"]')?.value)
-      .toBe("912345678");
-    expect(container.querySelector('[role="combobox"]')?.textContent)
-      .toContain("+95");
-    expect(container.querySelector<HTMLInputElement>('input[type="url"]')?.value)
-      .toBe("https://www.linkedin.com/in/candidate");
+    expect(container.querySelector<HTMLInputElement>('input[placeholder="Full name"]')?.value).toBe(
+      "Saved Candidate",
+    );
+    expect(container.querySelector<HTMLInputElement>('input[type="tel"]')?.value).toBe("912345678");
+    expect(container.querySelector('[role="combobox"]')?.textContent).toContain("+95");
+    expect(container.querySelector<HTMLInputElement>('input[type="url"]')?.value).toBe(
+      "https://www.linkedin.com/in/candidate",
+    );
     expect(mocks.select).toHaveBeenCalledWith("name, phone, linkedin_url, portfolio_url");
 
     await act(async () => {
@@ -120,7 +120,8 @@ describe("candidate resume step profile prefill", () => {
 
     await renderPage();
 
-    expect(container.querySelector<HTMLInputElement>('input[placeholder="Full name"]')?.value)
-      .toBe("Account Name");
+    expect(container.querySelector<HTMLInputElement>('input[placeholder="Full name"]')?.value).toBe(
+      "Account Name",
+    );
   });
 });

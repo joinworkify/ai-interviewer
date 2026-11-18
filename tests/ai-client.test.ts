@@ -27,9 +27,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("chat", () => {
   it("returns content, served model and token usage", async () => {
-    const fetchMock = vi.fn(async () =>
-      ok("hello", { prompt_tokens: 12, completion_tokens: 3 }),
-    );
+    const fetchMock = vi.fn(async () => ok("hello", { prompt_tokens: 12, completion_tokens: 3 }));
     const res = await chat(config, messages, { fetch: fetchMock as typeof fetch });
     expect(res).toEqual({
       content: "hello",
@@ -157,7 +155,9 @@ describe("llmConfigWarnings", () => {
 
   it("is quiet for the settings that work", () => {
     expect(llmConfigWarnings({ model: "gemini-3.1-flash-lite", baseUrl: GEMINI })).toEqual([]);
-    expect(llmConfigWarnings({ model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" })).toEqual([]);
+    expect(
+      llmConfigWarnings({ model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" }),
+    ).toEqual([]);
   });
 
   it("warns when LLM_MODEL is a live (realtime) model", () => {
@@ -167,7 +167,10 @@ describe("llmConfigWarnings", () => {
   });
 
   it("warns when the Gemini base URL lacks /v1beta/openai", () => {
-    const [w] = llmConfigWarnings({ model: "gemini-3.1-flash-lite", baseUrl: "https://generativelanguage.googleapis.com" });
+    const [w] = llmConfigWarnings({
+      model: "gemini-3.1-flash-lite",
+      baseUrl: "https://generativelanguage.googleapis.com",
+    });
     expect(w).toContain("LLM_BASE_URL");
     expect(w).toContain("/v1beta/openai");
   });

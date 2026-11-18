@@ -31,6 +31,8 @@ const rules = [
   },
 ];
 
-await s3.send(new PutBucketCorsCommand({ Bucket: bucket, CORSConfiguration: { CORSRules: rules } }));
+await s3.send(
+  new PutBucketCorsCommand({ Bucket: bucket, CORSConfiguration: { CORSRules: rules } }),
+);
 const { CORSRules } = await s3.send(new GetBucketCorsCommand({ Bucket: bucket }));
 console.log(`CORS set on ${bucket}:`, JSON.stringify(CORSRules, null, 2));

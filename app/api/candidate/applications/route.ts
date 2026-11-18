@@ -1,4 +1,3 @@
-
 import { jsonResponse } from "@/lib/http/json";
 import { attemptProgress } from "@/lib/candidate/attempts";
 import { describeError } from "@/lib/log/safe-error";
@@ -13,8 +12,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
 
     // Verify the signed-in candidate.
-    const { data: claimsData, error: claimsError } =
-      await supabase.auth.getClaims();
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
 
     const userId = claimsData?.claims?.sub;
 
@@ -43,9 +41,7 @@ export async function GET(request: Request) {
     }
 
     const sessionIds = consents.map((item) => item.session_id);
-    const roleIds = [
-      ...new Set(consents.map((item) => item.role_id).filter(Boolean)),
-    ];
+    const roleIds = [...new Set(consents.map((item) => item.role_id).filter(Boolean))];
 
     // Load only the candidate's own interview sessions and the referenced roles.
     const [{ data: sessions, error: sessionError }, { data: rolesData, error: rolesError }] =
@@ -63,13 +59,9 @@ export async function GET(request: Request) {
     if (sessionError) throw sessionError;
     if (rolesError) throw rolesError;
 
-    const validSessions = (sessions ?? []).filter(
-      (session) => session.user_id === userId,
-    );
+    const validSessions = (sessions ?? []).filter((session) => session.user_id === userId);
 
-    const interviewIds = [
-      ...new Set(validSessions.map((session) => session.interview_id)),
-    ];
+    const interviewIds = [...new Set(validSessions.map((session) => session.interview_id))];
 
     if (!interviewIds.length) {
       return jsonResponse(200, {
@@ -99,25 +91,22 @@ export async function GET(request: Request) {
         .map((session) => [session.id, session]),
     );
 
-    const roleTitles = new Map(
-      (rolesData ?? []).map((role) => [
-        role.id,
-        role.title,
-      ]),
-    );
+    const roleTitles = new Map((rolesData ?? []).map((role) => [role.id, role.title]));
 
     const applications = consents.flatMap((consent) => {
       const session = sessionById.get(consent.session_id);
 
       if (!session || consent.user_id !== userId) return [];
 
-      return [{
-        id: consent.id,
-        roleId: consent.role_id,
-        roleTitle: roleTitles.get(consent.role_id) ?? "Unknown role",
-        appliedAt: consent.accepted_at,
-        status: attemptProgress(session),
-      }];
+      return [
+        {
+          id: consent.id,
+          roleId: consent.role_id,
+          roleTitle: roleTitles.get(consent.role_id) ?? "Unknown role",
+          appliedAt: consent.accepted_at,
+          status: attemptProgress(session),
+        },
+      ];
     });
 
     return jsonResponse(200, {

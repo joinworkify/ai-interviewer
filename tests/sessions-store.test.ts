@@ -70,7 +70,10 @@ describe("session store scopes every query to the verified user", () => {
 
   it("completeSession updates only status and ended_at, filtered by id and user_id", async () => {
     const { client, log } = fakeClient(() => ({ data: null, error: null }));
-    await createSupabaseSessionStore(client, async () => ME).completeSession(SID, "2026-11-12T01:00:00Z");
+    await createSupabaseSessionStore(client, async () => ME).completeSession(
+      SID,
+      "2026-11-12T01:00:00Z",
+    );
     expect(log).toHaveLength(1);
     expect(log[0].op).toBe("update");
     expect(log[0].payload).toEqual({ status: "completed", ended_at: "2026-11-12T01:00:00Z" });
@@ -79,9 +82,7 @@ describe("session store scopes every query to the verified user", () => {
 
   it("createSession checks the user owns the interview, then inserts with the verified id", async () => {
     const { client, log } = fakeClient((q) =>
-      q.op === "insert"
-        ? { data: SESSION_ROW, error: null }
-        : { data: { id: IV }, error: null },
+      q.op === "insert" ? { data: SESSION_ROW, error: null } : { data: { id: IV }, error: null },
     );
     await createSupabaseSessionStore(client, async () => ME).createSession(ME, IV);
     expect(log.map((q) => q.op)).toEqual(["select", "insert"]);
@@ -148,7 +149,9 @@ describe("session store refuses a user id that is not the verified one", () => {
   it("insertFeedback with another user's id", async () => {
     const { client, log } = fakeClient(() => ({ data: { id: SID }, error: null }));
     await expect(
-      createSupabaseSessionStore(client, async () => ME).insertFeedback(feedbackRow({ user_id: OTHER })),
+      createSupabaseSessionStore(client, async () => ME).insertFeedback(
+        feedbackRow({ user_id: OTHER }),
+      ),
     ).rejects.toBeInstanceOf(SessionStoreError);
     expect(log).toHaveLength(0);
   });

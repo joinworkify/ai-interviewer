@@ -27,7 +27,13 @@ export const TRANSCRIPT_TEXT = [
 ].join("\n");
 
 export function makeToken(
-  over: { userId?: string; sessionId?: string; secret?: string; nowMs?: number; ttlSeconds?: number } = {},
+  over: {
+    userId?: string;
+    sessionId?: string;
+    secret?: string;
+    nowMs?: number;
+    ttlSeconds?: number;
+  } = {},
 ): string {
   return issueSessionToken(
     over.userId ?? USER,

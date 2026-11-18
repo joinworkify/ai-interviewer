@@ -272,11 +272,7 @@ describe("handleSubmitFeedback", () => {
   });
 
   it("takes the owner from the session, never the body", async () => {
-    const res = await handleSubmitFeedback(
-      post({ ...answers, userId: OTHER }),
-      SID,
-      deps(),
-    );
+    const res = await handleSubmitFeedback(post({ ...answers, userId: OTHER }), SID, deps());
     expect(res.status).toBe(400);
     expect(store.feedback).toHaveLength(0);
   });
@@ -299,8 +295,15 @@ describe("handleSubmitFeedback", () => {
 
     store.addSession();
     store.feedback.push({
-      id: "x", session_id: SID, user_id: ME, total_score: 1, strengths: [],
-      areas_for_improvement: [], final_assessment: null, per_answer: [], created_at: "",
+      id: "x",
+      session_id: SID,
+      user_id: ME,
+      total_score: 1,
+      strengths: [],
+      areas_for_improvement: [],
+      final_assessment: null,
+      per_answer: [],
+      created_at: "",
     });
     const dup = await handleSubmitFeedback(post(answers), SID, d());
     expect(dup.status).toBe(409);
@@ -347,7 +350,11 @@ describe("handleSubmitFeedback", () => {
     const body = await res.json();
     expect(body.error).toBe("server_misconfigured");
     expect(body.missing).toEqual(
-      expect.arrayContaining(["LLM_API_KEY", "LLM_MODEL", expect.stringContaining("AI_DAILY_CALL_LIMIT")]),
+      expect.arrayContaining([
+        "LLM_API_KEY",
+        "LLM_MODEL",
+        expect.stringContaining("AI_DAILY_CALL_LIMIT"),
+      ]),
     );
   });
 
@@ -458,7 +465,12 @@ describe("handleSubmitFeedback", () => {
     const transcriptEval = {
       perAnswer: [
         { questionIndex: 1, answerSummary: "Tested with Vitest.", score: 50, feedback: "Thin." },
-        { questionIndex: 0, answerSummary: "Built a React dashboard.", score: 90, feedback: "Good." },
+        {
+          questionIndex: 0,
+          answerSummary: "Built a React dashboard.",
+          score: 90,
+          feedback: "Good.",
+        },
       ],
       strengths: ["Concrete example"],
       areasForImprovement: ["Testing depth"],
@@ -481,8 +493,22 @@ describe("handleSubmitFeedback", () => {
       expect(body.source).toBe("transcript");
       expect(body.feedback.totalScore).toBe(70);
       expect(body.feedback.perAnswer).toEqual([
-        { questionIndex: 0, question: "Q0?", answer: "Built a React dashboard.", source: "transcript", score: 90, feedback: "Good." },
-        { questionIndex: 1, question: "Q1?", answer: "Tested with Vitest.", source: "transcript", score: 50, feedback: "Thin." },
+        {
+          questionIndex: 0,
+          question: "Q0?",
+          answer: "Built a React dashboard.",
+          source: "transcript",
+          score: 90,
+          feedback: "Good.",
+        },
+        {
+          questionIndex: 1,
+          question: "Q1?",
+          answer: "Tested with Vitest.",
+          source: "transcript",
+          score: 50,
+          feedback: "Thin.",
+        },
       ]);
       expect(store.sessions.get(SID)?.status).toBe("completed");
     });
@@ -492,7 +518,11 @@ describe("handleSubmitFeedback", () => {
         void init;
         return llmReply(transcriptEval);
       });
-      await handleSubmitFeedback(post({}), SID, deps({ fetch: fetchMock as unknown as typeof fetch }));
+      await handleSubmitFeedback(
+        post({}),
+        SID,
+        deps({ fetch: fetchMock as unknown as typeof fetch }),
+      );
       const sent = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
       const user = JSON.parse(sent.messages[1].content);
       expect(user.questions).toEqual([
@@ -500,7 +530,10 @@ describe("handleSubmitFeedback", () => {
         { questionIndex: 1, question: "Q1?" },
         { questionIndex: 2, question: "Q2?" },
       ]);
-      expect(user.transcript[1]).toEqual({ role: "candidate", text: "I built a dashboard in React." });
+      expect(user.transcript[1]).toEqual({
+        role: "candidate",
+        text: "I built a dashboard in React.",
+      });
     });
 
     it("ignores browser-supplied answers: the stored transcript wins", async () => {
@@ -516,7 +549,10 @@ describe("handleSubmitFeedback", () => {
     });
 
     it("rejects a model index outside the interview (transcript mode)", async () => {
-      const bad = { ...transcriptEval, perAnswer: [{ questionIndex: 9, answerSummary: "x", score: 1, feedback: "y" }] };
+      const bad = {
+        ...transcriptEval,
+        perAnswer: [{ questionIndex: 9, answerSummary: "x", score: 1, feedback: "y" }],
+      };
       const res = await handleSubmitFeedback(
         post({}),
         SID,
@@ -529,7 +565,11 @@ describe("handleSubmitFeedback", () => {
     it("422s on a transcript that is too large, without calling the model", async () => {
       store.addSession({ transcript: [{ role: "user", message: "x".repeat(60_001) }] });
       const fetchMock = vi.fn(async () => llmReply(transcriptEval));
-      const res = await handleSubmitFeedback(post({}), SID, deps({ fetch: fetchMock as unknown as typeof fetch }));
+      const res = await handleSubmitFeedback(
+        post({}),
+        SID,
+        deps({ fetch: fetchMock as unknown as typeof fetch }),
+      );
       expect(res.status).toBe(422);
       expect((await res.json()).error).toBe("transcript_too_large");
       expect(fetchMock).not.toHaveBeenCalled();

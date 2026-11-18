@@ -40,9 +40,7 @@ export interface ParsedTranscript {
   metadata: TranscriptMetadata;
 }
 
-export type AdapterResult =
-  | { ok: true; value: ParsedTranscript }
-  | { ok: false; errors: string[] };
+export type AdapterResult = { ok: true; value: ParsedTranscript } | { ok: false; errors: string[] };
 
 /**
  * Turns one provider's payload into the canonical transcript plus metadata.

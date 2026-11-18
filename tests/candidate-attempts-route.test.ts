@@ -4,7 +4,11 @@ vi.mock("server-only", () => ({}));
 
 const getClaims = vi.fn();
 const lookup = vi.fn();
-const selectChain = { select: vi.fn(() => selectChain), eq: vi.fn(() => selectChain), maybeSingle: lookup };
+const selectChain = {
+  select: vi.fn(() => selectChain),
+  eq: vi.fn(() => selectChain),
+  maybeSingle: lookup,
+};
 const createClient = vi.fn(async () => ({ auth: { getClaims }, from: vi.fn(() => selectChain) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
 
@@ -20,9 +24,7 @@ const createAdminClient = vi.fn(() => ({
           data: {
             id: "software-engineer",
             title: "Software Engineer",
-            requirements: [
-              { title: "Programming Foundations", text: "Working proficiency." },
-            ],
+            requirements: [{ title: "Programming Foundations", text: "Working proficiency." }],
           },
           error: null,
         }),
@@ -65,7 +67,10 @@ const USER = "11111111-2222-4333-8444-555555555555";
 const SESSION = "22222222-2222-4222-8222-222222222222";
 const SECRET = "sb_secret_DO-NOT-LEAK-123";
 
-function post(headers: Record<string, string> = {}, body: unknown = { roleId: "software-engineer", consentVersion: CONSENT_VERSION }) {
+function post(
+  headers: Record<string, string> = {},
+  body: unknown = { roleId: "software-engineer", consentVersion: CONSENT_VERSION },
+) {
   return POST(
     new Request("http://localhost:3000/api/candidate/attempts", {
       method: "POST",
@@ -171,7 +176,11 @@ describe("POST /api/candidate/attempts", () => {
       success: true,
       attempt: { sessionId: SESSION, roleId: "software-engineer" },
     });
-    expect(inserts.map((i) => i.table)).toEqual(["interviews", "interview_sessions", "candidate_consents"]);
+    expect(inserts.map((i) => i.table)).toEqual([
+      "interviews",
+      "interview_sessions",
+      "candidate_consents",
+    ]);
     expect(inserts[0].row.user_id).toBe(USER);
     expect(inserts[1].row).toEqual({ user_id: USER, interview_id: "iv-1" });
     expect(inserts[2].row).toEqual({
@@ -185,7 +194,14 @@ describe("POST /api/candidate/attempts", () => {
   it("ignores a user id sent in the body", async () => {
     configure();
     getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });
-    const res = await post({}, { roleId: "software-engineer", consentVersion: CONSENT_VERSION, userId: "99999999-2222-4333-8444-555555555555" });
+    const res = await post(
+      {},
+      {
+        roleId: "software-engineer",
+        consentVersion: CONSENT_VERSION,
+        userId: "99999999-2222-4333-8444-555555555555",
+      },
+    );
     expect(res.status).toBe(400);
     expect(inserts).toEqual([]);
   });
@@ -222,7 +238,10 @@ describe("GET /api/candidate/attempts/[id]", () => {
     status: "completed",
     started_at: "2026-11-13T00:00:00Z",
     ended_at: null,
-    transcript: [{ role: "interviewer", text: "Q?" }, { role: "candidate", text: "SECRET-ANSWER" }],
+    transcript: [
+      { role: "interviewer", text: "Q?" },
+      { role: "candidate", text: "SECRET-ANSWER" },
+    ],
     transcript_source: "dograh_webhook",
     ...over,
   });
@@ -251,7 +270,10 @@ describe("GET /api/candidate/attempts/[id]", () => {
     const res = await get();
     expect(res.status).toBe(200);
     const text = await res.text();
-    expect(JSON.parse(text)).toEqual({ success: true, attempt: { sessionId: SESSION, status: "submitted" } });
+    expect(JSON.parse(text)).toEqual({
+      success: true,
+      attempt: { sessionId: SESSION, status: "submitted" },
+    });
     expect(text).not.toMatch(/SECRET-ANSWER|transcript|feedback/i);
     expect(selectChain.eq).toHaveBeenCalledWith("user_id", USER);
   });
@@ -259,7 +281,10 @@ describe("GET /api/candidate/attempts/[id]", () => {
   it("answers 404 for another user's session", async () => {
     configure();
     getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });
-    lookup.mockResolvedValue({ data: row({ user_id: "99999999-2222-4333-8444-555555555555" }), error: null });
+    lookup.mockResolvedValue({
+      data: row({ user_id: "99999999-2222-4333-8444-555555555555" }),
+      error: null,
+    });
     expect((await get()).status).toBe(404);
   });
 

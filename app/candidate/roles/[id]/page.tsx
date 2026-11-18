@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -26,7 +25,6 @@ export default function RoleDetailPage() {
 
   useEffect(() => {
     getRole(id).then(setRole, (e: Error) => setError(e.message));
-
   }, [id]);
 
   // This page is public: signed-out visitors log in first, then land on the resume step.
@@ -71,37 +69,23 @@ export default function RoleDetailPage() {
   }
 
   if (!role) {
-    return (
-      <div
-        className="h-64 animate-pulse rounded-lg bg-muted"
-        aria-busy="true"
-      />
-    );
+    return <div className="h-64 animate-pulse rounded-lg bg-muted" aria-busy="true" />;
   }
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-14">
       <article className="flex flex-col gap-8">
-        <Link
-          href="/candidate/roles"
-          className="text-sm text-muted-foreground hover:underline"
-        >
+        <Link href="/candidate/roles" className="text-sm text-muted-foreground hover:underline">
           ← All roles
         </Link>
 
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {role.title}
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">{role.title}</h1>
 
-          <p className="mt-3 text-sm text-muted-foreground">
-            Pay rate: {formatPayRate(role)}
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">Pay rate: {formatPayRate(role)}</p>
 
           {role.jobType && (
-            <p className="text-sm text-muted-foreground">
-              Job type: {role.jobType}
-            </p>
+            <p className="text-sm text-muted-foreground">Job type: {role.jobType}</p>
           )}
         </div>
 
@@ -117,30 +101,18 @@ export default function RoleDetailPage() {
 
         {role.about && (
           <section>
-            <h2 className="mb-3 text-lg font-semibold">
-              About the role
-            </h2>
+            <h2 className="mb-3 text-lg font-semibold">About the role</h2>
             <p className="text-[15px] leading-7">{role.about}</p>
           </section>
         )}
 
-        <Section
-          title="Key Responsibilities"
-          items={role.responsibilities}
-        />
+        <Section title="Key Responsibilities" items={role.responsibilities} />
 
-        <Section
-          title="Required Skills & Qualifications"
-          items={role.requirements}
-        />
+        <Section title="Required Skills & Qualifications" items={role.requirements} />
 
         <div className="flex justify-end border-t pt-4">
           <div className="flex flex-col items-end gap-1">
-            <Button
-              variant="outline"
-              onClick={handleShare}
-              disabled={copied}
-            >
+            <Button variant="outline" onClick={handleShare} disabled={copied}>
               {copied ? (
                 <>
                   <Check className="mr-2 h-4 w-4 text-green-600" />
@@ -155,10 +127,7 @@ export default function RoleDetailPage() {
             </Button>
 
             {shareError && (
-              <span
-                role="alert"
-                className="text-xs text-destructive"
-              >
+              <span role="alert" className="text-xs text-destructive">
                 {shareError}
               </span>
             )}
@@ -167,20 +136,14 @@ export default function RoleDetailPage() {
       </article>
 
       <aside className="h-fit rounded-xl border bg-card p-6 shadow-sm lg:sticky lg:top-6">
-        <section
-          aria-labelledby="how-it-works"
-          className="mb-6 border-b pb-6"
-        >
+        <section aria-labelledby="how-it-works" className="mb-6 border-b pb-6">
           <h2 id="how-it-works" className="mb-4 font-semibold">
             How applying works
           </h2>
 
           <ol className="flex flex-col gap-5">
             {APPLICATION_STEPS.map((step, i) => (
-              <li
-                key={step.id}
-                className="flex gap-3.5 text-sm"
-              >
+              <li key={step.id} className="flex gap-3.5 text-sm">
                 <span
                   aria-hidden="true"
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary text-xs font-semibold text-primary"
@@ -198,7 +161,11 @@ export default function RoleDetailPage() {
             ))}
           </ol>
         </section>
-        {applyError && <p role="alert" className="mb-3 text-sm text-destructive">{applyError}</p>}
+        {applyError && (
+          <p role="alert" className="mb-3 text-sm text-destructive">
+            {applyError}
+          </p>
+        )}
         <Button className="w-full" size="lg" disabled={applying} onClick={apply}>
           {applying ? "Opening..." : "Apply"}
         </Button>
@@ -207,13 +174,7 @@ export default function RoleDetailPage() {
   );
 }
 
-function Section({
-  title,
-  items,
-}: {
-  title: string;
-  items: { title: string; text: string }[];
-}) {
+function Section({ title, items }: { title: string; items: { title: string; text: string }[] }) {
   return (
     <section>
       <h2 className="mb-4 text-lg font-semibold">{title}</h2>

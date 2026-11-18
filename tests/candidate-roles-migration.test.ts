@@ -7,8 +7,7 @@ import { describe, expect, it } from "vitest";
  * in unit tests), so it guards these files, not out-of-band dashboard edits.
  */
 
-const read = (path: string) =>
-  readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
+const read = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), "utf8");
 
 const normalize = (path: string) =>
   read(path)
@@ -19,7 +18,10 @@ const normalize = (path: string) =>
     .toLowerCase();
 
 const sql = normalize("../supabase/migrations/20261111000000_candidate_roles.sql");
-const stmts = sql.split(";").map((s) => s.trim()).filter(Boolean);
+const stmts = sql
+  .split(";")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 describe("roles migration", () => {
   it("creates public.roles with RLS on", () => {
@@ -31,7 +33,8 @@ describe("roles migration", () => {
     expect(stmts).toContain("revoke all on table public.roles from anon, authenticated");
     expect(stmts).toContain("grant select on table public.roles to anon, authenticated");
     for (const s of stmts) {
-      if (/^grant /.test(s) && / to (anon|authenticated)/.test(s)) expect(s).toMatch(/^grant select /);
+      if (/^grant /.test(s) && / to (anon|authenticated)/.test(s))
+        expect(s).toMatch(/^grant select /);
       if (/^create policy /.test(s)) {
         expect(s).toMatch(/for select to anon, authenticated using \(is_active\)$/);
       }
@@ -47,9 +50,7 @@ describe("roles search migration", () => {
   const searchSql = normalize("../supabase/migrations/20261118000000_roles_search.sql");
 
   it("searches as the caller, with RLS in force", () => {
-    expect(searchSql).toMatch(
-      /create or replace function public\.search_roles\(p_query text\)/,
-    );
+    expect(searchSql).toMatch(/create or replace function public\.search_roles\(p_query text\)/);
     expect(searchSql).toMatch(/security invoker/);
     expect(searchSql).toMatch(/set search_path = ''/);
     expect(searchSql).not.toMatch(/security definer/);
@@ -74,7 +75,10 @@ describe("roles search migration", () => {
 
 describe("roles seed", () => {
   const all = read("../supabase/seed.sql");
-  const seed = all.slice(all.indexOf("-- BEGIN candidate roles"), all.indexOf("-- END candidate roles"));
+  const seed = all.slice(
+    all.indexOf("-- BEGIN candidate roles"),
+    all.indexOf("-- END candidate roles"),
+  );
   const rows = [
     ...seed.matchAll(/\('([a-z0-9-]+)',\s*'([^']+)',\s*([\d.]+),\s*([\d.]+),\s*'(hour|task)'/g),
   ].map(([, id, title, min, max, type]) => ({

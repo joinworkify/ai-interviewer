@@ -37,9 +37,7 @@ function fail(op: string, message: string): never {
  * grants without breaking this path. The service role bypasses RLS, so the
  * `user_id` filter inside `store_session_transcript` is the access check.
  */
-export function createSupabaseTranscriptStore(
-  admin: SupabaseClient<Database>,
-): TranscriptStore {
+export function createSupabaseTranscriptStore(admin: SupabaseClient<Database>): TranscriptStore {
   return {
     async storeOnce(input) {
       const { data, error } = await admin.rpc("store_session_transcript", {

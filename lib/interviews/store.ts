@@ -32,12 +32,9 @@ export interface InterviewStore {
 }
 
 export type StoreConfigResult =
-  | { ok: true; url: string; secretKey: string }
-  | { ok: false; missing: string[] };
+  { ok: true; url: string; secretKey: string } | { ok: false; missing: string[] };
 
-export function readStoreConfig(
-  env: Record<string, string | undefined>,
-): StoreConfigResult {
+export function readStoreConfig(env: Record<string, string | undefined>): StoreConfigResult {
   const url = env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const secretKey = env.SUPABASE_SECRET_KEY?.trim();
   const missing: string[] = [];
@@ -49,10 +46,7 @@ export function readStoreConfig(
 
 const PG_UNIQUE_VIOLATION = "23505";
 
-export function createSupabaseInterviewStore(
-  url: string,
-  secretKey: string,
-): InterviewStore {
+export function createSupabaseInterviewStore(url: string, secretKey: string): InterviewStore {
   // New client per request; never persisted or shared with the browser.
   const client: SupabaseClient = createClient(url, secretKey, {
     auth: { persistSession: false, autoRefreshToken: false },

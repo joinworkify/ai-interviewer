@@ -14,11 +14,31 @@ export interface ApplicationStep {
 }
 
 export const APPLICATION_STEPS: readonly ApplicationStep[] = [
-  { id: "role", label: "Role details", description: "Read about the role and confirm you want to apply." },
-  { id: "resume", label: "Resume (optional)", description: "Add your name, contact details and a PDF or DOCX resume." },
-  { id: "consent", label: "Consent", description: "Read and accept how your interview is recorded and reviewed." },
-  { id: "setup", label: "Mic check", description: "Test your microphone and speaker before you start." },
-  { id: "interview", label: "Interview", description: "Have a short voice interview with the AI interviewer." },
+  {
+    id: "role",
+    label: "Role details",
+    description: "Read about the role and confirm you want to apply.",
+  },
+  {
+    id: "resume",
+    label: "Resume (optional)",
+    description: "Add your name, contact details and a PDF or DOCX resume.",
+  },
+  {
+    id: "consent",
+    label: "Consent",
+    description: "Read and accept how your interview is recorded and reviewed.",
+  },
+  {
+    id: "setup",
+    label: "Mic check",
+    description: "Test your microphone and speaker before you start.",
+  },
+  {
+    id: "interview",
+    label: "Interview",
+    description: "Have a short voice interview with the AI interviewer.",
+  },
 ];
 
 /** Where the stepper says the candidate is: a step, or "done" once the interview is over. */
@@ -67,7 +87,11 @@ export function setupPath(attemptId: string, roleId: string): string {
  * step opens again instead of skipping forward. Null when the step cannot be
  * revisited (the interview itself) or there is not enough to build the link.
  */
-export function stepHref(step: StepId, roleId: string | null, attemptId: string | null): string | null {
+export function stepHref(
+  step: StepId,
+  roleId: string | null,
+  attemptId: string | null,
+): string | null {
   if (!roleId) return null;
   const role = encodeURIComponent(roleId);
   const attempt = attemptId ? `&attempt=${encodeURIComponent(attemptId)}` : "";

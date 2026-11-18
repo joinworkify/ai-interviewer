@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CreateAuthTokenConfig } from "@google/genai";
-import {
-  handleLiveTokenRequest,
-  type LiveTokenDeps,
-} from "@/lib/gemini-live/token-handler";
+import { handleLiveTokenRequest, type LiveTokenDeps } from "@/lib/gemini-live/token-handler";
 import { SlidingWindowLimiter } from "@/lib/gemini-live/rate-limit";
 import { END_INTERVIEW_TOOL } from "@/lib/gemini-live/interview-details";
 
@@ -16,10 +13,7 @@ const BODY = { role: "Backend Engineer", level: "senior", techstack: "Go, Postgr
 
 const env = { GEMINI_API_KEY: API_KEY, GEMINI_LIVE_MODEL: "gemini-3.8-live" };
 
-function req(
-  body: unknown = BODY,
-  headers: Record<string, string> = {},
-): Request {
+function req(body: unknown = BODY, headers: Record<string, string> = {}): Request {
   return new Request(URL_, {
     method: "POST",
     headers: {
@@ -192,18 +186,12 @@ describe("Gemini setup", () => {
 
 describe("request body", () => {
   it("returns 415 for non-JSON content types", async () => {
-    const res = await handleLiveTokenRequest(
-      req(BODY, { "content-type": "text/plain" }),
-      deps(),
-    );
+    const res = await handleLiveTokenRequest(req(BODY, { "content-type": "text/plain" }), deps());
     expect(res.status).toBe(415);
   });
 
   it("returns 413 for oversized bodies", async () => {
-    const res = await handleLiveTokenRequest(
-      req({ ...BODY, role: "x".repeat(5000) }),
-      deps(),
-    );
+    const res = await handleLiveTokenRequest(req({ ...BODY, role: "x".repeat(5000) }), deps());
     expect(res.status).toBe(413);
   });
 

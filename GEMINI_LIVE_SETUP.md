@@ -21,10 +21,10 @@ Official references:
 Add these to your existing server env file (`.env.local` locally, or your
 hosting provider's settings). Placeholders are in `.env.example`.
 
-| Variable | Value | Notes |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | Your Google AI Studio key from <https://aistudio.google.com/apikey> | **Server-only.** Never prefix with `NEXT_PUBLIC_`. Used only to mint ephemeral tokens. |
-| `GEMINI_LIVE_MODEL` | A Live API native-audio model id, e.g. `gemini-3.8-live` | Required, no default. Check the current id on the Live API page. Text models such as `gemini-2.5-flash` are rejected with a setup error. A leading `models/` is accepted. |
+| Variable                 | Value                                                                                      | Notes                                                                                                                                                                                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GEMINI_API_KEY`         | Your Google AI Studio key from <https://aistudio.google.com/apikey>                        | **Server-only.** Never prefix with `NEXT_PUBLIC_`. Used only to mint ephemeral tokens.                                                                                                                                                                                        |
+| `GEMINI_LIVE_MODEL`      | A Live API native-audio model id, e.g. `gemini-3.8-live`                                   | Required, no default. Check the current id on the Live API page. Text models such as `gemini-2.5-flash` are rejected with a setup error. A leading `models/` is accepted.                                                                                                     |
 | `GEMINI_LIVE_APP_ORIGIN` | Optional. The public origin users load the app from, e.g. `https://interviews.example.com` | **Server-only.** Format is `scheme://host[:port]` with no path. Set it behind a reverse proxy, CDN or container where the app server sees an internal Host (e.g. `10.0.0.5:3000`). An invalid value fails closed: the token API returns 403 and the page lists it as invalid. |
 
 Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
@@ -87,6 +87,7 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
   **not** trusted. Behind a TLS-terminating proxy, the server sees `http:`
   and/or an internal Host, so set `GEMINI_LIVE_APP_ORIGIN` to the public
   origin.
+
 - The exact path `/api/gemini-live/token` is exempt from the login redirect
   in `lib/supabase/proxy.ts`. The proxy still refreshes the session cookie,
   and the route checks Supabase claims itself, so signed-out callers get a
@@ -147,7 +148,7 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
   matching call `id`, enters "closing", releases the mic, lets the closing
   sentence finish playing (up to 10 s), then closes the session.
 - Lifecycle: phases `microphone → authorizing → connecting → active →
-  (closing) → ended | error`. End works in every phase. Each Start is an
+(closing) → ended | error`. End works in every phase. Each Start is an
   attempt. End, unmount, errors and retries invalidate it, so late
   microphone streams are stopped and late sessions are closed, never adopted.
   The mic is requested before the token, so a denied permission spends no

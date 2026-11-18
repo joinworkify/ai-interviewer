@@ -33,9 +33,7 @@ export function CandidateHeader() {
         .eq("id", user.id)
         .maybeSingle();
 
-      setName(
-        profile?.name?.trim() || user.user_metadata?.name?.trim() || null,
-      );
+      setName(profile?.name?.trim() || user.user_metadata?.name?.trim() || null);
     }
 
     void loadProfile();
@@ -116,10 +114,7 @@ export function CandidateHeader() {
               </button>
             </>
           ) : (
-            <Link
-              href="/auth/login"
-              className="text-sm font-medium text-primary hover:underline"
-            >
+            <Link href="/auth/login" className="text-sm font-medium text-primary hover:underline">
               Log in
             </Link>
           )}

@@ -26,10 +26,7 @@ export interface FakeOptions {
   deleteUser?: (id: string) => { error: { message: string } | null };
 }
 
-export function fakeClient(
-  replies: (q: Recorded) => Reply,
-  options: FakeOptions = {},
-) {
+export function fakeClient(replies: (q: Recorded) => Reply, options: FakeOptions = {}) {
   const log: Recorded[] = [];
   const events: string[] = [];
   const client = {

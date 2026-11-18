@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  asAuthenticated,
-  asServiceRole,
-  dbAvailable,
-  IDS,
-  runSql,
-} from "../helpers/psql";
+import { asAuthenticated, asServiceRole, dbAvailable, IDS, runSql } from "../helpers/psql";
 
 /**
  * Forgery tests against the real local Postgres. They run as the
@@ -54,10 +48,7 @@ describe.skipIf(!HAS_DB)("browser cannot forge sessions or feedback", () => {
       "delete own feedback (re-opens the session for another evaluation)",
       `delete from public.feedback where id = '${IDS.feedbackA}';`,
     ],
-    [
-      "delete own session",
-      `delete from public.interview_sessions where id = '${IDS.sessionA}';`,
-    ],
+    ["delete own session", `delete from public.interview_sessions where id = '${IDS.sessionA}';`],
     [
       "insert an interview",
       `insert into public.interviews (user_id, questions) values ('${A}', '{"forged"}');`,
@@ -66,10 +57,7 @@ describe.skipIf(!HAS_DB)("browser cannot forge sessions or feedback", () => {
       "insert ai_usage (would reset the quota)",
       `insert into public.ai_usage (user_id, feature, model) values ('${A}', 'x', 'y');`,
     ],
-    [
-      "delete ai_usage",
-      `delete from public.ai_usage where user_id = '${A}';`,
-    ],
+    ["delete ai_usage", `delete from public.ai_usage where user_id = '${A}';`],
   ])("denies: %s", (_name, statement) => {
     it("fails with permission denied", () => {
       const r = runSql(asAuthenticated(A, statement));

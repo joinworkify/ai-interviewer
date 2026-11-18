@@ -6,7 +6,7 @@ import { ResumeProfileForm } from "@/components/candidate/resume-profile-form";
 import { saveProfile } from "@/lib/candidate/profile-client";
 
 vi.mock("@/lib/candidate/profile-client", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/lib/candidate/profile-client")>(),
+  ...(await importOriginal<typeof import("@/lib/candidate/profile-client")>()),
   saveProfile: vi.fn(),
 }));
 
@@ -21,15 +21,19 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  act(() => root.render(createElement(ResumeProfileForm, {
-    initialProfile: {
-      name: "Candidate",
-      email: "candidate@example.com",
-      phone: "",
-      linkedinUrl: "",
-      portfolioUrl: "",
-    },
-  })));
+  act(() =>
+    root.render(
+      createElement(ResumeProfileForm, {
+        initialProfile: {
+          name: "Candidate",
+          email: "candidate@example.com",
+          phone: "",
+          linkedinUrl: "",
+          portfolioUrl: "",
+        },
+      }),
+    ),
+  );
 });
 
 afterEach(() => {
@@ -40,7 +44,9 @@ afterEach(() => {
 });
 
 async function save() {
-  await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
+  await act(async () =>
+    container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click(),
+  );
 }
 
 describe("ResumeProfileForm success message", () => {
@@ -51,7 +57,9 @@ describe("ResumeProfileForm success message", () => {
     expect(saveProfile).toHaveBeenCalledTimes(2);
 
     act(() => vi.advanceTimersByTime(1000));
-    expect(container.querySelector('[role="status"]')?.textContent).toBe("Profile saved successfully.");
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(
+      "Profile saved successfully.",
+    );
     act(() => vi.advanceTimersByTime(2999));
     expect(container.querySelector('[role="status"]')).not.toBeNull();
     act(() => vi.advanceTimersByTime(1));

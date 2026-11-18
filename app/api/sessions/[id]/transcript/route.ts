@@ -5,10 +5,7 @@ import { handlePutTranscript } from "@/lib/transcripts/handlers";
 import { runTranscriptRoute } from "@/lib/transcripts/route-deps";
 
 /** Store the transcript of one of the signed-in user's sessions, once. */
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const blocked = guardSameOrigin(request, process.env);
   if (blocked) return blocked;
   const { id } = await params;
@@ -16,10 +13,7 @@ export async function PUT(
 }
 
 /** Delete a session's transcript and recording URL. The feedback is kept. */
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const blocked = guardSameOrigin(request, process.env);
   if (blocked) return blocked;
   const { id } = await params;

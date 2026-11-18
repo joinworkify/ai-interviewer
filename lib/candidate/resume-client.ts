@@ -15,8 +15,7 @@ export interface SavedResume {
 export class ResumeUploadError extends Error {}
 
 // Not imported from resume.ts: that module is server-side (node:crypto).
-const DOCX_TYPE =
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 /** Browsers often report an empty type for .docx, so derive it from the extension the page already checked. */
 export function resumeContentType(file: { name: string }): string {
@@ -35,9 +34,7 @@ async function readMessage(res: Response, fallback: string): Promise<string> {
 }
 
 /** The candidate's saved resumes, the one in use first; [] when there are none. */
-export async function fetchSavedResumes(
-  fetchImpl: Fetch = fetch,
-): Promise<SavedResume[]> {
+export async function fetchSavedResumes(fetchImpl: Fetch = fetch): Promise<SavedResume[]> {
   try {
     const res = await fetchImpl("/api/candidate/resume", { cache: "no-store" });
     if (!res.ok) return [];
@@ -75,10 +72,7 @@ export function deleteResume(id: string, fetchImpl: Fetch = fetch): Promise<void
 }
 
 /** Uploads `file` and returns the stored resume. Throws ResumeUploadError with a message fit to show. */
-export async function uploadResume(
-  file: File,
-  fetchImpl: Fetch = fetch,
-): Promise<SavedResume> {
+export async function uploadResume(file: File, fetchImpl: Fetch = fetch): Promise<SavedResume> {
   const created = await fetchImpl("/api/candidate/resume/upload-url", {
     method: "POST",
     headers: JSON_HEADERS,
@@ -90,10 +84,7 @@ export async function uploadResume(
   });
   if (!created.ok) {
     throw new ResumeUploadError(
-      await readMessage(
-        created,
-        "Could not start the upload. Please try again.",
-      ),
+      await readMessage(created, "Could not start the upload. Please try again."),
     );
   }
   const { resumeId, upload } = (await created.json()) as {
@@ -113,10 +104,7 @@ export async function uploadResume(
       "The upload did not go through. Check your connection and try again.",
     );
   }
-  if (!put.ok)
-    throw new ResumeUploadError(
-      "The upload did not go through. Please try again.",
-    );
+  if (!put.ok) throw new ResumeUploadError("The upload did not go through. Please try again.");
 
   const confirmed = await fetchImpl("/api/candidate/resume/confirm", {
     method: "POST",
@@ -125,10 +113,7 @@ export async function uploadResume(
   });
   if (!confirmed.ok) {
     throw new ResumeUploadError(
-      await readMessage(
-        confirmed,
-        "Could not save the resume. Please try again.",
-      ),
+      await readMessage(confirmed, "Could not save the resume. Please try again."),
     );
   }
   const body = (await confirmed.json()) as { resume: SavedResume };

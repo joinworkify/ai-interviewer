@@ -23,10 +23,10 @@ const config: LlmConfig = {
 };
 
 function chat(content: unknown, status = 200) {
-  return new Response(
-    JSON.stringify({ choices: [{ message: { content } }] }),
-    { status, headers: { "content-type": "application/json" } },
-  );
+  return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
 }
 
 describe("readLlmConfig", () => {
@@ -64,10 +64,7 @@ describe("parseQuestions", () => {
   it("parses object, bare array, and fenced output", () => {
     expect(parseQuestions('{"questions":["A?","B?"]}', 2)).toEqual(["A?", "B?"]);
     expect(parseQuestions('["A?","B?","C?"]', 2)).toEqual(["A?", "B?"]);
-    expect(parseQuestions('```json\n{"questions":["**A?**","B?"]}\n```', 2)).toEqual([
-      "A?",
-      "B?",
-    ]);
+    expect(parseQuestions('```json\n{"questions":["**A?**","B?"]}\n```', 2)).toEqual(["A?", "B?"]);
   });
 
   it.each([
@@ -109,9 +106,9 @@ describe("generateQuestions", () => {
   ])("maps HTTP %i to %s", async (status, kind) => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const fetchMock = vi.fn(async () => new Response("nope", { status }));
-    await expect(
-      generateQuestions(input, config, fetchMock as typeof fetch),
-    ).rejects.toMatchObject({ kind, upstreamStatus: status });
+    await expect(generateQuestions(input, config, fetchMock as typeof fetch)).rejects.toMatchObject(
+      { kind, upstreamStatus: status },
+    );
     spy.mockRestore();
   });
 
@@ -119,22 +116,22 @@ describe("generateQuestions", () => {
     const timeout = vi.fn(async () => {
       throw new DOMException("timed out", "TimeoutError");
     });
-    await expect(
-      generateQuestions(input, config, timeout as typeof fetch),
-    ).rejects.toMatchObject({ kind: "timeout" });
+    await expect(generateQuestions(input, config, timeout as typeof fetch)).rejects.toMatchObject({
+      kind: "timeout",
+    });
 
     const network = vi.fn(async () => {
       throw new TypeError("fetch failed");
     });
-    await expect(
-      generateQuestions(input, config, network as typeof fetch),
-    ).rejects.toMatchObject({ kind: "network" });
+    await expect(generateQuestions(input, config, network as typeof fetch)).rejects.toMatchObject({
+      kind: "network",
+    });
   });
 
   it("rejects a 2xx response without usable content", async () => {
     const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
-    await expect(
-      generateQuestions(input, config, fetchMock as typeof fetch),
-    ).rejects.toMatchObject({ kind: "bad_output" });
+    await expect(generateQuestions(input, config, fetchMock as typeof fetch)).rejects.toMatchObject(
+      { kind: "bad_output" },
+    );
   });
 });

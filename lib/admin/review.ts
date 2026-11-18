@@ -14,7 +14,11 @@ const MAX_BODY_BYTES = 256;
 
 export interface ReviewStore {
   sessionExists(sessionId: string): Promise<boolean>;
-  setStatus(sessionId: string, status: ReviewStatus, adminId: string): Promise<{ updatedAt: string }>;
+  setStatus(
+    sessionId: string,
+    status: ReviewStatus,
+    adminId: string,
+  ): Promise<{ updatedAt: string }>;
 }
 
 export interface ReviewHandlerDeps {
@@ -45,7 +49,8 @@ export async function handleSetReviewStatus(
   }
 
   try {
-    if (!(await deps.store.sessionExists(sessionId))) return fail(404, "not_found", "Interview not found.");
+    if (!(await deps.store.sessionExists(sessionId)))
+      return fail(404, "not_found", "Interview not found.");
     const { updatedAt } = await deps.store.setStatus(sessionId, status, caller.userId);
     return jsonResponse(200, { success: true, review: { sessionId, status, updatedAt } });
   } catch {

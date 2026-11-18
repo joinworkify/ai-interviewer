@@ -20,9 +20,9 @@ function SupabaseSetupIncomplete({ missing }: { missing: string[] }) {
     >
       <p className="font-semibold">Setup incomplete: Supabase is not configured</p>
       <p>
-        Sign-in and saved interviews need these environment variables. Add them
-        to your existing env file (see <code>.env.example</code> and{" "}
-        <code>VAPI_SETUP.md</code>), then restart the dev server or rebuild:
+        Sign-in and saved interviews need these environment variables. Add them to your existing env
+        file (see <code>.env.example</code> and <code>VAPI_SETUP.md</code>), then restart the dev
+        server or rebuild:
       </p>
       <ul className="list-disc pl-5 font-mono text-xs">
         {missing.map((name) => (
@@ -30,8 +30,8 @@ function SupabaseSetupIncomplete({ missing }: { missing: string[] }) {
         ))}
       </ul>
       <p className="text-muted-foreground">
-        After Supabase is configured, this page will list any remaining Vapi,
-        LLM and server-secret variables.
+        After Supabase is configured, this page will list any remaining Vapi, LLM and server-secret
+        variables.
       </p>
     </div>
   );
@@ -40,10 +40,7 @@ function SupabaseSetupIncomplete({ missing }: { missing: string[] }) {
 async function InterviewContent() {
   const missingSupabase = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
-    [
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ],
+    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
   ]
     .filter(([, value]) => !value?.trim())
     .map(([name]) => name as string);
@@ -60,16 +57,13 @@ async function InterviewContent() {
   // Read at request time (after cookies()), never sent to the client except
   // the two public values and booleans.
   const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY?.trim() ?? "";
-  const assistantId =
-    process.env.NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID?.trim() ?? "";
+  const assistantId = process.env.NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID?.trim() ?? "";
   const checks = [
     { name: "NEXT_PUBLIC_VAPI_PUBLIC_KEY", ok: publicKey.length > 0 },
     { name: "NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID", ok: assistantId.length > 0 },
     {
       name: `VAPI_TOOL_SIGNING_SECRET (≥ ${MIN_SIGNING_SECRET_LENGTH} chars)`,
-      ok:
-        (process.env.VAPI_TOOL_SIGNING_SECRET?.length ?? 0) >=
-        MIN_SIGNING_SECRET_LENGTH,
+      ok: (process.env.VAPI_TOOL_SIGNING_SECRET?.length ?? 0) >= MIN_SIGNING_SECRET_LENGTH,
     },
     { name: "SUPABASE_SECRET_KEY", ok: !!process.env.SUPABASE_SECRET_KEY?.trim() },
     { name: "LLM_API_KEY", ok: !!process.env.LLM_API_KEY?.trim() },
@@ -99,9 +93,8 @@ async function InterviewContent() {
             ))}
           </ul>
           <p className="text-muted-foreground">
-            Vapi must also be able to reach{" "}
-            <code>/api/vapi/generate-interview</code> over public HTTPS —
-            <code> localhost</code> is not reachable from Vapi.
+            Vapi must also be able to reach <code>/api/vapi/generate-interview</code> over public
+            HTTPS —<code> localhost</code> is not reachable from Vapi.
           </p>
         </div>
       )}
@@ -112,8 +105,8 @@ async function InterviewContent() {
         </div>
       ) : (
         <p className="rounded-3xl border border-foreground/10 bg-foreground/[0.03] p-6 text-sm text-muted-foreground">
-          The voice call is disabled until the Vapi public key and Generator
-          Assistant ID are configured.
+          The voice call is disabled until the Vapi public key and Generator Assistant ID are
+          configured.
         </p>
       )}
 
@@ -130,8 +123,7 @@ async function InterviewContent() {
           </p>
         ) : !interviews || interviews.length === 0 ? (
           <p className="rounded-3xl border border-dashed border-foreground/15 p-6 text-sm text-muted-foreground">
-            No interviews yet. Start a call and tell the assistant what role
-            you are preparing for.
+            No interviews yet. Start a call and tell the assistant what role you are preparing for.
           </p>
         ) : (
           <ul className="flex flex-col gap-4">
@@ -193,9 +185,8 @@ export default function InterviewPage() {
           Create an interview by voice
         </h1>
         <p className="relative max-w-2xl text-base leading-relaxed text-muted-foreground">
-          The assistant will ask for the role, level, interview type, tech
-          stack and number of questions, then generate and save the questions
-          to your account.
+          The assistant will ask for the role, level, interview type, tech stack and number of
+          questions, then generate and save the questions to your account.
         </p>
       </header>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>

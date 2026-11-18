@@ -18,7 +18,13 @@ const open: Progress = { roleId: ROLE, resume: { uploaded: true }, attempt: { id
 
 describe("APPLICATION_STEPS", () => {
   it("lists the five steps in order with unique ids", () => {
-    expect(APPLICATION_STEPS.map((s) => s.id)).toEqual(["role", "resume", "consent", "setup", "interview"]);
+    expect(APPLICATION_STEPS.map((s) => s.id)).toEqual([
+      "role",
+      "resume",
+      "consent",
+      "setup",
+      "interview",
+    ]);
     expect(new Set(APPLICATION_STEPS.map((s) => s.id)).size).toBe(5);
     for (const s of APPLICATION_STEPS) expect(s.description.length).toBeGreaterThan(0);
   });
@@ -62,25 +68,40 @@ describe("redirectFor", () => {
       expect(redirectFor(step, none, null)).toBeNull();
     });
 
-    it.each(["resume", "consent"] as const)("%s sends the candidate on to setup once an attempt is open", (step) => {
-      expect(redirectFor(step, open, null)).toBe(setupPath(OPEN, ROLE));
-    });
+    it.each(["resume", "consent"] as const)(
+      "%s sends the candidate on to setup once an attempt is open",
+      (step) => {
+        expect(redirectFor(step, open, null)).toBe(setupPath(OPEN, ROLE));
+      },
+    );
 
-    it.each(["resume", "consent"] as const)("%s opens when the URL has no role (the page explains it)", (step) => {
-      expect(redirectFor(step, null, null)).toBeNull();
-    });
+    it.each(["resume", "consent"] as const)(
+      "%s opens when the URL has no role (the page explains it)",
+      (step) => {
+        expect(redirectFor(step, null, null)).toBeNull();
+      },
+    );
 
-    it.each(["resume", "consent"] as const)("%s opens again on a deliberate go-back with the open attempt", (step) => {
-      expect(redirectFor(step, open, OPEN)).toBeNull();
-    });
+    it.each(["resume", "consent"] as const)(
+      "%s opens again on a deliberate go-back with the open attempt",
+      (step) => {
+        expect(redirectFor(step, open, OPEN)).toBeNull();
+      },
+    );
 
-    it.each(["resume", "consent"] as const)("%s still skips forward for any other attempt id", (step) => {
-      expect(redirectFor(step, open, OTHER)).toBe(setupPath(OPEN, ROLE));
-    });
+    it.each(["resume", "consent"] as const)(
+      "%s still skips forward for any other attempt id",
+      (step) => {
+        expect(redirectFor(step, open, OTHER)).toBe(setupPath(OPEN, ROLE));
+      },
+    );
 
-    it.each(["resume", "consent"] as const)("%s drops a finished attempt from the URL and opens fresh", (step) => {
-      expect(redirectFor(step, none, OTHER)).toBe(`/candidate/${step}?role=${ROLE}`);
-    });
+    it.each(["resume", "consent"] as const)(
+      "%s drops a finished attempt from the URL and opens fresh",
+      (step) => {
+        expect(redirectFor(step, none, OTHER)).toBe(`/candidate/${step}?role=${ROLE}`);
+      },
+    );
   });
 
   describe("setup and interview", () => {
@@ -88,18 +109,27 @@ describe("redirectFor", () => {
       expect(redirectFor(step, open, OPEN)).toBeNull();
     });
 
-    it.each(["setup", "interview"] as const)("%s redirects another attempt id to the open one", (step) => {
-      expect(redirectFor(step, open, OTHER)).toBe(setupPath(OPEN, ROLE));
-      expect(redirectFor(step, open, null)).toBe(setupPath(OPEN, ROLE));
-    });
+    it.each(["setup", "interview"] as const)(
+      "%s redirects another attempt id to the open one",
+      (step) => {
+        expect(redirectFor(step, open, OTHER)).toBe(setupPath(OPEN, ROLE));
+        expect(redirectFor(step, open, null)).toBe(setupPath(OPEN, ROLE));
+      },
+    );
 
-    it.each(["setup", "interview"] as const)("%s sends a closed or unknown attempt to its result", (step) => {
-      expect(redirectFor(step, none, OTHER)).toBe(`/candidate/result?attempt=${OTHER}`);
-    });
+    it.each(["setup", "interview"] as const)(
+      "%s sends a closed or unknown attempt to its result",
+      (step) => {
+        expect(redirectFor(step, none, OTHER)).toBe(`/candidate/result?attempt=${OTHER}`);
+      },
+    );
 
-    it.each(["setup", "interview"] as const)("%s without an attempt goes back to the role", (step) => {
-      expect(redirectFor(step, none, null)).toBe(`/candidate/roles/${ROLE}`);
-    });
+    it.each(["setup", "interview"] as const)(
+      "%s without an attempt goes back to the role",
+      (step) => {
+        expect(redirectFor(step, none, null)).toBe(`/candidate/roles/${ROLE}`);
+      },
+    );
 
     it.each(["setup", "interview"] as const)("%s without a role goes to the role list", (step) => {
       expect(redirectFor(step, null, OPEN)).toBe("/candidate/roles");

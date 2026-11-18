@@ -88,12 +88,14 @@ describe("readDograhWidgetConfig", () => {
     });
   });
 
-  it.each(["not a url", "http://example.com/x.js", "https://user:pw@example.com/x.js", "javascript:alert(1)"])(
-    "rejects %s",
-    (value) => {
-      const r = readDograhWidgetConfig({ NEXT_PUBLIC_DOGRAH_WIDGET_SRC: value });
-      expect(r.ok).toBe(false);
-      expect(JSON.stringify(r)).not.toContain("pw@");
-    },
-  );
+  it.each([
+    "not a url",
+    "http://example.com/x.js",
+    "https://user:pw@example.com/x.js",
+    "javascript:alert(1)",
+  ])("rejects %s", (value) => {
+    const r = readDograhWidgetConfig({ NEXT_PUBLIC_DOGRAH_WIDGET_SRC: value });
+    expect(r.ok).toBe(false);
+    expect(JSON.stringify(r)).not.toContain("pw@");
+  });
 });

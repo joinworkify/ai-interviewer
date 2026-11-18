@@ -30,14 +30,26 @@ describe("readJsonBody", () => {
 
   describe("allowEmpty", () => {
     it("returns {} for no body, with or without a content type", async () => {
-      expect(await readJsonBody(post(undefined), 100, { allowEmpty: true })).toEqual({ ok: true, value: {} });
-      expect(await readJsonBody(post("  ", JSON_H), 100, { allowEmpty: true })).toEqual({ ok: true, value: {} });
+      expect(await readJsonBody(post(undefined), 100, { allowEmpty: true })).toEqual({
+        ok: true,
+        value: {},
+      });
+      expect(await readJsonBody(post("  ", JSON_H), 100, { allowEmpty: true })).toEqual({
+        ok: true,
+        value: {},
+      });
     });
 
     it("still enforces content type, JSON and size on non-empty bodies", async () => {
-      expect(await readJsonBody(post("{}", { "content-type": "text/plain" }), 100, { allowEmpty: true })).toMatchObject({ status: 415 });
-      expect(await readJsonBody(post("{nope", JSON_H), 100, { allowEmpty: true })).toMatchObject({ status: 400 });
-      expect(await readJsonBody(post("x".repeat(200), JSON_H), 100, { allowEmpty: true })).toMatchObject({ status: 413 });
+      expect(
+        await readJsonBody(post("{}", { "content-type": "text/plain" }), 100, { allowEmpty: true }),
+      ).toMatchObject({ status: 415 });
+      expect(await readJsonBody(post("{nope", JSON_H), 100, { allowEmpty: true })).toMatchObject({
+        status: 400,
+      });
+      expect(
+        await readJsonBody(post("x".repeat(200), JSON_H), 100, { allowEmpty: true }),
+      ).toMatchObject({ status: 413 });
     });
   });
 });

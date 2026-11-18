@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, getResult, getRoles, isValidEmail, roleFromRow, waitForResult } from "@/lib/candidate/api";
+import {
+  ApiError,
+  getResult,
+  getRoles,
+  isValidEmail,
+  roleFromRow,
+  waitForResult,
+} from "@/lib/candidate/api";
 import { formatCountdown, setupGate } from "@/lib/candidate/setup";
 import { createFakeVoiceSession, type VoiceStatus } from "@/lib/candidate/voice";
 import { fakeClient } from "./helpers/fake-supabase";
@@ -37,7 +44,9 @@ describe("getRoles", () => {
   const row = (id: string, title: string, skills: string[] = []) => ({
     id,
     title,
-    pay_min: 1, pay_max: 2, pay_type: "hour",
+    pay_min: 1,
+    pay_max: 2,
+    pay_type: "hour",
     job_type: "",
     skills,
     about: "",
@@ -58,7 +67,9 @@ describe("getRoles", () => {
       {
         id: "x",
         title: "X",
-        payMin: 1, payMax: 2, payType: "hour",
+        payMin: 1,
+        payMax: 2,
+        payType: "hour",
         jobType: undefined,
         skills: ["TypeScript"],
         about: undefined,
@@ -97,14 +108,19 @@ describe("isValidEmail", () => {
 
 describe("getResult", () => {
   const reply = (status: unknown, httpStatus = 200) =>
-    vi.fn(async () => Response.json({ success: true, attempt: { sessionId: "s", status } }, { status: httpStatus }));
+    vi.fn(async () =>
+      Response.json({ success: true, attempt: { sessionId: "s", status } }, { status: httpStatus }),
+    );
 
-  it.each(["processing", "submitted", "incomplete"] as const)("maps %s from the server, with no score or pass/fail", async (status) => {
-    const result = await getResult("s", reply(status) as never);
-    expect(Object.keys(result).sort()).toEqual(["attemptId", "status", "summary"]);
-    expect(result.status).toBe(status);
-    expect(result.summary).not.toMatch(/score|pass|fail|reject|accept/i);
-  });
+  it.each(["processing", "submitted", "incomplete"] as const)(
+    "maps %s from the server, with no score or pass/fail",
+    async (status) => {
+      const result = await getResult("s", reply(status) as never);
+      expect(Object.keys(result).sort()).toEqual(["attemptId", "status", "summary"]);
+      expect(result.status).toBe(status);
+      expect(result.summary).not.toMatch(/score|pass|fail|reject|accept/i);
+    },
+  );
 
   it("asks for the attempt by id, same origin, uncached", async () => {
     const f = reply("submitted");
@@ -147,14 +163,24 @@ describe("waitForResult", () => {
 
   it("polls until the transcript has arrived", async () => {
     const f = answers("processing", "processing", "submitted");
-    const result = await waitForResult("s", { fetchImpl: f as never, intervalMs: 1000, timeoutMs: 30_000, ...clock() });
+    const result = await waitForResult("s", {
+      fetchImpl: f as never,
+      intervalMs: 1000,
+      timeoutMs: 30_000,
+      ...clock(),
+    });
     expect(result.status).toBe("submitted");
     expect(f).toHaveBeenCalledTimes(3);
   });
 
   it("returns the last processing result at the timeout instead of failing", async () => {
     const f = answers("processing");
-    const result = await waitForResult("s", { fetchImpl: f as never, intervalMs: 1000, timeoutMs: 5000, ...clock() });
+    const result = await waitForResult("s", {
+      fetchImpl: f as never,
+      intervalMs: 1000,
+      timeoutMs: 5000,
+      ...clock(),
+    });
     expect(result.status).toBe("processing");
     expect(f.mock.calls.length).toBeGreaterThan(1);
     expect(f.mock.calls.length).toBeLessThanOrEqual(6);
@@ -162,7 +188,12 @@ describe("waitForResult", () => {
 
   it("survives one failed poll", async () => {
     const f = answers("boom", "incomplete");
-    const result = await waitForResult("s", { fetchImpl: f as never, intervalMs: 1000, timeoutMs: 30_000, ...clock() });
+    const result = await waitForResult("s", {
+      fetchImpl: f as never,
+      intervalMs: 1000,
+      timeoutMs: 30_000,
+      ...clock(),
+    });
     expect(result.status).toBe("incomplete");
   });
 
@@ -209,7 +240,11 @@ describe("fake voice session", () => {
     const statuses: VoiceStatus[] = [];
     const captions: string[] = [];
     createFakeVoiceSession(
-      { onStatus: (s) => statuses.push(s), onSpeaker: () => {}, onCaption: (c) => captions.push(c) },
+      {
+        onStatus: (s) => statuses.push(s),
+        onSpeaker: () => {},
+        onCaption: (c) => captions.push(c),
+      },
       { script: ["Q1", "Q2"], dropOnce: true, turnMs: 10 },
     );
     vi.runAllTimers();
@@ -221,7 +256,11 @@ describe("fake voice session", () => {
   it("stop() cancels pending events", () => {
     vi.useFakeTimers();
     const statuses: VoiceStatus[] = [];
-    const s = createFakeVoiceSession({ onStatus: (x) => statuses.push(x), onSpeaker: () => {}, onCaption: () => {} });
+    const s = createFakeVoiceSession({
+      onStatus: (x) => statuses.push(x),
+      onSpeaker: () => {},
+      onCaption: () => {},
+    });
     s.stop();
     vi.runAllTimers();
     expect(statuses).toEqual(["connecting"]);

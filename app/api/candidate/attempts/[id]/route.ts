@@ -6,10 +6,7 @@ import { runAttemptRoute } from "@/lib/candidate/route-deps";
  * submitted or incomplete. Read-only, so there is no origin check; it never
  * returns a transcript, feedback or score.
  */
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return runAttemptRoute((deps) => handleGetAttempt(id, deps));
 }

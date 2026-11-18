@@ -50,9 +50,7 @@ describe("Gemini Live client adapter", () => {
         ],
       }),
     );
-    expect(result.ok && result.value.transcript).toEqual([
-      { role: "candidate", text: "hi there" },
-    ]);
+    expect(result.ok && result.value.transcript).toEqual([{ role: "candidate", text: "hi there" }]);
   });
 
   it("accepts an empty entries list (session ended before anyone spoke)", () => {
@@ -65,7 +63,10 @@ describe("Gemini Live client adapter", () => {
     ["unknown entry key", payload({ entries: [{ speaker: "candidate", text: "a", id: 1 }] })],
     ["bad speaker", payload({ entries: [{ speaker: "user", text: "a" }] })],
     ["non-string text", payload({ entries: [{ speaker: "candidate", text: 5 }] })],
-    ["non-boolean interrupted", payload({ entries: [{ speaker: "candidate", text: "a", interrupted: "y" }] })],
+    [
+      "non-boolean interrupted",
+      payload({ entries: [{ speaker: "candidate", text: "a", interrupted: "y" }] }),
+    ],
     ["entries not an array", payload({ entries: "nope" })],
     ["negative duration", payload({ durationSeconds: -1 })],
     ["fractional duration", payload({ durationSeconds: 1.5 })],
@@ -97,12 +98,18 @@ describe("validateTranscriptBody", () => {
 
   it("rejects a missing, unknown or inherited source", () => {
     expect(validateTranscriptBody({ payload: payload() }, defaultAdapters).ok).toBe(false);
-    expect(validateTranscriptBody({ source: "vapi", payload: payload() }, defaultAdapters).ok).toBe(false);
-    expect(validateTranscriptBody({ source: "constructor", payload: payload() }, defaultAdapters).ok).toBe(false);
+    expect(validateTranscriptBody({ source: "vapi", payload: payload() }, defaultAdapters).ok).toBe(
+      false,
+    );
+    expect(
+      validateTranscriptBody({ source: "constructor", payload: payload() }, defaultAdapters).ok,
+    ).toBe(false);
   });
 
   it("requires a payload", () => {
-    expect(validateTranscriptBody({ source: "client_gemini_live" }, defaultAdapters).ok).toBe(false);
+    expect(validateTranscriptBody({ source: "client_gemini_live" }, defaultAdapters).ok).toBe(
+      false,
+    );
   });
 
   it("rejects more than the maximum number of entries", () => {

@@ -93,14 +93,14 @@ Security properties:
 
 ## 1. Prerequisites
 
-| Requirement | Notes |
-|---|---|
-| Supabase project | The one this starter already uses (`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). |
-| Supabase **secret** key | Project Settings → API Keys → `sb_secret_…` (or the legacy `service_role` key). Server-only. |
-| Vapi account | <https://dashboard.vapi.ai>. You need the **public** key. The private key is not used by this app. |
-| LLM API key | Any OpenAI-compatible Chat Completions provider. Recommended example: a Google AI Studio Gemini key (see §2a). OpenAI etc. also work. |
-| Public HTTPS URL for this app | Vapi's servers call your endpoint, so `http://localhost:3000` will not work. See §4. |
-| Browser with microphone | Allow microphone access when prompted. |
+| Requirement                   | Notes                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase project              | The one this starter already uses (`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`).                              |
+| Supabase **secret** key       | Project Settings → API Keys → `sb_secret_…` (or the legacy `service_role` key). Server-only.                                          |
+| Vapi account                  | <https://dashboard.vapi.ai>. You need the **public** key. The private key is not used by this app.                                    |
+| LLM API key                   | Any OpenAI-compatible Chat Completions provider. Recommended example: a Google AI Studio Gemini key (see §2a). OpenAI etc. also work. |
+| Public HTTPS URL for this app | Vapi's servers call your endpoint, so `http://localhost:3000` will not work. See §4.                                                  |
+| Browser with microphone       | Allow microphone access when prompted.                                                                                                |
 
 ## 2. Environment variables
 
@@ -112,18 +112,18 @@ keys with placeholders. Only if you have no `.env.local` yet should you create
 one from `.env.example`. Set the same variables in your hosting provider for
 deployed environments.
 
-| Variable | Exposure | Value |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | public | Already required by the starter. |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public | Already required by the starter. |
-| `NEXT_PUBLIC_VAPI_PUBLIC_KEY` | public | Vapi Dashboard → API Keys → **Public** key. |
-| `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID` | public | ID of the assistant you create in §6. |
-| `VAPI_TOOL_SIGNING_SECRET` | **server-only** | ≥ 32 random chars. Generate it with `openssl rand -base64 48`. |
-| `SUPABASE_SECRET_KEY` | **server-only** | Supabase secret / service_role key. Never prefix it with `NEXT_PUBLIC_`. |
-| `LLM_API_KEY` | **server-only** | Your LLM provider API key. |
-| `LLM_MODEL` | server-only | A chat model ID your provider offers. This is required, and the app has no default. |
-| `LLM_BASE_URL` | server-only | Runtime default if unset: `https://api.openai.com/v1`. Gemini (example in `.env.example`, §2a): `https://generativelanguage.googleapis.com/v1beta/openai`. Must be HTTPS. |
-| `LLM_TIMEOUT_MS` | server-only | Optional. Default `25000`. Keep it below the tool's `timeoutSeconds`. |
+| Variable                                  | Exposure        | Value                                                                                                                                                                     |
+| ----------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                | public          | Already required by the starter.                                                                                                                                          |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`    | public          | Already required by the starter.                                                                                                                                          |
+| `NEXT_PUBLIC_VAPI_PUBLIC_KEY`             | public          | Vapi Dashboard → API Keys → **Public** key.                                                                                                                               |
+| `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID` | public          | ID of the assistant you create in §6.                                                                                                                                     |
+| `VAPI_TOOL_SIGNING_SECRET`                | **server-only** | ≥ 32 random chars. Generate it with `openssl rand -base64 48`.                                                                                                            |
+| `SUPABASE_SECRET_KEY`                     | **server-only** | Supabase secret / service_role key. Never prefix it with `NEXT_PUBLIC_`.                                                                                                  |
+| `LLM_API_KEY`                             | **server-only** | Your LLM provider API key.                                                                                                                                                |
+| `LLM_MODEL`                               | server-only     | A chat model ID your provider offers. This is required, and the app has no default.                                                                                       |
+| `LLM_BASE_URL`                            | server-only     | Runtime default if unset: `https://api.openai.com/v1`. Gemini (example in `.env.example`, §2a): `https://generativelanguage.googleapis.com/v1beta/openai`. Must be HTTPS. |
+| `LLM_TIMEOUT_MS`                          | server-only     | Optional. Default `25000`. Keep it below the tool's `timeoutSeconds`.                                                                                                     |
 
 Restart `npm run dev` after editing env files. For `next build` /
 `next start`, rebuild, because `NEXT_PUBLIC_*` values are inlined at build
@@ -144,11 +144,11 @@ happens for requests with a valid token. The endpoint never fakes questions.
 Using Gemini means configuring **two independent things**. They do not share
 settings: setting one does **not** configure the other.
 
-| | (1) Vapi voice assistant | (2) Backend question generation |
-|---|---|---|
-| What it does | Runs the live conversation (collects role, level, etc. and calls the tool) | Writes the interview questions inside `/api/vapi/generate-interview` |
-| Where it is configured | Vapi Dashboard (assistant + Integrations) | Server env vars `LLM_*` in this app / your host |
-| Where the Google key lives | Vapi Dashboard → Integrations | `LLM_API_KEY` (server-only) |
+|                            | (1) Vapi voice assistant                                                   | (2) Backend question generation                                      |
+| -------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| What it does               | Runs the live conversation (collects role, level, etc. and calls the tool) | Writes the interview questions inside `/api/vapi/generate-interview` |
+| Where it is configured     | Vapi Dashboard (assistant + Integrations)                                  | Server env vars `LLM_*` in this app / your host                      |
+| Where the Google key lives | Vapi Dashboard → Integrations                                              | `LLM_API_KEY` (server-only)                                          |
 
 ### Getting a Google API key
 
@@ -213,17 +213,17 @@ you use: <https://vapi.ai/pricing>.
 The schema is built by every file in `supabase/migrations/`, applied in
 filename order:
 
-| File | What it does |
-| --- | --- |
-| `20261109000000_create_interviews.sql` | Creates `public.interviews`, enables RLS and adds a select-own policy. |
-| `20261109000001_diagram_schema.sql` | Adds `profiles`, `interview_sessions`, `feedback` and `vapi_events`; reshapes `interviews`. |
-| `20261109000002_ai_backend.sql` | Adds `capability_uses` (the token replay guard), `ai_usage` and `save_generated_interview`. |
-| `20261111000000_candidate_roles.sql` | Adds `public.roles`, readable by anyone for active rows. |
+| File                                           | What it does                                                                                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261109000000_create_interviews.sql`         | Creates `public.interviews`, enables RLS and adds a select-own policy.                                                                         |
+| `20261109000001_diagram_schema.sql`            | Adds `profiles`, `interview_sessions`, `feedback` and `vapi_events`; reshapes `interviews`.                                                    |
+| `20261109000002_ai_backend.sql`                | Adds `capability_uses` (the token replay guard), `ai_usage` and `save_generated_interview`.                                                    |
+| `20261111000000_candidate_roles.sql`           | Adds `public.roles`, readable by anyone for active rows.                                                                                       |
 | `20261111000003_ai_transcript_persistence.sql` | Adds `transcript_source`, `duration_seconds` and `ended_reason` to `interview_sessions`, and the set-once `store_session_transcript` function. |
-| `20261112000004_ai_security_hardening.sql` | Makes `interview_sessions` and `feedback` server-write-only and adds `purge_vapi_events`. |
-| `20261112000005_dograh_transcript_source.sql` | Allows `dograh_webhook` as a transcript source. |
-| `20261112100000_roles_sort_order.sql` | Adds `roles.sort_order`. |
-| `20261113000000_candidate_consents.sql` | Adds `candidate_consents`, one consent record per interview attempt. |
+| `20261112000004_ai_security_hardening.sql`     | Makes `interview_sessions` and `feedback` server-write-only and adds `purge_vapi_events`.                                                      |
+| `20261112000005_dograh_transcript_source.sql`  | Allows `dograh_webhook` as a transcript source.                                                                                                |
+| `20261112100000_roles_sort_order.sql`          | Adds `roles.sort_order`.                                                                                                                       |
+| `20261113000000_candidate_consents.sql`        | Adds `candidate_consents`, one consent record per interview attempt.                                                                           |
 
 New migrations are added to this table by the PR that creates them; the files
 in `supabase/migrations/` are the source of truth.
@@ -257,6 +257,7 @@ https://<your-public-host>/api/vapi/generate-interview
 ```
 
 Use one of these:
+
 - **Deploy** (e.g. Vercel) and use the production URL, or
 - **Tunnel** your local dev server (`npm run dev`) with a tool like
   `ngrok http 3000` or `cloudflared tunnel --url http://localhost:3000`, and
@@ -295,23 +296,23 @@ in §5.4 as the source of truth.
 
 ### 5.1 General
 
-| Dashboard field | JSON key | Value |
-|---|---|---|
-| Tool name | `name` | `generate_interview` |
-| Description | `description` | `Generate and save interview questions for the signed-in user once role, level, type, techstack and amount are confirmed. Call exactly once per call.` |
-| URL | `url` | `https://<your-public-host>/api/vapi/generate-interview` |
-| Method | `method` | `POST` |
-| Timeout (seconds) | `timeoutSeconds` | `45` (must be longer than `LLM_TIMEOUT_MS`; the default is 20) |
+| Dashboard field   | JSON key         | Value                                                                                                                                                  |
+| ----------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tool name         | `name`           | `generate_interview`                                                                                                                                   |
+| Description       | `description`    | `Generate and save interview questions for the signed-in user once role, level, type, techstack and amount are confirmed. Call exactly once per call.` |
+| URL               | `url`            | `https://<your-public-host>/api/vapi/generate-interview`                                                                                               |
+| Method            | `method`         | `POST`                                                                                                                                                 |
+| Timeout (seconds) | `timeoutSeconds` | `45` (must be longer than `LLM_TIMEOUT_MS`; the default is 20)                                                                                         |
 
 ### 5.2 Request body schema (filled in by the assistant's model)
 
-| Property | Type | Required | Description / constraints |
-|---|---|---|---|
-| `role` | string | yes | Job role, e.g. "Frontend Developer". ≤ 80 chars. Letters, numbers, spaces, `+ # . - / & ( ) , '`. |
-| `level` | string | yes | Seniority, e.g. "Junior", "Mid", "Senior". ≤ 40 chars. |
-| `type` | string (enum) | yes | `technical`, `behavioral`, or `mixed`. |
-| `techstack` | string | yes | Comma-separated technologies, e.g. "React, TypeScript, Next.js". 1–12 items. |
-| `amount` | integer | yes | Number of questions, 1–10. |
+| Property    | Type          | Required | Description / constraints                                                                         |
+| ----------- | ------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| `role`      | string        | yes      | Job role, e.g. "Frontend Developer". ≤ 80 chars. Letters, numbers, spaces, `+ # . - / & ( ) , '`. |
+| `level`     | string        | yes      | Seniority, e.g. "Junior", "Mid", "Senior". ≤ 40 chars.                                            |
+| `type`      | string (enum) | yes      | `technical`, `behavioral`, or `mixed`.                                                            |
+| `techstack` | string        | yes      | Comma-separated technologies, e.g. "React, TypeScript, Next.js". 1–12 items.                      |
+| `amount`    | integer       | yes      | Number of questions, 1–10.                                                                        |
 
 Do **not** add `userid`, `userId` or `user_id`. The endpoint rejects any
 field not listed here, except `capability`.
@@ -322,15 +323,15 @@ Add this under the tool's **static parameters** (`parameters`). The SDK type
 describes it as "Static key-value pairs merged into the request body. Values
 support Liquid templates."
 
-| Key | Value |
-|---|---|
+| Key          | Value                 |
+| ------------ | --------------------- |
 | `capability` | `{{generationToken}}` |
 
 `generationToken` is a dynamic variable that the browser sets at call start
 with `vapi.start(assistantId, { variableValues: { generationToken } })`. See
 <https://docs.vapi.ai/assistants/dynamic-variables>.
 
-*Alternative:* if you prefer, send it as a header instead. Add a header
+_Alternative:_ if you prefer, send it as a header instead. Add a header
 `x-interview-capability` with value `{{generationToken}}`. The endpoint
 accepts either, and rejects the request if both are present and differ.
 
@@ -348,16 +349,21 @@ accepts either, and rejects the request if both are present and differ.
     "type": "object",
     "required": ["role", "level", "type", "techstack", "amount"],
     "properties": {
-      "role":      { "type": "string",  "description": "Job role, e.g. Frontend Developer" },
-      "level":     { "type": "string",  "description": "Seniority, e.g. Junior, Mid, Senior" },
-      "type":      { "type": "string",  "enum": ["technical", "behavioral", "mixed"], "description": "Interview focus" },
-      "techstack": { "type": "string",  "description": "Comma-separated technologies, e.g. React, TypeScript" },
-      "amount":    { "type": "integer", "description": "Number of questions, 1 to 10" }
+      "role": { "type": "string", "description": "Job role, e.g. Frontend Developer" },
+      "level": { "type": "string", "description": "Seniority, e.g. Junior, Mid, Senior" },
+      "type": {
+        "type": "string",
+        "enum": ["technical", "behavioral", "mixed"],
+        "description": "Interview focus"
+      },
+      "techstack": {
+        "type": "string",
+        "description": "Comma-separated technologies, e.g. React, TypeScript"
+      },
+      "amount": { "type": "integer", "description": "Number of questions, 1 to 10" }
     }
   },
-  "parameters": [
-    { "key": "capability", "value": "{{generationToken}}" }
-  ],
+  "parameters": [{ "key": "capability", "value": "{{generationToken}}" }],
   "backoffPlan": {
     "type": "fixed",
     "maxRetries": 1,
@@ -375,42 +381,42 @@ excluded from retries. Set `maxRetries` to `0` if you want no retries at all.
 
 ### 5.5 Optional tool messages
 
-| Type | Content |
-|---|---|
-| Request start | `One moment while I generate your interview questions.` |
-| Request delayed (after ~5 s) | `Still working on it, thanks for waiting.` |
-| Request failed | `Sorry, I couldn't generate the questions.` |
+| Type                         | Content                                                 |
+| ---------------------------- | ------------------------------------------------------- |
+| Request start                | `One moment while I generate your interview questions.` |
+| Request delayed (after ~5 s) | `Still working on it, thanks for waiting.`              |
+| Request failed               | `Sorry, I couldn't generate the questions.`             |
 
 ### 5.6 Endpoint responses (what the assistant receives)
 
-| Status | `error` | Meaning |
-|---|---|---|
-| 201 | — | `{ "success": true, "interviewId", "questionCount", "message" }` |
-| 400 | `invalid_request` / `invalid_json` | Bad fields. `details[]` lists the problems. |
-| 401 | `unauthorized` | Token missing, invalid or expired. |
-| 409 | `already_generated` | This call's token was already used successfully. |
-| 413 / 415 | `payload_too_large` / `unsupported_media_type` | Body over 8 KB, or not JSON. |
-| 502 | `llm_auth_failed` / `llm_failed` | The LLM provider rejected the key, returned an error, or returned unusable output. |
-| 503 | `server_misconfigured` / `llm_rate_limited` | Missing env vars (`missing[]`), or the provider is rate-limiting. |
-| 504 | `llm_timeout` | The LLM took longer than `LLM_TIMEOUT_MS`. |
-| 500 | `storage_failed` | Supabase insert or lookup failed. The table may be missing, or the secret key may be wrong. |
+| Status    | `error`                                        | Meaning                                                                                     |
+| --------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 201       | —                                              | `{ "success": true, "interviewId", "questionCount", "message" }`                            |
+| 400       | `invalid_request` / `invalid_json`             | Bad fields. `details[]` lists the problems.                                                 |
+| 401       | `unauthorized`                                 | Token missing, invalid or expired.                                                          |
+| 409       | `already_generated`                            | This call's token was already used successfully.                                            |
+| 413 / 415 | `payload_too_large` / `unsupported_media_type` | Body over 8 KB, or not JSON.                                                                |
+| 502       | `llm_auth_failed` / `llm_failed`               | The LLM provider rejected the key, returned an error, or returned unusable output.          |
+| 503       | `server_misconfigured` / `llm_rate_limited`    | Missing env vars (`missing[]`), or the provider is rate-limiting.                           |
+| 504       | `llm_timeout`                                  | The LLM took longer than `LLM_TIMEOUT_MS`.                                                  |
+| 500       | `storage_failed`                               | Supabase insert or lookup failed. The table may be missing, or the secret key may be wrong. |
 
 ## 6. Create the Generator Assistant
 
 Vapi Dashboard → **Assistants** → **Create Assistant** → start blank.
 
-| Dashboard field | JSON key | Value |
-|---|---|---|
-| Name | `name` | `Interview Generator` |
-| First message | `firstMessage` | `Hi! I'll help you set up a practice interview. What job role are you preparing for?` |
-| First message mode | `firstMessageMode` | `assistant-speaks-first` |
-| Model → Provider / Model | `model.provider`, `model.model` | Any tool-calling chat model offered in the dashboard. For Gemini: `Google` / `gemini-2.5-flash` (§2a) |
-| Model → System prompt | `model.messages[0]` (role `system`) | The prompt in §6.1 |
-| Model → Tools | `model.toolIds` | The `generate_interview` tool from §5, plus the built-in **End Call** tool (`type: "endCall"`) |
-| Voice / Transcriber | `voice`, `transcriber` | Your choice |
-| End call message | `endCallMessage` | `Your interview is saved. Good luck!` |
-| End call phrases | `endCallPhrases` | `goodbye`, `good luck with your interview` |
-| Max duration (seconds) | `maxDurationSeconds` | `600` (shorter than the 15-minute token lifetime) |
+| Dashboard field          | JSON key                            | Value                                                                                                 |
+| ------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Name                     | `name`                              | `Interview Generator`                                                                                 |
+| First message            | `firstMessage`                      | `Hi! I'll help you set up a practice interview. What job role are you preparing for?`                 |
+| First message mode       | `firstMessageMode`                  | `assistant-speaks-first`                                                                              |
+| Model → Provider / Model | `model.provider`, `model.model`     | Any tool-calling chat model offered in the dashboard. For Gemini: `Google` / `gemini-2.5-flash` (§2a) |
+| Model → System prompt    | `model.messages[0]` (role `system`) | The prompt in §6.1                                                                                    |
+| Model → Tools            | `model.toolIds`                     | The `generate_interview` tool from §5, plus the built-in **End Call** tool (`type: "endCall"`)        |
+| Voice / Transcriber      | `voice`, `transcriber`              | Your choice                                                                                           |
+| End call message         | `endCallMessage`                    | `Your interview is saved. Good luck!`                                                                 |
+| End call phrases         | `endCallPhrases`                    | `goodbye`, `good luck with your interview`                                                            |
+| Max duration (seconds)   | `maxDurationSeconds`                | `600` (shorter than the 15-minute token lifetime)                                                     |
 
 Save the assistant and copy its **ID** into
 `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID`.
@@ -472,16 +478,16 @@ Automated tests (no network, no external writes): `npm run test`.
 
 ## 8. Troubleshooting
 
-| Symptom | Likely cause |
-|---|---|
-| Start button missing, "voice call is disabled" | `NEXT_PUBLIC_VAPI_PUBLIC_KEY` or `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID` is not set. Restart the dev server or rebuild after setting them (`NEXT_PUBLIC_*` values are inlined at build time). |
-| "Setup incomplete: Supabase is not configured", or the capability endpoint returns 503 with `missing` | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are not set. Merge them into your env file, then restart or rebuild. |
-| "VAPI_TOOL_SIGNING_SECRET is not set…" on start | The secret is missing or shorter than 32 chars. |
-| Vapi error mentioning unauthorized/401 | You used the private key, or the public key is wrong. |
-| Tool returns 401 "Missing generation capability" | The static `capability` parameter is missing, or it doesn't use exactly `{{generationToken}}`. |
-| Tool request gets a 3xx / HTML login page | The deployed build predates the proxy exemption, or the URL path is wrong. |
-| Tool times out in Vapi | Raise `timeoutSeconds` (≤ 300), or lower `LLM_TIMEOUT_MS` / use a faster model. |
-| 500 `storage_failed` | Migration not run, wrong `SUPABASE_SECRET_KEY`, or it belongs to another project. |
-| "interviews table is missing" on the page | Run the SQL from §3. |
-| 502 `llm_auth_failed` | `LLM_API_KEY` is invalid for `LLM_BASE_URL`. |
-| 502 `llm_failed` | The provider returned an error, or the model ID is not valid. Check the server logs for the upstream status. |
+| Symptom                                                                                               | Likely cause                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Start button missing, "voice call is disabled"                                                        | `NEXT_PUBLIC_VAPI_PUBLIC_KEY` or `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID` is not set. Restart the dev server or rebuild after setting them (`NEXT_PUBLIC_*` values are inlined at build time). |
+| "Setup incomplete: Supabase is not configured", or the capability endpoint returns 503 with `missing` | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are not set. Merge them into your env file, then restart or rebuild.                                                        |
+| "VAPI_TOOL_SIGNING_SECRET is not set…" on start                                                       | The secret is missing or shorter than 32 chars.                                                                                                                                                 |
+| Vapi error mentioning unauthorized/401                                                                | You used the private key, or the public key is wrong.                                                                                                                                           |
+| Tool returns 401 "Missing generation capability"                                                      | The static `capability` parameter is missing, or it doesn't use exactly `{{generationToken}}`.                                                                                                  |
+| Tool request gets a 3xx / HTML login page                                                             | The deployed build predates the proxy exemption, or the URL path is wrong.                                                                                                                      |
+| Tool times out in Vapi                                                                                | Raise `timeoutSeconds` (≤ 300), or lower `LLM_TIMEOUT_MS` / use a faster model.                                                                                                                 |
+| 500 `storage_failed`                                                                                  | Migration not run, wrong `SUPABASE_SECRET_KEY`, or it belongs to another project.                                                                                                               |
+| "interviews table is missing" on the page                                                             | Run the SQL from §3.                                                                                                                                                                            |
+| 502 `llm_auth_failed`                                                                                 | `LLM_API_KEY` is invalid for `LLM_BASE_URL`.                                                                                                                                                    |
+| 502 `llm_failed`                                                                                      | The provider returned an error, or the model ID is not valid. Check the server logs for the upstream status.                                                                                    |

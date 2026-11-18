@@ -27,43 +27,48 @@ export function useMic() {
     setLevel(0);
   }, []);
 
-  const start = useCallback(async (deviceId?: string) => {
-    stop();
-    if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === "undefined") {
-      setState("unsupported");
-      return;
-    }
-    setState("checking");
-    try {
-      stream.current = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId } } : true });
-    } catch (err) {
-      const name = err instanceof DOMException ? err.name : "";
-      setState(name === "NotAllowedError" || name === "SecurityError" ? "blocked" : "silent");
-      return;
-    }
-    ctx.current = new AudioContext();
-    const analyser = ctx.current.createAnalyser();
-    analyser.fftSize = 512;
-    ctx.current.createMediaStreamSource(stream.current).connect(analyser);
-    const data = new Float32Array(analyser.fftSize);
-    let heard = false;
-    silentTimer.current = setTimeout(() => {
-      if (!heard) setState("silent");
-    }, SILENT_AFTER_MS);
-    const tick = () => {
-      analyser.getFloatTimeDomainData(data);
-      let sum = 0;
-      for (const v of data) sum += v * v;
-      const rms = Math.min(1, Math.sqrt(sum / data.length) * 4);
-      setLevel(rms);
-      if (!heard && rms > HEARD_LEVEL) {
-        heard = true;
-        setState("ok");
+  const start = useCallback(
+    async (deviceId?: string) => {
+      stop();
+      if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === "undefined") {
+        setState("unsupported");
+        return;
       }
-      raf.current = requestAnimationFrame(tick);
-    };
-    tick();
-  }, [stop]);
+      setState("checking");
+      try {
+        stream.current = await navigator.mediaDevices.getUserMedia({
+          audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+        });
+      } catch (err) {
+        const name = err instanceof DOMException ? err.name : "";
+        setState(name === "NotAllowedError" || name === "SecurityError" ? "blocked" : "silent");
+        return;
+      }
+      ctx.current = new AudioContext();
+      const analyser = ctx.current.createAnalyser();
+      analyser.fftSize = 512;
+      ctx.current.createMediaStreamSource(stream.current).connect(analyser);
+      const data = new Float32Array(analyser.fftSize);
+      let heard = false;
+      silentTimer.current = setTimeout(() => {
+        if (!heard) setState("silent");
+      }, SILENT_AFTER_MS);
+      const tick = () => {
+        analyser.getFloatTimeDomainData(data);
+        let sum = 0;
+        for (const v of data) sum += v * v;
+        const rms = Math.min(1, Math.sqrt(sum / data.length) * 4);
+        setLevel(rms);
+        if (!heard && rms > HEARD_LEVEL) {
+          heard = true;
+          setState("ok");
+        }
+        raf.current = requestAnimationFrame(tick);
+      };
+      tick();
+    },
+    [stop],
+  );
 
   const setMuted = useCallback((m: boolean) => {
     stream.current?.getAudioTracks().forEach((t) => (t.enabled = !m));
@@ -79,7 +84,8 @@ export function useMic() {
 export function playTestSound(sinkId?: string) {
   const ac = new AudioContext();
   // Chrome can route to a chosen speaker; other browsers use the default.
-  if (sinkId) void (ac as AudioContext & { setSinkId?: (id: string) => Promise<void> }).setSinkId?.(sinkId);
+  if (sinkId)
+    void (ac as AudioContext & { setSinkId?: (id: string) => Promise<void> }).setSinkId?.(sinkId);
   const osc = ac.createOscillator();
   const gain = ac.createGain();
   osc.frequency.value = 660;
@@ -91,7 +97,10 @@ export function playTestSound(sinkId?: string) {
 }
 
 /** Lists microphones and speakers (labels appear once mic permission is granted). */
-export async function listAudioDevices(): Promise<{ mics: MediaDeviceInfo[]; speakers: MediaDeviceInfo[] }> {
+export async function listAudioDevices(): Promise<{
+  mics: MediaDeviceInfo[];
+  speakers: MediaDeviceInfo[];
+}> {
   if (!navigator.mediaDevices?.enumerateDevices) return { mics: [], speakers: [] };
   const all = await navigator.mediaDevices.enumerateDevices();
   return {

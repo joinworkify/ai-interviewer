@@ -38,9 +38,7 @@ describe("extractJsonText / parseJsonContent", () => {
   });
 
   it.each([undefined, null, 42, "", "   "])("rejects non-text %j", (c) => {
-    expect(() => extractJsonText(c)).toThrowError(
-      expect.objectContaining({ kind: "bad_output" }),
-    );
+    expect(() => extractJsonText(c)).toThrowError(expect.objectContaining({ kind: "bad_output" }));
   });
 
   it("rejects invalid JSON as bad_output", () => {

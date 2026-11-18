@@ -26,8 +26,6 @@ export function isAdminClaims(claims: unknown): boolean {
   if (typeof claims !== "object" || claims === null) return false;
   const meta = (claims as { app_metadata?: unknown }).app_metadata;
   return (
-    typeof meta === "object" &&
-    meta !== null &&
-    (meta as { role?: unknown }).role === ADMIN_ROLE
+    typeof meta === "object" && meta !== null && (meta as { role?: unknown }).role === ADMIN_ROLE
   );
 }

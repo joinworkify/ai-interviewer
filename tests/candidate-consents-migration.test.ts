@@ -17,7 +17,9 @@ const sql = readFileSync(FILE, "utf8")
 describe("candidate_consents migration", () => {
   it("creates the table only if missing, with one row per session that follows its owner and session", () => {
     expect(sql).toContain("create table if not exists public.candidate_consents");
-    expect(sql).toContain("user_id uuid not null references public.profiles (id) on delete cascade");
+    expect(sql).toContain(
+      "user_id uuid not null references public.profiles (id) on delete cascade",
+    );
     expect(sql).toContain(
       "session_id uuid not null unique references public.interview_sessions (id) on delete cascade",
     );
@@ -29,7 +31,9 @@ describe("candidate_consents migration", () => {
     expect(sql).toContain("grant select on table public.candidate_consents to authenticated");
     expect(sql).toContain("grant all on table public.candidate_consents to service_role");
     expect(sql).toContain("using (user_id = (select auth.uid()))");
-    expect(sql).not.toMatch(/grant [a-z, ]*(insert|update|delete)[a-z, ]* on table public\.candidate_consents to (authenticated|anon)/);
+    expect(sql).not.toMatch(
+      /grant [a-z, ]*(insert|update|delete)[a-z, ]* on table public\.candidate_consents to (authenticated|anon)/,
+    );
   });
 
   it("can run twice", () => {

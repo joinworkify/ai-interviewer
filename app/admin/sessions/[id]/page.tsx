@@ -9,9 +9,10 @@ import { getAttempt } from "@/lib/admin/data";
 import { requireAdmin } from "@/lib/admin/server";
 import { isUuid } from "@/lib/sessions/validation";
 
-
 function formatDate(iso: string | null) {
-  return iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "—";
+  return iso
+    ? new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
+    : "—";
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -36,7 +37,12 @@ function ExternalLink({ href }: { href: string | null }) {
   // Only http(s) links are stored (a DB constraint enforces it), but check anyway.
   if (!href || !/^https?:\/\//i.test(href)) return <>—</>;
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary hover:underline"
+    >
       {href}
     </a>
   );
@@ -57,7 +63,9 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{a.candidate.name || a.candidate.email || "Candidate"}</h1>
+          <h1 className="text-2xl font-bold">
+            {a.candidate.name || a.candidate.email || "Candidate"}
+          </h1>
           <p className="text-sm text-muted-foreground">{a.roleTitle ?? "Unknown role"}</p>
         </div>
         <div>
@@ -76,21 +84,29 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
               <Field label="Name">{a.candidate.name || "—"}</Field>
               <Field label="Email">{a.candidate.email || "—"}</Field>
               <Field label="Phone">{a.candidate.phone || "—"}</Field>
-              <Field label="LinkedIn"><ExternalLink href={a.candidate.linkedinUrl} /></Field>
-              <Field label="Portfolio"><ExternalLink href={a.candidate.portfolioUrl} /></Field>
+              <Field label="LinkedIn">
+                <ExternalLink href={a.candidate.linkedinUrl} />
+              </Field>
+              <Field label="Portfolio">
+                <ExternalLink href={a.candidate.portfolioUrl} />
+              </Field>
             </dl>
           </Section>
 
           <Section title="Interview">
             <dl className="grid grid-cols-2 gap-3">
-              <Field label="Interview status"><span className="capitalize">{a.interviewStatus.replace("_", " ")}</span></Field>
+              <Field label="Interview status">
+                <span className="capitalize">{a.interviewStatus.replace("_", " ")}</span>
+              </Field>
               <Field label="Duration">
                 {a.durationSeconds != null ? `${Math.round(a.durationSeconds / 60)} min` : "—"}
               </Field>
               <Field label="Started">{formatDate(a.startedAt)}</Field>
               <Field label="Ended">{formatDate(a.endedAt)}</Field>
               <Field label="Consent">
-                {a.consent ? `Given ${formatDate(a.consent.acceptedAt)} (v${a.consent.version})` : "—"}
+                {a.consent
+                  ? `Given ${formatDate(a.consent.acceptedAt)} (v${a.consent.version})`
+                  : "—"}
               </Field>
               <Field label="End reason">{a.endedReason || "—"}</Field>
             </dl>
@@ -106,7 +122,8 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                 <p>
                   <span className="font-medium">{a.resume.fileName}</span>{" "}
                   <span className="text-sm text-muted-foreground">
-                    ({Math.max(1, Math.round(a.resume.size / 1024))} KB, uploaded {formatDate(a.resume.uploadedAt)})
+                    ({Math.max(1, Math.round(a.resume.size / 1024))} KB, uploaded{" "}
+                    {formatDate(a.resume.uploadedAt)})
                   </span>
                 </p>
                 {a.resume.previewUrl && (
@@ -123,7 +140,9 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                   <p className="text-sm text-muted-foreground">Resume storage is not configured.</p>
                 )}
                 {!a.resume.previewUrl && a.resume.downloadUrl && (
-                  <p className="text-xs text-muted-foreground">Preview is only available for PDF resumes.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Preview is only available for PDF resumes.
+                  </p>
                 )}
               </div>
             )}
@@ -145,7 +164,9 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                       ai ? "border-l-4 border-primary bg-muted/40" : "bg-primary/10"
                     }`}
                   >
-                    <div className={`mb-1 text-xs font-semibold uppercase ${ai ? "text-primary" : "text-foreground"}`}>
+                    <div
+                      className={`mb-1 text-xs font-semibold uppercase ${ai ? "text-primary" : "text-foreground"}`}
+                    >
                       {ai ? "AI interviewer" : t.role === "candidate" ? "Candidate" : "Speaker"}
                     </div>
                     <p className="whitespace-pre-wrap">{t.text}</p>

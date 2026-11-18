@@ -1,16 +1,8 @@
-
 "use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  CalendarDays,
-  ChevronRight,
-  Clock3,
-  FileCheck,
-  FileClock,
-  Search,
-} from "lucide-react";
+import { CalendarDays, ChevronRight, Clock3, FileCheck, FileClock, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,12 +104,10 @@ export default function ApplicationsPage() {
     const normalizedQuery = query.trim().toLowerCase();
 
     return applications.filter((application) => {
-      const matchesFilter =
-        filter === "all" || application.status === filter;
+      const matchesFilter = filter === "all" || application.status === filter;
 
       const matchesSearch =
-        !normalizedQuery ||
-        application.roleTitle.toLowerCase().includes(normalizedQuery);
+        !normalizedQuery || application.roleTitle.toLowerCase().includes(normalizedQuery);
 
       return matchesFilter && matchesSearch;
     });
@@ -126,10 +116,7 @@ export default function ApplicationsPage() {
   const totalPages = Math.ceil(shown.length / PAGE_SIZE);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
 
-  const paginatedApplications = shown.slice(
-    startIndex,
-    startIndex + PAGE_SIZE,
-  );
+  const paginatedApplications = shown.slice(startIndex, startIndex + PAGE_SIZE);
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.min(Math.max(page, 1), totalPages));
@@ -138,9 +125,7 @@ export default function ApplicationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Application Status
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight">Application Status</h1>
         <p className="text-sm text-muted-foreground">
           View your interview application history and current status.
         </p>
@@ -177,9 +162,7 @@ export default function ApplicationsPage() {
               <span className="ml-1 opacity-75">
                 {item.value === "all"
                   ? applications.length
-                  : applications.filter(
-                      (app) => app.status === item.value,
-                    ).length}
+                  : applications.filter((app) => app.status === item.value).length}
               </span>
             )}
           </Button>
@@ -191,9 +174,7 @@ export default function ApplicationsPage() {
           role="alert"
           className="flex flex-col items-center gap-3 rounded-xl border p-8 text-center text-sm"
         >
-          <p className="text-destructive">
-            Applications failed to load.
-          </p>
+          <p className="text-destructive">Applications failed to load.</p>
           <Button variant="outline" onClick={() => void load()}>
             Retry
           </Button>
@@ -201,19 +182,14 @@ export default function ApplicationsPage() {
       ) : applications === null ? (
         <div className="flex flex-col gap-4" aria-busy="true">
           {Array.from({ length: 3 }, (_, index) => (
-            <div
-              key={index}
-              className="h-36 animate-pulse rounded-xl bg-muted"
-            />
+            <div key={index} className="h-36 animate-pulse rounded-xl bg-muted" />
           ))}
         </div>
       ) : shown.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
           <FileClock className="h-8 w-8 text-muted-foreground" />
           <p className="font-semibold">
-            {applications.length === 0
-              ? "No applications yet"
-              : "No matching applications"}
+            {applications.length === 0 ? "No applications yet" : "No matching applications"}
           </p>
           <p className="text-sm text-muted-foreground">
             {applications.length === 0
@@ -222,9 +198,7 @@ export default function ApplicationsPage() {
           </p>
           {applications.length === 0 && (
             <Button asChild variant="outline">
-              <Link href="/candidate/roles">
-                Browse available roles
-              </Link>
+              <Link href="/candidate/roles">Browse available roles</Link>
             </Button>
           )}
         </div>
@@ -242,26 +216,19 @@ export default function ApplicationsPage() {
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col gap-2">
-                      <h2 className="text-lg font-semibold">
-                        {application.roleTitle}
-                      </h2>
+                      <h2 className="text-lg font-semibold">{application.roleTitle}</h2>
 
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <CalendarDays className="h-4 w-4" />
                         Applied{" "}
-                        {new Date(application.appliedAt).toLocaleDateString(
-                          undefined,
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          },
-                        )}
+                        {new Date(application.appliedAt).toLocaleDateString(undefined, {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </div>
 
-                      <p className="text-sm text-muted-foreground">
-                        {status.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{status.description}</p>
                     </div>
 
                     <div className="flex flex-col items-start gap-3 sm:items-end">
@@ -273,9 +240,7 @@ export default function ApplicationsPage() {
                       </span>
 
                       <Link
-                        href={`/candidate/result?attempt=${encodeURIComponent(
-                          application.id,
-                        )}`}
+                        href={`/candidate/result?attempt=${encodeURIComponent(application.id)}`}
                         className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                       >
                         View interview status
@@ -290,8 +255,7 @@ export default function ApplicationsPage() {
 
           <div className="flex flex-col items-center gap-3 pt-2">
             <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1}–
-              {Math.min(startIndex + PAGE_SIZE, shown.length)} of{" "}
+              Showing {startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, shown.length)} of{" "}
               {shown.length} applications
             </p>
 
@@ -301,11 +265,7 @@ export default function ApplicationsPage() {
                   <PaginationPrevious
                     href="#"
                     aria-disabled={currentPage === 1}
-                    className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                     onClick={(event) => {
                       event.preventDefault();
                       goToPage(currentPage - 1);
@@ -313,10 +273,7 @@ export default function ApplicationsPage() {
                   />
                 </PaginationItem>
 
-                {Array.from(
-                  { length: totalPages },
-                  (_, index) => index + 1,
-                ).map((page) => (
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
                   <PaginationItem key={page}>
                     <PaginationLink
                       href="#"
@@ -336,11 +293,7 @@ export default function ApplicationsPage() {
                   <PaginationNext
                     href="#"
                     aria-disabled={currentPage === totalPages}
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
                     onClick={(event) => {
                       event.preventDefault();
                       goToPage(currentPage + 1);

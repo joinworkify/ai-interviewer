@@ -35,7 +35,10 @@ function fail(status: number, error: string, message: string): Response {
   return jsonResponse(status, { success: false, error, message });
 }
 
-export async function handleGetProgress(request: Request, deps: ProgressHandlerDeps): Promise<Response> {
+export async function handleGetProgress(
+  request: Request,
+  deps: ProgressHandlerDeps,
+): Promise<Response> {
   const userId = await deps.getUserId();
   if (!userId) return fail(401, "unauthorized", "Sign in to continue your application.");
 

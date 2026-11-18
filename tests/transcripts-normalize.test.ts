@@ -46,9 +46,7 @@ describe("normalizeTranscript with Gemini Live entries", () => {
   });
 
   it("prefers `role` when an entry has both", () => {
-    const result = normalizeTranscript([
-      { role: "candidate", speaker: "interviewer", text: "x" },
-    ]);
+    const result = normalizeTranscript([{ role: "candidate", speaker: "interviewer", text: "x" }]);
     expect(result).toEqual({ ok: true, turns: [{ role: "candidate", text: "x" }] });
   });
 

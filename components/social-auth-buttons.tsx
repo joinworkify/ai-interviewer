@@ -36,7 +36,9 @@ export function SocialAuthButtons({ next = DEFAULT_NEXT }: { next?: string }) {
       });
       if (oauthError) throw oauthError;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start social sign in. Please try again.");
+      setError(
+        err instanceof Error ? err.message : "Unable to start social sign in. Please try again.",
+      );
       setLoadingProvider(null);
     }
   }

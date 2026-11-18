@@ -24,14 +24,7 @@ const MAX_LEVEL_LENGTH = 40;
 const MAX_TECH_ITEM_LENGTH = 40;
 const MAX_TECHSTACK_RAW_LENGTH = 600;
 
-const ALLOWED_KEYS = new Set([
-  "role",
-  "level",
-  "type",
-  "techstack",
-  "amount",
-  "capability",
-]);
+const ALLOWED_KEYS = new Set(["role", "level", "type", "techstack", "amount", "capability"]);
 
 /**
  * Letters/numbers (any script), spaces and a few punctuation characters that
@@ -50,8 +43,7 @@ export interface GenerateInterviewInput {
 }
 
 export type ValidationResult =
-  | { ok: true; data: GenerateInterviewInput; capability: unknown }
-  | { ok: false; errors: string[] };
+  { ok: true; data: GenerateInterviewInput; capability: unknown } | { ok: false; errors: string[] };
 
 // A Map (not an object literal) so that keys such as "constructor",
 // "__proto__" or "toString" cannot resolve to inherited Object.prototype
@@ -106,18 +98,13 @@ function validateAmount(value: unknown, errors: string[]): number | undefined {
     return undefined;
   }
   if (n < MIN_QUESTIONS || n > MAX_QUESTIONS) {
-    errors.push(
-      `amount must be between ${MIN_QUESTIONS} and ${MAX_QUESTIONS}.`,
-    );
+    errors.push(`amount must be between ${MIN_QUESTIONS} and ${MAX_QUESTIONS}.`);
     return undefined;
   }
   return n;
 }
 
-function validateTechstack(
-  value: unknown,
-  errors: string[],
-): string[] | undefined {
+function validateTechstack(value: unknown, errors: string[]): string[] | undefined {
   let items: unknown[];
   if (typeof value === "string") {
     if (value.length > MAX_TECHSTACK_RAW_LENGTH) {
@@ -142,9 +129,7 @@ function validateTechstack(
     const normalized = normalizeSpaces(item);
     if (normalized.length === 0) continue;
     if (normalized.length > MAX_TECH_ITEM_LENGTH) {
-      errors.push(
-        `techstack items must be at most ${MAX_TECH_ITEM_LENGTH} characters.`,
-      );
+      errors.push(`techstack items must be at most ${MAX_TECH_ITEM_LENGTH} characters.`);
       return undefined;
     }
     if (!TEXT_RE.test(normalized)) {

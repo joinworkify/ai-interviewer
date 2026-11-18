@@ -113,7 +113,9 @@ export const dograhWebhookAdapter: TranscriptAdapter = {
       disposition.length > MAX_DISPOSITION_LENGTH ||
       /[\u0000-\u001f\u007f]/.test(disposition)
     ) {
-      errors.push(`payload.disposition must be text of at most ${MAX_DISPOSITION_LENGTH} characters.`);
+      errors.push(
+        `payload.disposition must be text of at most ${MAX_DISPOSITION_LENGTH} characters.`,
+      );
     }
 
     let turns: CanonicalTurn[] = [];

@@ -19,10 +19,7 @@ export async function POST() {
   // (Next.js inlines these at build time).
   const missingSupabase = [
     ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL],
-    [
-      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-    ],
+    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY],
   ]
     .filter(([, value]) => !value?.trim())
     .map(([name]) => name as string);
@@ -50,10 +47,7 @@ export async function POST() {
   }
 
   try {
-    const { token, payload } = issueCapability(
-      userId,
-      process.env.VAPI_TOOL_SIGNING_SECRET,
-    );
+    const { token, payload } = issueCapability(userId, process.env.VAPI_TOOL_SIGNING_SECRET);
     return Response.json(
       { token, expiresAt: payload.exp, ttlSeconds: CAPABILITY_TTL_SECONDS },
       { headers: noStore },

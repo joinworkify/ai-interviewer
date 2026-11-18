@@ -33,27 +33,27 @@ Before deploying to a hosted Supabase project, run `npm run db:push` so every mi
 
 Copy `.env.example` to `.env.local` (`npm run setup:env` does this).
 
-| Group    | Variables                                                                                                                     |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Supabase | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (server-only)                       |
-| Vapi (prototype only) | `NEXT_PUBLIC_VAPI_PUBLIC_KEY`, `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID`, `VAPI_TOOL_SIGNING_SECRET` (server-only, 32+ chars) |
-| LLM      | `LLM_API_KEY` (server-only), `LLM_MODEL`; optional `LLM_BASE_URL`, `LLM_TIMEOUT_MS`, `AI_DAILY_CALL_LIMIT`. For Gemini use `LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai` and a text model such as `gemini-3.1-flash-lite` (not the live model). The app logs a warning for settings known to fail. |
-| Dograh   | `DOGRAH_API_URL`, `DOGRAH_WEBHOOK_SECRET`, `DOGRAH_SESSION_SIGNING_SECRET` (server-only), `NEXT_PUBLIC_DOGRAH_WIDGET_SRC`; see [DOGRAH_SETUP.md](DOGRAH_SETUP.md) |
+| Group                 | Variables                                                                                                                                                                                                                                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase              | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (server-only)                                                                                                                                                                                                                     |
+| Vapi (prototype only) | `NEXT_PUBLIC_VAPI_PUBLIC_KEY`, `NEXT_PUBLIC_VAPI_GENERATOR_ASSISTANT_ID`, `VAPI_TOOL_SIGNING_SECRET` (server-only, 32+ chars)                                                                                                                                                                                               |
+| LLM                   | `LLM_API_KEY` (server-only), `LLM_MODEL`; optional `LLM_BASE_URL`, `LLM_TIMEOUT_MS`, `AI_DAILY_CALL_LIMIT`. For Gemini use `LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai` and a text model such as `gemini-3.1-flash-lite` (not the live model). The app logs a warning for settings known to fail. |
+| Dograh                | `DOGRAH_API_URL`, `DOGRAH_WEBHOOK_SECRET`, `DOGRAH_SESSION_SIGNING_SECRET` (server-only), `NEXT_PUBLIC_DOGRAH_WIDGET_SRC`; see [DOGRAH_SETUP.md](DOGRAH_SETUP.md)                                                                                                                                                           |
 
 ## Scripts
 
 `make help` lists the same commands as Make targets.
 
-| Command                                             | Purpose                         |
-| --------------------------------------------------- | ------------------------------- |
-| `npm run dev` / `build` / `start`                   | Run or build the app            |
-| `npm run verify`                                    | Lint, typecheck and tests       |
-| `npm run verify:full`                               | Env check, `verify`, then build |
-| `npm run test:watch`                                | Tests in watch mode             |
-| `npm run supabase:start` / `stop` / `status`        | Local Supabase (Docker)         |
-| `npm run db:push` / `db:reset` / `db:new -- <name>` | Apply or create migrations      |
+| Command                                             | Purpose                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `npm run dev` / `build` / `start`                   | Run or build the app                                                           |
+| `npm run verify`                                    | Lint, typecheck and tests                                                      |
+| `npm run verify:full`                               | Env check, `verify`, then build                                                |
+| `npm run test:watch`                                | Tests in watch mode                                                            |
+| `npm run supabase:start` / `stop` / `status`        | Local Supabase (Docker)                                                        |
+| `npm run db:push` / `db:reset` / `db:new -- <name>` | Apply or create migrations                                                     |
 | `npm run db:migrate` / `db:seed`                    | Local DB: apply new migrations, load `supabase/seed.sql` (keeps existing data) |
-| `npm run admin:create`                              | Create or update an admin account (see below)   |
+| `npm run admin:create`                              | Create or update an admin account (see below)                                  |
 
 `npm run db:reset` also loads [`supabase/seed.sql`](supabase/seed.sql): fake data,
 the candidate roles and three dev logins (`dev@example.test`,

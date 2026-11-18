@@ -43,7 +43,13 @@ function resolveImport(from: string, spec: string): string | null {
   if (spec.startsWith("@/")) base = spec.slice(2);
   else if (spec.startsWith(".")) base = rel(resolve(ROOT, dirname(from), spec));
   else return null; // package import
-  for (const candidate of [base, `${base}.ts`, `${base}.tsx`, `${base}/index.ts`, `${base}/index.tsx`]) {
+  for (const candidate of [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}/index.ts`,
+    `${base}/index.tsx`,
+  ]) {
     if (source.has(candidate)) return candidate;
   }
   return null;
@@ -92,8 +98,13 @@ describe("the admin (service-role) client stays server-only", () => {
     expect(reached.size).toBeGreaterThan(entries.length); // the walk follows imports
     for (const [file, entry] of reached) {
       expect(file, `reachable from client module ${entry}`).not.toBe(ADMIN);
-      expect(SECRET_ENV.test(source.get(file)!), `${file} reads the service-role key (reachable from ${entry})`).toBe(false);
-      expect(importsServerOnly(file), `${file} is server-only but reachable from ${entry}`).toBe(false);
+      expect(
+        SECRET_ENV.test(source.get(file)!),
+        `${file} reads the service-role key (reachable from ${entry})`,
+      ).toBe(false);
+      expect(importsServerOnly(file), `${file} is server-only but reachable from ${entry}`).toBe(
+        false,
+      );
     }
   });
 
@@ -113,7 +124,10 @@ describe("the admin (service-role) client stays server-only", () => {
       "app/protected/interview/page.tsx", // server component: shows whether the key is set (never its value)
     ]);
     const readers = [...source.keys()].filter((f) => SECRET_ENV.test(source.get(f)!));
-    for (const f of readers) expect(allowed.has(f), `${f} reads the service-role key: review it, then add it here`).toBe(true);
+    for (const f of readers)
+      expect(allowed.has(f), `${f} reads the service-role key: review it, then add it here`).toBe(
+        true,
+      );
   });
 });
 
@@ -151,12 +165,18 @@ describe("mutating routes check the request origin", () => {
   it.each(routes.filter((f) => MUTATING.test(source.get(f)!)))(
     "%s calls guardSameOrigin before doing any work in each mutating handler",
     (file) => {
-      const mutating = handlersOf(source.get(file)!).filter((h) => /^(POST|PUT|PATCH|DELETE)$/.test(h.method));
+      const mutating = handlersOf(source.get(file)!).filter((h) =>
+        /^(POST|PUT|PATCH|DELETE)$/.test(h.method),
+      );
       expect(mutating.length).toBeGreaterThan(0);
       for (const { method, body } of mutating) {
         const guard = body.indexOf("guardSameOrigin(request");
-        expect(guard, `${file} ${method} must call guardSameOrigin(request, ...)`).toBeGreaterThan(-1);
-        const work = body.search(/(?:run(?:Session|Deletion|Transcript|Attempt|Profile|Review)Route|handleDograhSession)\(/);
+        expect(guard, `${file} ${method} must call guardSameOrigin(request, ...)`).toBeGreaterThan(
+          -1,
+        );
+        const work = body.search(
+          /(?:run(?:Session|Deletion|Transcript|Attempt|Profile|Review)Route|handleDograhSession)\(/,
+        );
         expect(guard, `${file} ${method} must guard before running`).toBeLessThan(work);
       }
     },
@@ -180,13 +200,16 @@ function findRawErrorLogs(text: string): string[] {
       } else current += ch;
     }
     args.push(current.trim());
-    if (args.some((a) => /^(err|error|e|reason|cause|ex)$/.test(a))) found.push(m[1].trim().slice(0, 60));
+    if (args.some((a) => /^(err|error|e|reason|cause|ex)$/.test(a)))
+      found.push(m[1].trim().slice(0, 60));
   }
   return found;
 }
 
 describe("server logging rules", () => {
-  const serverFiles = [...source.keys()].filter((f) => f.startsWith("app/api/") || f.startsWith("lib/"));
+  const serverFiles = [...source.keys()].filter(
+    (f) => f.startsWith("app/api/") || f.startsWith("lib/"),
+  );
 
   it("the raw-error detector flags raw errors and accepts safe forms", () => {
     expect(findRawErrorLogs('console.error("x", err);')).toHaveLength(1);
@@ -198,14 +221,18 @@ describe("server logging rules", () => {
   });
 
   it("uses no console.log, console.info or console.debug", () => {
-    const offenders = [...source.keys()].filter((f) => /console\.(log|info|debug)\(/.test(source.get(f)!));
+    const offenders = [...source.keys()].filter((f) =>
+      /console\.(log|info|debug)\(/.test(source.get(f)!),
+    );
     expect(offenders).toEqual([]);
   });
 
   it("never passes a raw error object to console.error or console.warn", () => {
     // `console.error("x", err)` can print stack, cause and upstream bodies.
     // Use describeError(err) from lib/log/safe-error.ts.
-    const offenders = serverFiles.flatMap((f) => findRawErrorLogs(source.get(f)!).map((a) => `${f}: ${a}`));
+    const offenders = serverFiles.flatMap((f) =>
+      findRawErrorLogs(source.get(f)!).map((a) => `${f}: ${a}`),
+    );
     expect(offenders).toEqual([]);
   });
 });

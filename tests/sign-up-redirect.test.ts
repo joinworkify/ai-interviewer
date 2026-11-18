@@ -5,7 +5,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { SignUpForm } from "@/components/sign-up-form";
 
 const { signUp, push, state } = vi.hoisted(() => ({
-  signUp: vi.fn(), push: vi.fn(), state: { next: "/candidate/resume?role=engineer" },
+  signUp: vi.fn(),
+  push: vi.fn(),
+  state: { next: "/candidate/resume?role=engineer" },
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
@@ -36,25 +38,34 @@ async function submit() {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     }
   });
-  await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  await act(async () =>
+    container
+      .querySelector("form")!
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
+  );
 }
 describe("sign-up continuation", () => {
   it("follows the role continuation immediately when sign-up returns a session", async () => {
     signUp.mockResolvedValue({ data: { session: { access_token: "test-only" } }, error: null });
     await submit();
     expect(push).toHaveBeenCalledWith(state.next);
-    expect(container.querySelector('a[href^="/auth/login"]')?.getAttribute("href")).toBe(`/auth/login?next=${encodeURIComponent(state.next)}`);
+    expect(container.querySelector('a[href^="/auth/login"]')?.getAttribute("href")).toBe(
+      `/auth/login?next=${encodeURIComponent(state.next)}`,
+    );
   });
 
-  it.each(["https://evil.example", "//evil.example", "/\\evil.example", "/..//evil.example"])("rejects unsafe next=%s for both session and email redirects", async (next) => {
-    state.next = next;
-    signUp.mockResolvedValue({ data: { session: { access_token: "test-only" } }, error: null });
-    await submit();
-    expect(push).toHaveBeenCalledWith("/candidate/roles");
-    const callback = new URL(signUp.mock.calls[0][0].options.emailRedirectTo);
-    expect(callback.origin).toBe(window.location.origin);
-    expect(callback.searchParams.get("next")).toBe("/candidate/roles");
-  });
+  it.each(["https://evil.example", "//evil.example", "/\\evil.example", "/..//evil.example"])(
+    "rejects unsafe next=%s for both session and email redirects",
+    async (next) => {
+      state.next = next;
+      signUp.mockResolvedValue({ data: { session: { access_token: "test-only" } }, error: null });
+      await submit();
+      expect(push).toHaveBeenCalledWith("/candidate/roles");
+      const callback = new URL(signUp.mock.calls[0][0].options.emailRedirectTo);
+      expect(callback.origin).toBe(window.location.origin);
+      expect(callback.searchParams.get("next")).toBe("/candidate/roles");
+    },
+  );
 
   it("sends email confirmations through the session-exchanging callback before the protected next page", async () => {
     signUp.mockResolvedValue({ data: { session: null }, error: null });

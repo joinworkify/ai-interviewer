@@ -20,8 +20,7 @@ export interface TranscriptTurn {
 }
 
 export type TranscriptResult =
-  | { ok: true; turns: TranscriptTurn[] }
-  | { ok: false; reason: "empty" | "too_large" };
+  { ok: true; turns: TranscriptTurn[] } | { ok: false; reason: "empty" | "too_large" };
 
 const INTERVIEWER = new Set(["assistant", "bot", "ai", "interviewer"]);
 const CANDIDATE = new Set(["user", "candidate"]);
@@ -30,7 +29,10 @@ const IGNORED = new Set(["system", "tool", "function", "tool_calls", "tool_call_
 const LINE_ROLE_RE = /^(ai|assistant|bot|interviewer|user|candidate)\s*:\s*/i;
 
 function clean(text: string): string {
-  return text.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+  return text
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function roleOf(raw: string): TurnRole | "ignore" {

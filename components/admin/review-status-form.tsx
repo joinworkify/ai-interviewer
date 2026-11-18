@@ -5,7 +5,13 @@ import { useState } from "react";
 
 import { REVIEW_STATUSES, REVIEW_STATUS_LABELS, type ReviewStatus } from "@/lib/admin/access";
 
-export function ReviewStatusForm({ sessionId, status }: { sessionId: string; status: ReviewStatus }) {
+export function ReviewStatusForm({
+  sessionId,
+  status,
+}: {
+  sessionId: string;
+  status: ReviewStatus;
+}) {
   const router = useRouter();
   const [value, setValue] = useState<ReviewStatus>(status);
   const [saving, setSaving] = useState(false);

@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { issueCapability } from "@/lib/interviews/capability";
-import {
-  handleGenerateInterview,
-  MAX_BODY_BYTES,
-} from "@/lib/interviews/generate-handler";
+import { handleGenerateInterview, MAX_BODY_BYTES } from "@/lib/interviews/generate-handler";
 import {
   DuplicateGenerationError,
   StoreError,
@@ -166,9 +163,7 @@ describe("handleGenerateInterview", () => {
   });
 
   it("rejects a client-supplied userid even with a valid capability", async () => {
-    const res = await run(
-      req(fields({ capability: token().token, userid: "attacker" })),
-    );
+    const res = await run(req(fields({ capability: token().token, userid: "attacker" })));
     expect(res.status).toBe(400);
     expect(store.rows).toHaveLength(0);
   });

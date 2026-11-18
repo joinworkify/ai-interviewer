@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  MAX_TRANSCRIPT_CHARS,
-  normalizeTranscript,
-} from "@/lib/sessions/transcript";
+import { MAX_TRANSCRIPT_CHARS, normalizeTranscript } from "@/lib/sessions/transcript";
 
 describe("normalizeTranscript", () => {
   it("reads Vapi-style message arrays and drops system/tool turns", () => {
@@ -31,7 +28,9 @@ describe("normalizeTranscript", () => {
   });
 
   it("reads a role-prefixed string and joins continuation lines", () => {
-    const r = normalizeTranscript("AI: Why this role?\nUser: Because I like\nbuilding things.\nAI: Thanks");
+    const r = normalizeTranscript(
+      "AI: Why this role?\nUser: Because I like\nbuilding things.\nAI: Thanks",
+    );
     expect(r).toEqual({
       ok: true,
       turns: [
@@ -75,9 +74,7 @@ describe("normalizeTranscript", () => {
   });
 
   it("accepts a transcript exactly at the cap", () => {
-    const r = normalizeTranscript([
-      { role: "user", message: "x".repeat(MAX_TRANSCRIPT_CHARS) },
-    ]);
+    const r = normalizeTranscript([{ role: "user", message: "x".repeat(MAX_TRANSCRIPT_CHARS) }]);
     expect(r.ok).toBe(true);
   });
 });
