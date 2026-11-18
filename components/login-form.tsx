@@ -47,6 +47,12 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     }
     // Admins land on their dashboard unless the login was for a specific page.
     const isAdmin = data.user?.app_metadata?.role === "admin";
+    // Cache Components keeps this page mounted (hidden) after navigating away,
+    // so Back or a later logout would restore the spinner and the typed
+    // password. Clear them before leaving.
+    setEmail("");
+    setPassword("");
+    setIsLoading(false);
     router.push(isAdmin && next === DEFAULT_NEXT ? "/admin" : next);
   };
 
