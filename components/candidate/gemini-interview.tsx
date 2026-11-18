@@ -202,6 +202,7 @@ export function GeminiInterview() {
                 })
               )}
             </div>
+            <p className="text-xs text-muted-foreground">Captions are automatic and may not be exact.</p>
           </>
         )}
 

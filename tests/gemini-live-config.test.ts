@@ -129,6 +129,9 @@ describe("buildInterviewerInstruction", () => {
     expect(text).toMatch(/language other than English/i);
     expect(text).toMatch(/answer the same question again in English/i);
     expect(text).toMatch(/after the third reminder/i);
+    // Accented short replies ("yeah" heard as "Oh, ja") must not count.
+    expect(text).toMatch(/Short or unclear replies .* are never another language/);
+    expect(text).toMatch(/could you repeat that/i);
     expect(text).toContain(`${END_INTERVIEW_TOOL} function with reason "non_english"`);
   });
 
