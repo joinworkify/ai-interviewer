@@ -8,16 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MicLevel } from "@/components/candidate/mic-level";
 import { useMic } from "@/components/candidate/use-mic";
-import { getRole } from "@/lib/candidate/api";
-import { interviewDetailsForRole } from "@/lib/candidate/interview-details";
 import { formatCountdown, RECONNECT_SECONDS } from "@/lib/candidate/setup";
-import {
-  createDograhVoiceSession,
-  createFakeVoiceSession,
-  type Speaker,
-  type VoiceSession,
-  type VoiceStatus,
-} from "@/lib/candidate/voice";
+import { createFakeVoiceSession, type Speaker, type VoiceStatus } from "@/lib/candidate/voice";
 
 const STATUS_LABEL: Record<VoiceStatus, string> = {
   connecting: "Connecting...",
@@ -27,15 +19,11 @@ const STATUS_LABEL: Record<VoiceStatus, string> = {
   failed: "Failed",
 };
 
-interface Props {
-  /**
-   * Dograh widget script URL, or null when Dograh is not configured. Without
-   * it the screen runs the scripted fake interviewer (local work only).
-   */
-  widgetSrc: string | null;
-}
-
-export function LiveInterview({ widgetSrc }: Props) {
+/**
+ * Scripted practice interview, used only when Gemini Live is not configured
+ * (local work without GEMINI_API_KEY). The real interview is GeminiInterview.
+ */
+export function LiveInterview() {
   const params = useSearchParams();
   const attemptId = params.get("attempt");
   const roleId = params.get("role");
@@ -53,35 +41,9 @@ export function LiveInterview({ widgetSrc }: Props) {
     void startMic();
     const handlers = { onStatus: setStatus, onSpeaker: setSpeaker, onCaption: setCaption };
 
-    if (!widgetSrc || !roleId) {
-      const fake = createFakeVoiceSession(handlers, { dropOnce });
-      return () => fake.stop();
-    }
-
-    // Real call. The role comes from public.roles (by id), the questions from
-    // the interview the server created for this attempt.
-    let cancelled = false;
-    let session: VoiceSession | null = null;
-    getRole(roleId).then(
-      (role) => {
-        if (cancelled) return;
-        session = createDograhVoiceSession(handlers, {
-          sessionId: attemptId,
-          widgetSrc,
-          ...interviewDetailsForRole(role),
-        });
-      },
-      () => {
-        if (cancelled) return;
-        setCaption("Couldn't load this role. Please go back and try again.");
-        setStatus("failed");
-      },
-    );
-    return () => {
-      cancelled = true;
-      session?.stop();
-    };
-  }, [attemptId, roleId, widgetSrc, dropOnce, startMic]);
+    const fake = createFakeVoiceSession(handlers, { dropOnce });
+    return () => fake.stop();
+  }, [attemptId, dropOnce, startMic]);
 
   // Failed: say so, then send the candidate back to the Apply now screen.
   const applyHref = roleId ? `/candidate/roles/${encodeURIComponent(roleId)}` : "/candidate/roles";

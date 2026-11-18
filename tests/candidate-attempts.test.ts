@@ -18,7 +18,6 @@ import {
 import { createSupabaseAttemptStore } from "@/lib/candidate/attempt-store";
 import { interviewDetailsForRole, levelForRole } from "@/lib/candidate/interview-details";
 import roles from "@/lib/candidate/roles.json";
-import { sanitizeQuestions } from "@/lib/dograh/context";
 import { validateLiveInterviewBody } from "@/lib/gemini-live/interview-details";
 
 const USER = "11111111-2222-4333-8444-555555555555";
@@ -64,8 +63,6 @@ describe("buildRoleQuestions", () => {
     expect(questions.length).toBeGreaterThanOrEqual(2);
     expect(questions.length).toBeLessThanOrEqual(MAX_ATTEMPT_QUESTIONS);
     expect(questions[0]).toContain(role.title);
-    // The Dograh context keeps every question as it is (nothing dropped or cleaned).
-    expect(sanitizeQuestions(questions)).toEqual(questions);
   });
 
   it("is deterministic", () => {
@@ -75,7 +72,7 @@ describe("buildRoleQuestions", () => {
 });
 
 describe("interviewDetailsForRole", () => {
-  it.each(roles.map((r) => [r.id]))("gives details the Dograh session route accepts for %s", (id) => {
+  it.each(roles.map((r) => [r.id]))("gives details the Gemini Live token route accepts for %s", (id) => {
     const role = roles.find((r) => r.id === id)!;
     const result = validateLiveInterviewBody({ ...interviewDetailsForRole(role), sessionId: SESSION });
     expect(result.ok, JSON.stringify(result)).toBe(true);
@@ -108,6 +105,33 @@ describe("handleStartAttempt", () => {
       roleId: "software-engineer",
       version: CONSENT_VERSION,
     });
+  });
+
+  it("uses questions tailored to the candidate when they are available", async () => {
+    const { deps: d, createAttempt } = deps();
+    const tailored = ["Tell me about Acme.", "Q2", "Q3", "Q4", "Q5", "Q6 is cut"];
+    const tailorQuestions = vi.fn(async () => tailored);
+    const res = await handleStartAttempt(post(valid()), { ...d, tailorQuestions });
+    expect(res.status).toBe(201);
+    expect(tailorQuestions).toHaveBeenCalledWith(USER, expect.objectContaining({ id: "software-engineer" }));
+    expect(createAttempt).toHaveBeenCalledWith(USER, tailored.slice(0, MAX_ATTEMPT_QUESTIONS), expect.anything());
+  });
+
+  it("falls back to the role's own questions when tailoring returns nothing or fails", async () => {
+    for (const tailorQuestions of [vi.fn(async () => null), vi.fn(async () => { throw new Error("llm down"); })]) {
+      const { deps: d, createAttempt } = deps();
+      const res = await handleStartAttempt(post(valid()), { ...d, tailorQuestions });
+      expect(res.status).toBe(201);
+      expect(createAttempt).toHaveBeenCalledWith(USER, buildRoleQuestions(findRole("software-engineer")!), expect.anything());
+    }
+  });
+
+  it("never pays for tailored questions when the attempt limit is reached", async () => {
+    const { deps: d } = deps({ attemptCount: 99 });
+    const tailorQuestions = vi.fn(async () => ["Q"]);
+    const res = await handleStartAttempt(post(valid()), { ...d, tailorQuestions });
+    expect(res.status).toBe(429);
+    expect(tailorQuestions).not.toHaveBeenCalled();
   });
 
   it("answers 409 and creates nothing when the consent text the page showed is out of date", async () => {

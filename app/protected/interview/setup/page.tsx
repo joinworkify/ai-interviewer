@@ -54,7 +54,7 @@ export default function SetupPage() {
   
 
   const handleStartInterview = () => {
-    router.push("/protected/interview/gemini");
+    router.push("/candidate/roles");
   };
 
   const isSetupComplete = micStatus === "success" && speakerStatus === "success";

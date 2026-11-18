@@ -122,6 +122,22 @@ describe("buildInterviewerInstruction", () => {
     expect(text).toContain(END_INTERVIEW_TOOL);
     expect(text).toMatch(/5 minutes/);
   });
+
+  it("keeps the interview in English: reminds, then ends after the third reminder as non_english", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toMatch(/English only/i);
+    expect(text).toMatch(/language other than English/i);
+    expect(text).toMatch(/answer the same question again in English/i);
+    expect(text).toMatch(/after the third reminder/i);
+    expect(text).toContain(`${END_INTERVIEW_TOOL} function with reason "non_english"`);
+  });
+
+  it("caps the interview at 8 questions including follow-ups and offers to skip", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toMatch(/at most 8 questions in total, counting follow-up/i);
+    expect(text).toContain("Would you like to skip to the next question?");
+    expect(text).toContain("Okay, we'll skip this one.");
+  });
 });
 
 describe("buildEphemeralTokenConfig", () => {

@@ -67,8 +67,6 @@ describe("Supabase proxy login redirect", () => {
   });
 
   it.each([
-    "/api/dograh/session",
-    "/api/dograh/webhook",
     "/api/candidate/attempts",
     "/api/candidate/attempts/22222222-2222-4222-8222-222222222222",
     "/api/candidate/resume",
@@ -87,6 +85,8 @@ describe("Supabase proxy login redirect", () => {
     "/api/dograh",
     "/api/dograh/",
     "/api/dograh/other",
+    "/api/dograh/session",
+    "/api/dograh/webhook",
     "/api/dograh/session/",
     "/api/dograh/session/extra",
     "/api/dograh/webhook/extra",
@@ -101,7 +101,7 @@ describe("Supabase proxy login redirect", () => {
     "/api/candidate/other",
     "/api/candidate/profile/",
     "/api/candidate/profile/extra",
-    "/protected/interview/dograh",
+    "/protected/interview/setup",
   ])("still redirects signed-out %s to /auth/login", async (path) => {
     const res = await updateSession(post(path));
     expect(res.status).toBe(307);

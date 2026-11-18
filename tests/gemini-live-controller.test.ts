@@ -594,6 +594,28 @@ describe("end_interview tool and time limit", () => {
     expect(session.closed).toBe(1);
   });
 
+  it("records non_english when the interviewer ends after repeated reminders", async () => {
+    const h = harness();
+    const session = await startActive(h);
+    h.players[0].remaining = 0;
+    session.callbacks.onmessage({
+      toolCall: { functionCalls: [{ id: "c", name: "end_interview", args: { reason: "non_english" } }] },
+    });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(h.controller.getSnapshot()).toMatchObject({ phase: "ended", endReason: "non_english" });
+  });
+
+  it("records interviewer_ended for any other end reason, and resets on the next start", async () => {
+    const h = harness();
+    const session = await startActive(h);
+    h.players[0].remaining = 0;
+    session.callbacks.onmessage({
+      toolCall: { functionCalls: [{ id: "c", name: "end_interview", args: { reason: "completed" } }] },
+    });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(h.controller.getSnapshot().endReason).toBe("interviewer_ended");
+  });
+
   it("caps the closing phase even if audio never drains", async () => {
     const h = harness();
     const session = await startActive(h);

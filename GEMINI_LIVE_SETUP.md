@@ -1,13 +1,14 @@
-# Gemini Live voice interviewer (prototype)
+# Gemini Live voice interviewer
 
 A browser voice **interviewer** that talks to Google Gemini Live directly.
-It does **not** use Vapi or Dograh, and it is a practice tool: the candidate
-screening flow (`/candidate/*`) runs on Dograh (`DOGRAH_SETUP.md`). The
-existing Vapi interview generator (`/protected/interview`, `VAPI_SETUP.md`) is
-unchanged and independent.
+It is the candidate interview engine: the live step of the candidate flow
+(`/candidate/live`) runs on it, in English only, asking the attempt's stored
+questions (written from the role and the candidate's resume). The Vapi
+interview generator (`/protected/interview`, `VAPI_SETUP.md`) is unchanged
+and independent.
 
-- Page: **`/protected/interview/gemini`** (signed-in users only; linked from
-  `/protected` and `/protected/interview`)
+- Page: **`/candidate/live?attempt=<id>&role=<id>`** (reached from the candidate
+  flow after consent and the mic check)
 - Token API: **`POST /api/gemini-live/token`**
 
 Official references:
@@ -188,9 +189,8 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
   production.
 - No audio is recorded or stored by this app. Google's data-use terms for the
   Gemini API apply to audio sent to Google.
-- Transcript storage is opt-in per run. Open
-  `/protected/interview/gemini?sessionId=<interview session id>` (a session
-  created with `POST /api/sessions`). The token request then carries the
+- Every candidate interview is linked to its attempt: the live page sends the
+  attempt id (the interview session created on consent). The token request then carries the
   `sessionId`, the server checks the session is yours and still open, and the
   interviewer is told to ask that interview's stored questions (treated as
   data: delimited, length-capped). When the session ends (End button, time

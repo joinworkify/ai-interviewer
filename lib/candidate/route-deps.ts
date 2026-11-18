@@ -6,8 +6,13 @@ import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import type { AttemptHandlerDeps } from "./attempts";
+import { createSupabaseUsageStore } from "@/lib/ai/usage";
+
+import { MAX_ATTEMPT_QUESTIONS, type AttemptHandlerDeps } from "./attempts";
 import { createSupabaseAttemptStore } from "./attempt-store";
+import { createS3Client, downloadResumeFile, readResumeS3Config } from "./resume-s3";
+import { extractResumeText } from "./resume-text";
+import { generateTailoredQuestions } from "./tailored-questions";
 
 /**
  * Real dependencies for POST /api/candidate/attempts. Identity comes from the
@@ -49,12 +54,41 @@ export async function runAttemptRoute(
       const sub = data?.claims?.sub;
       return !error && typeof sub === "string" ? sub : null;
     };
+    const admin = createAdminClient();
     return await run({
       getUserId,
-      store: createSupabaseAttemptStore(createAdminClient()),
+      store: createSupabaseAttemptStore(admin),
       // Reads go through the signed-in user's own client (RLS select-own), and
       // the store pins every query to the verified user id as well.
       sessions: createSupabaseSessionStore(supabase, getUserId),
+      tailorQuestions: (userId, role) =>
+        generateTailoredQuestions(
+          {
+            env: process.env,
+            usage: createSupabaseUsageStore(admin),
+            loadResumeText: async (id) => {
+              const s3 = readResumeS3Config(process.env);
+              if (!s3.ok) return null;
+              // The resume in use: last chosen, then last uploaded.
+              const { data, error } = await admin
+                .from("candidate_resumes")
+                .select("s3_key, content_type")
+                .eq("user_id", id)
+                .eq("status", "uploaded")
+                .order("selected_at", { ascending: false, nullsFirst: false })
+                .order("uploaded_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (error) throw error;
+              if (!data) return null;
+              const bytes = await downloadResumeFile(createS3Client(s3.config), s3.config.bucket, data.s3_key);
+              return extractResumeText(bytes, data.content_type);
+            },
+          },
+          userId,
+          role,
+          MAX_ATTEMPT_QUESTIONS,
+        ),
     });
   } catch (err) {
     console.error("[candidate-attempts] unhandled error", describeError(err));

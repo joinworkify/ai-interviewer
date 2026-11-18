@@ -11,7 +11,7 @@ import roles from "./roles.json";
  * row holding the role's questions, an `interview_sessions` row for the
  * attempt and a `candidate_consents` row recording which consent wording the
  * candidate agreed to, and answers with the session id. Posting is the
- * agreement: without a current `consentVersion` no attempt is created. That id is what the Dograh call, the transcript webhook and
+ * agreement: without a current `consentVersion` no attempt is created. That id is what the Gemini Live call, the saved transcript and
  * the feedback route all hang off.
  *
  * Framework-agnostic (Request -> Response) with injected dependencies, like
@@ -41,6 +41,7 @@ export const ROLE_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 interface RoleData {
   id: string;
   title: string;
+  responsibilities: { title: string; text: string }[];
   requirements: { title: string; text: string }[];
 }
 
@@ -101,6 +102,12 @@ export interface AttemptHandlerDeps {
   store: AttemptStore;
   /** Reads one session (the caller's own). Used by the status route only. */
   sessions: { getSession(sessionId: string): Promise<AttemptSession | null> };
+  /**
+   * Questions written for this candidate from the role and their resume, or
+   * null to use the fixed role questions. Optional so tests and setups
+   * without an LLM keep the fixed questions.
+   */
+  tailorQuestions?: (userId: string, role: RoleData) => Promise<string[] | null>;
 }
 
 /**
@@ -203,7 +210,16 @@ export async function handleStartAttempt(
         "You have used all of your attempts for this role. Contact DataSea if you need another.",
       );
     }
-    const { sessionId } = await deps.store.createAttempt(userId, buildRoleQuestions(role), {
+    // Only after the checks above, so a blocked attempt never pays for an LLM call.
+    let tailored: string[] | null = null;
+    try {
+      tailored = (await deps.tailorQuestions?.(userId, role)) ?? null;
+    } catch {
+      tailored = null;
+    }
+    const questions =
+      tailored && tailored.length > 0 ? tailored.slice(0, MAX_ATTEMPT_QUESTIONS) : buildRoleQuestions(role);
+    const { sessionId } = await deps.store.createAttempt(userId, questions, {
       roleId: role.id,
       version: consentVersion,
     });

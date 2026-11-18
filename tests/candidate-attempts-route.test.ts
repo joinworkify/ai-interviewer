@@ -205,7 +205,7 @@ describe("GET /api/candidate/attempts/[id]", () => {
     started_at: "2026-11-13T00:00:00Z",
     ended_at: null,
     transcript: [{ role: "interviewer", text: "Q?" }, { role: "candidate", text: "SECRET-ANSWER" }],
-    transcript_source: "dograh_webhook",
+    transcript_source: "client_gemini_live",
     ...over,
   });
 

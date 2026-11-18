@@ -175,6 +175,8 @@ export class LiveInterviewController {
   private attempt = 0;
   private res: Resources = { timers: [] };
   private transcript: TranscriptState = initialTranscript();
+  /** Why the interviewer is closing; recorded when it calls the end tool. */
+  private closingReason: EndedReason = "interviewer_ended";
   private readonly now: () => number;
 
   constructor(private readonly deps: ControllerDeps) {
@@ -201,6 +203,7 @@ export class LiveInterviewController {
     const stale = () => attempt !== this.attempt;
 
     this.transcript = initialTranscript();
+    this.closingReason = "interviewer_ended";
     this.res = { timers: [] };
     this.set({
       ...INITIAL_STATE,
@@ -413,7 +416,7 @@ export class LiveInterviewController {
       onclose: (e) => {
         if (!current() || this.state.phase === "connecting") return;
         if (this.state.phase === "closing") {
-          this.finish("The interviewer ended the interview.", "interviewer_ended");
+          this.finish("The interviewer ended the interview.", this.closingReason);
         } else {
           this.fail(describeCloseEvent(e ?? {}));
         }
@@ -484,6 +487,7 @@ export class LiveInterviewController {
     const functionResponses = calls.map((call) => {
       if (call.name === END_INTERVIEW_TOOL) {
         endRequested = true;
+        if (call.args?.reason === "non_english") this.closingReason = "non_english";
         return { id: call.id, name: call.name, response: { output: { ended: true } } };
       }
       return {
@@ -518,7 +522,7 @@ export class LiveInterviewController {
       const now = this.now();
       const remaining = this.res.player?.remainingMs() ?? 0;
       if (now >= deadline || (!first && remaining <= 0)) {
-        this.finish("The interviewer ended the interview.", "interviewer_ended");
+        this.finish("The interviewer ended the interview.", this.closingReason);
         return;
       }
       const wait = Math.min(
