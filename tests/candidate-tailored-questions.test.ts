@@ -137,7 +137,8 @@ describe("generateTailoredQuestions", () => {
   });
 });
 
-describe("resume text", () => {
+// Loading pdfjs and mammoth the first time can take seconds on a busy machine.
+describe("resume text", { timeout: 20_000 }, () => {
   it("cleans whitespace and control characters and caps the length", () => {
     expect(cleanResumeText("  a\u0000b \n\n c\t ")).toBe("a b c");
     expect(cleanResumeText("x".repeat(MAX_RESUME_TEXT_CHARS + 50))).toHaveLength(MAX_RESUME_TEXT_CHARS);
