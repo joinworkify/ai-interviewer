@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { CountrySelect } from "@/components/candidate/country-select";
 import { StepGate } from "@/components/candidate/step-gate";
+import { createClient } from "@/lib/supabase/client";
 import { setupPath } from "@/lib/candidate/steps";
 import {
   DEFAULT_DIAL_CODE,
   formatFileSize,
   getCountryConfig,
   linkError,
+  phoneInputFromProfile,
   resumeFileError,
   validatePhoneNumber,
 } from "@/lib/candidate/resume-form";
@@ -61,12 +63,80 @@ function ResumeStep() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const edited = React.useRef({ name: false, phone: false, country: false, link: false });
   // Errors show once a field was visited (or Continue was tried), not while the form is still empty.
   const [touched, setTouched] = useState({ name: false, phone: false, link: false });
   const touch = (field: keyof typeof touched) =>
     setTouched((t) => ({ ...t, [field]: true }));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfile() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!user) throw new Error("Not signed in");
+
+        const metadataName = [
+          user.user_metadata?.name,
+          user.user_metadata?.full_name,
+          user.user_metadata?.display_name,
+        ].find(
+          (value): value is string =>
+            typeof value === "string" && value.trim().length > 0,
+        );
+        if (!edited.current.name && metadataName) {
+          setFullName(metadataName.trim());
+        }
+
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("name, phone, linkedin_url, portfolio_url")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (error) throw error;
+        if (cancelled) return;
+
+        if (!edited.current.name) {
+          setFullName(profile?.name?.trim() || metadataName?.trim() || "");
+        }
+        if (!edited.current.phone && !edited.current.country) {
+          const savedPhone = phoneInputFromProfile(profile?.phone);
+          setDialCode(savedPhone.dialCode);
+          setPhone(savedPhone.phone);
+        }
+        if (!edited.current.link) {
+          setPortfolioUrl(
+            profile?.linkedin_url?.trim() ||
+              profile?.portfolio_url?.trim() ||
+              "",
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setProfileLoadError(
+            "We couldn't load your saved profile details. You can enter them manually.",
+          );
+        }
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    }
+
+    void loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Resumes uploaded earlier can be reused; the one in use comes first and is picked by default.
   useEffect(() => {
@@ -90,6 +160,7 @@ function ResumeStep() {
     const digitsOnly = e.target.value
       .replace(/[^\d]/g, "")
       .slice(0, currentCountry.maxDigits);
+    edited.current.phone = true;
     setPhone(digitsOnly);
   };
 
@@ -147,6 +218,7 @@ function ResumeStep() {
   const canContinue =
     !submitting &&
     !uploading &&
+    !profileLoading &&
     !nameProblem &&
     phoneValidation.valid &&
     !portfolioProblem;
@@ -159,8 +231,19 @@ function ResumeStep() {
       <p className="-mt-3 mb-6 text-center text-sm text-muted-foreground">
         This step is optional. You can skip it and continue to consent.
       </p>
+      {profileLoading && (
+        <p role="status" className="-mt-3 text-center text-sm text-slate-500">
+          Loading your saved details...
+        </p>
+      )}
+      {profileLoadError && (
+        <p role="alert" className="-mt-3 text-center text-sm text-red-600">
+          {profileLoadError}
+        </p>
+      )}
 
       <form
+        aria-busy={profileLoading}
         className="space-y-6"
         onSubmit={async (e) => {
           e.preventDefault();
@@ -173,7 +256,14 @@ function ResumeStep() {
             // already on the profile (the profile page does that).
             const details: ProfileUpdate = { name: fullName };
             if (phone) details.phone = `${dialCode}${phone}`;
-            if (portfolioUrl.trim()) details.portfolioUrl = portfolioUrl;
+            if (portfolioUrl.trim()) {
+              const hostname = new URL(portfolioUrl).hostname.toLowerCase();
+              if (hostname === "linkedin.com" || hostname.endsWith(".linkedin.com")) {
+                details.linkedinUrl = portfolioUrl;
+              } else {
+                details.portfolioUrl = portfolioUrl;
+              }
+            }
             await saveProfile(details);
             // The chosen saved resume is the one this application uses.
             if (resumeOption === "saved" && selectedId) await selectResume(selectedId);
@@ -200,7 +290,10 @@ function ResumeStep() {
           <input
             type="text"
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={(e) => {
+              edited.current.name = true;
+              setFullName(e.target.value);
+            }}
             onBlur={() => touch("name")}
             aria-invalid={touched.name && !!nameProblem}
             placeholder="Full name"
@@ -222,6 +315,8 @@ function ResumeStep() {
             <CountrySelect
               value={dialCode}
               onChange={(nextDial) => {
+                edited.current.country = true;
+                edited.current.phone = true;
                 const nextConfig = getCountryConfig(nextDial);
                 setDialCode(nextDial);
                 setPhone((prev) => prev.slice(0, nextConfig.maxDigits));
@@ -400,7 +495,10 @@ function ResumeStep() {
           <input
             type="url"
             value={portfolioUrl}
-            onChange={(e) => setPortfolioUrl(e.target.value)}
+            onChange={(e) => {
+              edited.current.link = true;
+              setPortfolioUrl(e.target.value);
+            }}
             onBlur={() => touch("link")}
             aria-invalid={touched.link && !!portfolioProblem}
             placeholder="https://"
@@ -416,7 +514,7 @@ function ResumeStep() {
           <button
             type="submit"
             // Not disabled for invalid input: clicking it reveals what to fix.
-            disabled={submitting || !roleId}
+            disabled={submitting || profileLoading || !roleId}
             className="rounded-xl bg-primary px-10 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {submitting ? "Uploading..." : "Continue"}
