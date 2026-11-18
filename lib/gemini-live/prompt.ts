@@ -22,6 +22,9 @@ export const NEW_SESSION_WINDOW_SECONDS = 60;
 /** Extra slack after the session cap before Google rejects messages. */
 const EXPIRY_GRACE_SECONDS = 30;
 
+/** Gemini prebuilt voice for the interviewer (a male voice). */
+export const INTERVIEWER_VOICE = "Charon";
+
 export const MAX_PROMPT_QUESTIONS = 10;
 /** Most questions the interviewer may ask in one session, follow-ups included. */
 export const MAX_INTERVIEW_TURNS = 8;
@@ -134,6 +137,7 @@ export function buildEphemeralTokenConfig(args: {
       model,
       config: {
         responseModalities: [Modality.AUDIO],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: INTERVIEWER_VOICE } } },
         systemInstruction: buildInterviewerInstruction(details, questions),
         tools: [{ functionDeclarations: [END_INTERVIEW_DECLARATION] }],
         inputAudioTranscription: {},
