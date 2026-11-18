@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { REVIEW_STATUSES, REVIEW_STATUS_LABELS, isReviewStatus } from "@/lib/admin/access";
 import { listAttempts } from "@/lib/admin/data";
 import { requireAdmin } from "@/lib/admin/server";
+import AdminFilters from "./admin-filters";
 
 
 const PAGE_SIZE = 10;
@@ -75,31 +76,7 @@ async function AdminPageContent({
         ))}
       </div>
 
-      <form className="flex flex-wrap gap-2" action="/admin">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search name or email"
-          aria-label="Search name or email"
-          className="h-10 min-w-0 flex-1 rounded-md border bg-white px-3 text-sm"
-        />
-        <select
-          name="status"
-          defaultValue={statusFilter ?? ""}
-          aria-label="Filter by status"
-          className="h-10 rounded-md border bg-white px-3 text-sm"
-        >
-          <option value="">All statuses</option>
-          {REVIEW_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {REVIEW_STATUS_LABELS[s]}
-            </option>
-          ))}
-        </select>
-        <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
-          Filter
-        </button>
-      </form>
+      <AdminFilters />
 
       <div className="overflow-x-auto rounded-xl border bg-white">
         <table className="w-full text-left text-sm">
@@ -128,7 +105,7 @@ async function AdminPageContent({
                   <div className="font-medium">{r.name || "No name"}</div>
                   <div className="text-xs text-muted-foreground">{r.email}</div>
                 </td>
-                <td className="px-4 py-3">{r.roleTitle ?? "—"}</td>
+                <td className="px-4 py-3">{r.roleTitle ?? "â€”"}</td>
                 <td className="px-4 py-3 capitalize">{r.interviewStatus.replace("_", " ")}</td>
                 <td className="px-4 py-3">{r.hasResume ? "Yes" : "No"}</td>
                 <td className="px-4 py-3">
@@ -151,7 +128,7 @@ async function AdminPageContent({
       {rows.length > 0 && (
         <nav aria-label="Pagination" className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <p className="text-muted-foreground">
-            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
+            Showing {(page - 1) * PAGE_SIZE + 1}â€“{Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
           </p>
           <div className="flex items-center gap-2">
             {page > 1 ? (
@@ -182,7 +159,7 @@ export default function AdminPage(props: {
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+    <Suspense fallback={<p className="text-sm text-muted-foreground">Loadingâ€¦</p>}>
       <AdminPageContent {...props} />
     </Suspense>
   );
