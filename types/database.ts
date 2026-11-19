@@ -356,19 +356,19 @@ export type Database = {
       interview_reviews: {
         Row: {
           session_id: string;
-          status: "pending" | "in_progress" | "completed" | "rejected";
+          status: "pending" | "in_progress" | "completed" | "accepted" | "rejected";
           updated_at: string;
           updated_by: string | null;
         };
         Insert: {
           session_id: string;
-          status?: "pending" | "in_progress" | "completed" | "rejected";
+          status?: "pending" | "in_progress" | "completed" | "accepted" | "rejected";
           updated_at?: string;
           updated_by?: string | null;
         };
         Update: {
           session_id?: string;
-          status?: "pending" | "in_progress" | "completed" | "rejected";
+          status?: "pending" | "in_progress" | "completed" | "accepted" | "rejected";
           updated_at?: string;
           updated_by?: string | null;
         };
@@ -404,6 +404,32 @@ export type Database = {
             columns: ["role_id"];
             isOneToOne: true;
             referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      candidate_notifications: {
+        Row: {
+          session_id: string;
+          stage: "in_review" | "accepted" | "not_selected";
+          sent_at: string;
+        };
+        Insert: {
+          session_id: string;
+          stage: "in_review" | "accepted" | "not_selected";
+          sent_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          stage?: "in_review" | "accepted" | "not_selected";
+          sent_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "candidate_notifications_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
             referencedColumns: ["id"];
           },
         ];

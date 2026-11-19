@@ -1,10 +1,13 @@
 import "server-only";
 
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
+import { createEmailSender } from "@/lib/notifications/email";
+import { notifyCandidate } from "@/lib/notifications/review-notify";
+import { createSupabaseNotifyStore } from "@/lib/notifications/store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -60,6 +63,24 @@ export async function runReviewRoute(
     const admin = createAdminClient();
     return await run({
       getCaller,
+      // After the response: email the candidate when the admin asked to.
+      onStatusSet: ({ sessionId, status, notify }) => {
+        if (!notify) return;
+        after(async () => {
+          try {
+            const origin = process.env.APP_ORIGIN?.trim().replace(/\/+$/, "");
+            await notifyCandidate({
+              store: createSupabaseNotifyStore(admin),
+              send: createEmailSender(process.env),
+              sessionId,
+              status,
+              link: origin ? `${origin}/candidate/applications` : null,
+            });
+          } catch (err) {
+            console.error("[admin-review] notification failed", describeError(err));
+          }
+        });
+      },
       store: {
         async sessionExists(sessionId) {
           const { data, error } = await admin
