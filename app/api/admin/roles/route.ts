@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { describeError } from "@/lib/log/safe-error";
 import { isRoleBullets, isRolePay } from "@/lib/admin/role-validation";
+import { loadRubrics, saveRubric } from "@/lib/admin/rubrics";
+import { parseRubric } from "@/lib/evaluation/rubric";
 
 import { requireAdmin } from "@/lib/admin/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -21,7 +23,10 @@ export async function GET() {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, roles: data });
+    const rubrics = await loadRubrics(supabase);
+    const roles = (data ?? []).map((role) => ({ ...role, rubric: rubrics.get(role.id) ?? [] }));
+
+    return NextResponse.json({ success: true, roles });
   } catch (error) {
     console.error("[admin-roles] GET failed:", describeError(error));
 
@@ -57,9 +62,15 @@ export async function POST(request: Request) {
       about = "",
       responsibilities = [],
       requirements = [],
+      rubric = [],
       is_active = true,
       sort_order = 0,
     } = body as Record<string, unknown>;
+
+    const parsedRubric = parseRubric(rubric);
+    if (!parsedRubric.ok) {
+      return NextResponse.json({ success: false, message: parsedRubric.message }, { status: 400 });
+    }
 
     if (
       typeof id !== "string" ||
@@ -117,7 +128,18 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    return NextResponse.json({ success: true, role: data }, { status: 201 });
+    // The role exists now; a rubric failure is reported but the role is kept.
+    try {
+      await saveRubric(supabase, id, parsedRubric.rubric);
+    } catch (rubricError) {
+      console.error("[admin-roles] rubric save failed:", describeError(rubricError));
+      return NextResponse.json(
+        { success: false, message: "Role created, but its rubric could not be saved. Edit the role to retry." },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true, role: { ...data, rubric: parsedRubric.rubric } }, { status: 201 });
   } catch (error) {
     console.error("[admin-roles] POST failed:", describeError(error));
 

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bot, Mic, MicOff } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MicLevel } from "@/components/candidate/mic-level";
@@ -20,7 +21,7 @@ const STATUS_LABEL: Record<VoiceStatus, string> = {
 };
 
 /**
- * Scripted practice interview, used only when Gemini Live is not configured
+ * Scripted stand-in interview, used only when Gemini Live is not configured
  * (local work without GEMINI_API_KEY). The real interview is GeminiInterview.
  */
 export function LiveInterview() {
@@ -110,13 +111,13 @@ export function LiveInterview() {
 
 
       <div className="grid gap-4 md:grid-cols-[1fr_240px]">
-        <div className="flex flex-col items-center gap-6 rounded-xl border bg-card p-8 shadow-sm">
+        <div className="flex flex-col items-center gap-6 rounded-xl border bg-white p-8 shadow-sm">
           <div
-            className={`flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 ${
+            className={`flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/10 ${
               speaker === "interviewer" ? "animate-pulse ring-4 ring-primary/40" : ""
             }`}
           >
-            <Bot className="h-12 w-12" />
+            <LogoMark size={72} className="rounded-2xl" />
           </div>
           <p className="text-sm text-muted-foreground" aria-live="polite">
             {speaker === "interviewer"

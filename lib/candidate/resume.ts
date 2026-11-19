@@ -79,6 +79,8 @@ export interface ResumeStorage {
     ttlSeconds: number,
     /** "inline" lets a browser show the PDF in a frame; the default downloads it. */
     disposition?: "attachment" | "inline",
+    /** Type to serve an inline file as; defaults to PDF (the resume viewer). */
+    contentType?: string,
   ): Promise<string>;
   /** Size and type of a stored object, or null when it does not exist. */
   head(key: string): Promise<{ size: number; contentType: string } | null>;

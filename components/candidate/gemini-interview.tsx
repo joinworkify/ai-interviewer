@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Bot, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRole } from "@/lib/candidate/api";
@@ -12,6 +13,8 @@ import { browserControllerDeps } from "@/lib/gemini-live/browser";
 import { LiveInterviewController, type SessionPhase } from "@/lib/gemini-live/controller";
 import { MAX_SESSION_SECONDS, validateLiveInterviewBody, type LiveInterviewDetails } from "@/lib/gemini-live/interview-details";
 import { attachTranscriptSync } from "@/lib/gemini-live/transcript-sync";
+import { uploadRecording } from "@/lib/recording/client";
+import { startInterviewRecorder, type InterviewRecorder } from "@/lib/recording/recorder";
 import { ReportProblem } from "@/components/candidate/report-problem";
 import type { SaveTranscriptOutcome } from "@/lib/transcripts/client";
 
@@ -61,6 +64,25 @@ export function GeminiInterview() {
   useEffect(() => {
     if (!attemptId) return;
     return attachTranscriptSync(controller, { sessionId: attemptId, onOutcome: setSaved });
+  }, [controller, attemptId]);
+
+  // Record the call (candidate mic + interviewer voice) and upload the audio
+  // once it ends, for the reviewer. Best effort: the interview and its
+  // transcript never depend on it, and any failure is silent here.
+  const recorderRef = useRef<InterviewRecorder | null>(null);
+  useEffect(() => {
+    if (!attemptId) return;
+    const sync = () => {
+      const phase = controller.getSnapshot().phase;
+      if (phase === "active" && !recorderRef.current) {
+        recorderRef.current = startInterviewRecorder(controller.getAudioStreams());
+      } else if ((phase === "ended" || phase === "error") && recorderRef.current) {
+        const recorder = recorderRef.current;
+        recorderRef.current = null;
+        void recorder.stop().then((audio) => (audio ? uploadRecording({ sessionId: attemptId, audio }) : undefined));
+      }
+    };
+    return controller.subscribe(sync);
   }, [controller, attemptId]);
 
   // Wi-Fi off: end the call as a dropped connection right away.
@@ -183,13 +205,13 @@ export function GeminiInterview() {
         )}
       </div>
 
-      <div className="flex flex-col items-center gap-6 rounded-xl border bg-card p-8 shadow-sm">
+      <div className="flex flex-col items-center gap-6 rounded-xl border bg-white p-8 shadow-sm">
         <div
-          className={`flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 ${
+          className={`flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/10 ${
             state.interviewerSpeaking ? "animate-pulse ring-4 ring-primary/40" : ""
           }`}
         >
-          <Bot className="h-12 w-12" aria-hidden="true" />
+          <LogoMark size={72} className="rounded-2xl" />
         </div>
 
         {state.phase === "idle" ? (

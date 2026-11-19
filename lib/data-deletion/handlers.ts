@@ -21,6 +21,11 @@ export interface DeletionHandlerDeps {
    * account goes. A failure aborts the deletion so it can be retried.
    */
   deleteUserFiles?: (userId: string) => Promise<void>;
+  /**
+   * Removes one session's audio recording from S3 before its transcript or the
+   * session is deleted. A failure aborts the deletion so it can be retried.
+   */
+  deleteSessionFiles?: (userId: string, sessionId: string) => Promise<void>;
   /** Best-effort cleanup once the account is gone (e.g. clear auth cookies). */
   afterAccountDeleted?: () => Promise<void>;
 }
@@ -56,6 +61,11 @@ async function deleteOne(
   if (!userId) return unauthorized();
   if (!isUuid(sessionId)) return notFound();
   try {
+    // Ownership first: a stranger's id must not reach storage. The store
+    // re-checks, so a session that is not theirs is still a 404 below.
+    if (deps.deleteSessionFiles && (await deps.store.ownsSession(userId, sessionId))) {
+      await deps.deleteSessionFiles(userId, sessionId);
+    }
     const done =
       kind === "transcript"
         ? await deps.store.deleteTranscript(userId, sessionId)

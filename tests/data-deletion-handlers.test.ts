@@ -16,6 +16,9 @@ class FakeStore implements DeletionStore {
   /** Session ids that exist and belong to ME. */
   owned = new Set([SID]);
   fail = false;
+  async ownsSession(_userId: string, sessionId: string) {
+    return this.owned.has(sessionId);
+  }
   async deleteTranscript(userId: string, sessionId: string) {
     this.calls.push(`transcript:${userId}:${sessionId}`);
     if (this.fail) throw new DeletionStoreError("boom secret-detail");
@@ -192,5 +195,39 @@ describe("handleDeleteAccount", () => {
     expect(JSON.stringify(await res.json())).not.toContain("secret-detail");
     expect(store.calls).toEqual([]);
     expect(after).not.toHaveBeenCalled();
+  });
+});
+
+describe.each([
+  ["handleDeleteTranscript", handleDeleteTranscript],
+  ["handleDeleteSession", handleDeleteSession],
+] as const)("%s recording cleanup", (_name, handler) => {
+  it("removes the session's recording file before deleting", async () => {
+    const order: string[] = [];
+    const deleteSessionFiles = vi.fn(async () => {
+      order.push("files");
+    });
+    const origTranscript = store.deleteTranscript.bind(store);
+    store.deleteTranscript = async (u, s) => (order.push("db"), origTranscript(u, s));
+    const origSession = store.deleteSession.bind(store);
+    store.deleteSession = async (u, s) => (order.push("db"), origSession(u, s));
+    const res = await handler(SID, deps({ deleteSessionFiles }));
+    expect(res.status).toBe(200);
+    expect(deleteSessionFiles).toHaveBeenCalledWith(ME, SID);
+    expect(order).toEqual(["files", "db"]);
+  });
+
+  it("never touches storage for a session that is not the user's", async () => {
+    const deleteSessionFiles = vi.fn(async () => {});
+    const other = "33333333-3333-4333-8333-333333333333";
+    const res = await handler(other, deps({ deleteSessionFiles }));
+    expect(res.status).toBe(404);
+    expect(deleteSessionFiles).not.toHaveBeenCalled();
+  });
+
+  it("keeps the data and answers 500 when the file cannot be removed", async () => {
+    const res = await handler(SID, deps({ deleteSessionFiles: async () => { throw new Error("s3 down"); } }));
+    expect(res.status).toBe(500);
+    expect(store.calls).toEqual([]);
   });
 });

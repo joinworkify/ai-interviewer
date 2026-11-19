@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ReportProblem } from "@/components/candidate/report-problem";
@@ -19,6 +19,16 @@ export default function ResultPage() {
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [failed, setFailed] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const router = useRouter();
+  const [reporting, setReporting] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
+
+  // After a report is sent, close the screen by returning to the roles.
+  useEffect(() => {
+    if (!reportSent) return;
+    const t = setTimeout(() => router.push("/candidate/roles"), 1500);
+    return () => clearTimeout(t);
+  }, [reportSent, router]);
 
   // The result is the real state of the stored attempt. The transcript reaches
   // us a few seconds after the call ends, so this waits for it.
@@ -82,10 +92,15 @@ export default function ResultPage() {
           <p className="text-xs text-muted-foreground">A person at DataSea will review it.</p>
         </>
       )}
-      {attemptId && <ReportProblem sessionId={attemptId} />}
-      <Button asChild className="w-32">
-        <Link href="/candidate/roles">Done</Link>
-      </Button>
+      {attemptId && (
+        <ReportProblem sessionId={attemptId} onOpenChange={setReporting} onSent={() => setReportSent(true)} />
+      )}
+      {/* While the report form is open its Send report button is the action. */}
+      {!reporting && !reportSent && (
+        <Button asChild className="w-32">
+          <Link href="/candidate/roles">Done</Link>
+        </Button>
+      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { describeError } from "@/lib/log/safe-error";
 import { isRoleBullets, isRolePay } from "@/lib/admin/role-validation";
+import { loadRubrics, saveRubric } from "@/lib/admin/rubrics";
+import { parseRubric, type RubricCriterion } from "@/lib/evaluation/rubric";
 
 import { requireAdmin } from "@/lib/admin/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -119,6 +121,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       }
     }
 
+    let rubricUpdate: RubricCriterion[] | undefined;
+    if ("rubric" in input) {
+      const parsedRubric = parseRubric(input.rubric);
+      if (!parsedRubric.ok) {
+        return NextResponse.json({ success: false, message: parsedRubric.message }, { status: 400 });
+      }
+      rubricUpdate = parsedRubric.rubric;
+    }
+
     if ("is_active" in input) {
       if (typeof input.is_active !== "boolean") {
         return NextResponse.json(
@@ -139,7 +150,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       updates.sort_order = input.sort_order as number;
     }
 
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0 && rubricUpdate === undefined) {
       return NextResponse.json(
         { success: false, message: "No valid fields provided." },
         { status: 400 },
@@ -148,12 +159,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase
-      .from("roles")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .maybeSingle();
+    // A rubric-only edit still has to find the role, so read it back either way.
+    const { data, error } =
+      Object.keys(updates).length > 0
+        ? await supabase.from("roles").update(updates).eq("id", id).select().maybeSingle()
+        : await supabase.from("roles").select().eq("id", id).maybeSingle();
 
     if (error) throw error;
 
@@ -164,7 +174,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       );
     }
 
-    return NextResponse.json({ success: true, role: data });
+    if (rubricUpdate !== undefined) await saveRubric(supabase, id, rubricUpdate);
+    const rubric = rubricUpdate ?? (await loadRubrics(supabase)).get(id) ?? [];
+
+    return NextResponse.json({ success: true, role: { ...data, rubric } });
   } catch (error) {
     console.error("[admin-roles] PATCH failed:", describeError(error));
 

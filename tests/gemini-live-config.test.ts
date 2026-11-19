@@ -168,7 +168,7 @@ describe("buildEphemeralTokenConfig", () => {
     const c = constraints.config!;
     expect(c.responseModalities).toEqual(["AUDIO"]);
     expect(c.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName).toBe("Charon");
-    expect(c.inputAudioTranscription).toEqual({});
+    expect(c.inputAudioTranscription).toEqual({ languageCodes: ["en-US"] });
     expect(c.outputAudioTranscription).toEqual({});
     expect(String(c.systemInstruction)).toContain('"SRE"');
     expect(c.tools).toEqual([
@@ -204,5 +204,19 @@ describe("SlidingWindowLimiter", () => {
     const l = new SlidingWindowLimiter({ limit: 1, windowMs: 1000, maxKeys: 3 });
     for (let i = 0; i < 10; i++) l.hit(`u${i}`, i * 2000);
     expect(l.size).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("interviewer instruction framing", () => {
+  const details = { role: "Software Engineer", level: "mid", techstack: ["TypeScript"] } as never;
+
+  it("presents the interview as real, never as practice", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toContain("real job opening");
+    expect(text).toMatch(/Never call it a practice, training, mock, demo or test interview/);
+    // The only mentions of "practice" are the prohibitions themselves.
+    expect(text.replace(/not practice, training or a test|a practice, training, mock, demo or test interview/g, "")).not.toMatch(
+      /practice interview|training interview|mock interview/i,
+    );
   });
 });

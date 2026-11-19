@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { EvaluationPanel } from "@/components/admin/evaluation-panel";
 import { ResumeViewer } from "@/components/admin/resume-viewer-lazy";
 import { ReviewStatusForm } from "@/components/admin/review-status-form";
 import { REVIEW_STATUS_LABELS } from "@/lib/admin/access";
@@ -152,6 +153,30 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
           </Section>
         </div>
       </div>
+
+      <Section title="AI score">
+        <EvaluationPanel sessionId={a.sessionId} evaluation={a.evaluation} hasTranscript={a.transcript.length > 0} />
+      </Section>
+
+      <Section title="Recording">
+        {a.recording ? (
+          <div className="grid gap-2">
+            {/* Short-lived signed link; the audio never passes through this server. */}
+            <audio controls preload="metadata" className="w-full" src={a.recording.url}>
+              Your browser cannot play this recording.
+            </audio>
+            <p className="text-xs text-muted-foreground">
+              Candidate and interviewer, mixed. {Math.max(1, Math.round(a.recording.sizeBytes / 1024))} KB
+              {a.recording.uploadedAt && ` · saved ${formatDate(a.recording.uploadedAt)}`}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No recording for this interview. Interviews taken before recording was added, and ones where the
+            browser could not record or upload, have none.
+          </p>
+        )}
+      </Section>
 
       <Section title="Transcript">
         {a.transcript.length === 0 ? (

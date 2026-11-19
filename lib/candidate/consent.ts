@@ -13,17 +13,17 @@
  * reviewed text; change it here and bump the version.
  */
 
-export const CONSENT_VERSION = "2026-11-18";
+export const CONSENT_VERSION = "2026-11-19";
 
 /** What the candidate is told, one point per line. */
 export const CONSENT_POINTS: readonly string[] = [
-  "Your voice is processed during the interview and turned into a written transcript. DataSea keeps the transcript, not an audio recording.",
+  "Your voice is processed during the interview and turned into a written transcript. DataSea also saves an audio recording of the interview, which a person at DataSea can listen to when reviewing it.",
   "The interview runs on Google Gemini, an AI voice service. It processes your audio live to hold the conversation.",
   "The interview is in English only. Please answer in English.",
-  "An AI model reads the transcript and writes feedback. A person at DataSea reviews your interview and that feedback.",
-  "You can ask DataSea to delete your interview data.",
+  "An AI model reads the transcript, scores your answers against the criteria for the role, and writes feedback. A person at DataSea reviews your interview, the score and that feedback. The score is a guide, not an automatic decision.",
+  "You can ask DataSea to delete your interview data, including the recording.",
 ];
 
 /** The label next to the checkbox. */
 export const CONSENT_LABEL =
-  "I have read this and agree to the AI interview and to my voice being processed into a written transcript.";
+  "I have read this and agree to the AI interview, to my voice being processed into a written transcript, and to the interview being recorded.";

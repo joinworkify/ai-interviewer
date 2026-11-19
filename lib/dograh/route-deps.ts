@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { createSupabaseUsageStore } from "@/lib/ai/usage";
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
+import { evaluateSession } from "@/lib/evaluation/store";
 import { evaluateStoredSession } from "@/lib/sessions/auto-evaluate";
 import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -61,6 +62,7 @@ export async function runDograhWebhookRoute(
           } catch (err) {
             console.error("[dograh-webhook] evaluation failed", describeError(err));
           }
+          await evaluateSession(sessionId);
         });
       },
     });

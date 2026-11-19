@@ -6,6 +6,8 @@
  * independent of the audio and of each other (input fragments can arrive
  * after the model already started answering). Rules:
  *  - fragments append to the speaker's open (partial) entry, else start one;
+ *  - a candidate entry that first appears while the interviewer is replying to
+ *    it (late transcription) is placed above that reply;
  *  - a candidate entry stays open while the interviewer replies, so late
  *    fragments land above the reply instead of creating a misplaced entry;
  *  - turnComplete / interrupted close the interviewer entry and the candidate
@@ -95,9 +97,20 @@ function append(
       text,
       final: false,
     };
+    // Gemini transcribes the candidate late: the first words of an answer can
+    // arrive while the interviewer is already replying to it. When the reply
+    // in progress follows another interviewer entry, the candidate's answer
+    // is the missing turn between them, so it goes above the reply.
+    const entries = state.entries.slice();
+    const replyIdx = speaker === "candidate" ? indexOf(state, state.openInterviewer) : -1;
+    const at =
+      replyIdx > 0 && state.entries[replyIdx - 1].speaker === "interviewer"
+        ? replyIdx
+        : entries.length;
+    entries.splice(at, 0, entry);
     next = {
       ...state,
-      entries: [...state.entries, entry],
+      entries,
       nextId: state.nextId + 1,
       [key]: entry.id,
     };

@@ -382,6 +382,126 @@ export type Database = {
           },
         ];
       };
+      role_rubrics: {
+        Row: {
+          role_id: string;
+          criteria: Json;
+          updated_at: string;
+        };
+        Insert: {
+          role_id: string;
+          criteria?: Json;
+          updated_at?: string;
+        };
+        Update: {
+          role_id?: string;
+          criteria?: Json;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "role_rubrics_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: true;
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      interview_evaluations: {
+        Row: {
+          session_id: string;
+          status: "completed" | "failed";
+          overall_score: number | null;
+          recommendation: "strong_yes" | "yes" | "maybe" | "no" | null;
+          summary: string;
+          strengths: string[];
+          concerns: string[];
+          criteria: Json;
+          model: string | null;
+          error_code: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          session_id: string;
+          status?: "completed" | "failed";
+          overall_score?: number | null;
+          recommendation?: "strong_yes" | "yes" | "maybe" | "no" | null;
+          summary?: string;
+          strengths?: string[];
+          concerns?: string[];
+          criteria?: Json;
+          model?: string | null;
+          error_code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          status?: "completed" | "failed";
+          overall_score?: number | null;
+          recommendation?: "strong_yes" | "yes" | "maybe" | "no" | null;
+          summary?: string;
+          strengths?: string[];
+          concerns?: string[];
+          criteria?: Json;
+          model?: string | null;
+          error_code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_evaluations_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: true;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      interview_recordings: {
+        Row: {
+          session_id: string;
+          user_id: string;
+          s3_key: string;
+          content_type: string;
+          size_bytes: number;
+          status: "pending" | "uploaded";
+          created_at: string;
+          uploaded_at: string | null;
+        };
+        Insert: {
+          session_id: string;
+          user_id: string;
+          s3_key: string;
+          content_type: string;
+          size_bytes: number;
+          status?: "pending" | "uploaded";
+          created_at?: string;
+          uploaded_at?: string | null;
+        };
+        Update: {
+          session_id?: string;
+          user_id?: string;
+          s3_key?: string;
+          content_type?: string;
+          size_bytes?: number;
+          status?: "pending" | "uploaded";
+          created_at?: string;
+          uploaded_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_recordings_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: true;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       candidate_resumes: {
         Row: {
           id: string;

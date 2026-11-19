@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin/access";
 import { listAttempts } from "@/lib/admin/data";
 import { requireAdmin } from "@/lib/admin/server";
+import { InterviewsSkeleton } from "@/components/admin/skeletons";
 import AdminFilters from "./admin-filters";
 
 const PAGE_SIZE = 10;
@@ -80,7 +81,7 @@ async function AdminPageContent({
           <Link
             key={s}
             href={statusFilter === s ? "/admin" : `/admin?status=${s}`}
-            className={`rounded-xl border bg-card p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
+            className={`rounded-xl border bg-white p-4 dark:bg-card hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
           >
             <div className="text-sm text-muted-foreground">
               {REVIEW_STATUS_LABELS[s]}
@@ -92,7 +93,7 @@ async function AdminPageContent({
 
       <AdminFilters />
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto rounded-xl border bg-white dark:bg-card">
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-muted/40 font-ui text-xs uppercase text-muted-foreground">
             <tr>
@@ -100,6 +101,7 @@ async function AdminPageContent({
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Interview</th>
               <th className="px-4 py-3">Resume</th>
+              <th className="px-4 py-3">AI score</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Started</th>
               <th className="px-4 py-3" />
@@ -109,7 +111,7 @@ async function AdminPageContent({
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   No interviews found.
@@ -130,11 +132,14 @@ async function AdminPageContent({
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">{r.roleTitle ?? "â€”"}</td>
+                <td className="px-4 py-3">{r.roleTitle ?? "—"}</td>
                 <td className="px-4 py-3 capitalize">
                   {r.interviewStatus.replace("_", " ")}
                 </td>
                 <td className="px-4 py-3">{r.hasResume ? "Yes" : "No"}</td>
+                <td className="px-4 py-3 tabular-nums">
+                  {r.score === null ? <span className="text-muted-foreground">—</span> : <span className="font-semibold">{r.score}</span>}
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`rounded-full px-2 py-1 font-ui text-xs font-medium ${STATUS_STYLE[r.reviewStatus]}`}
@@ -165,19 +170,19 @@ async function AdminPageContent({
           className="flex flex-wrap items-center justify-between gap-3 text-sm"
         >
           <p className="text-muted-foreground">
-            Showing {(page - 1) * PAGE_SIZE + 1}â€“
+            Showing {(page - 1) * PAGE_SIZE + 1}–
             {Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
           </p>
           <div className="flex items-center gap-2">
             {page > 1 ? (
               <Link
                 href={pageHref(page - 1)}
-                className="rounded-md border bg-background px-3 py-2 hover:border-primary"
+                className="rounded-md border bg-white px-3 py-2 dark:bg-background hover:border-primary"
               >
                 Previous
               </Link>
             ) : (
-              <span className="rounded-md border bg-background px-3 py-2 opacity-50">
+              <span className="rounded-md border bg-white px-3 py-2 dark:bg-background opacity-50">
                 Previous
               </span>
             )}
@@ -187,12 +192,12 @@ async function AdminPageContent({
             {page < pageCount ? (
               <Link
                 href={pageHref(page + 1)}
-                className="rounded-md border bg-background px-3 py-2 hover:border-primary"
+                className="rounded-md border bg-white px-3 py-2 dark:bg-background hover:border-primary"
               >
                 Next
               </Link>
             ) : (
-              <span className="rounded-md border bg-background px-3 py-2 opacity-50">
+              <span className="rounded-md border bg-white px-3 py-2 dark:bg-background opacity-50">
                 Next
               </span>
             )}
@@ -207,9 +212,7 @@ export default function AdminPage(props: {
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   return (
-    <Suspense
-      fallback={<p className="text-sm text-muted-foreground">Loadingâ€¦</p>}
-    >
+    <Suspense fallback={<InterviewsSkeleton />}>
       <AdminPageContent {...props} />
     </Suspense>
   );

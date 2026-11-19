@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { LogoMark } from "@/components/brand/logo-mark";
 import { LogoutButton } from "@/components/admin/logout-button";
+import { InterviewsSkeleton } from "@/components/admin/skeletons";
 import { requireAdmin } from "@/lib/admin/server";
 
 export const instant = false;
@@ -63,7 +64,17 @@ export default function AdminLayout({
     <div className="theme-datasea flex min-h-screen flex-col bg-background">
       <Suspense
         fallback={
-          <p className="p-5 text-sm text-muted-foreground">Loading…</p>
+          <>
+            <header className="border-b bg-background">
+              <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 font-heading font-semibold tracking-tight">
+                <LogoMark size={32} />
+                Admin dashboard
+              </div>
+            </header>
+            <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-5">
+              <InterviewsSkeleton />
+            </main>
+          </>
         }
       >
         <AdminShell>{children}</AdminShell>

@@ -19,11 +19,18 @@ describe("deleteTranscript", () => {
     const { client, log, events } = fakeClient(found);
     const ok = await createSupabaseDeletionStore(client).deleteTranscript(ME, SID);
     expect(ok).toBe(true);
-    expect(events).toEqual(["interview_sessions:select", "rpc:purge_vapi_events", "interview_sessions:update"]);
+    expect(events).toEqual([
+      "interview_sessions:select",
+      "rpc:purge_vapi_events",
+      "interview_recordings:delete",
+      "interview_sessions:update",
+    ]);
     expect(log[0].filters).toEqual({ id: SID, user_id: ME });
     expect(log[1].payload).toEqual({ p_user_id: ME, p_session_id: SID });
-    expect(log[2].payload).toEqual({ transcript: null, recording_url: null });
-    expect(log[2].filters).toEqual({ id: SID, user_id: ME });
+    // The audio recording row goes too (its S3 file is removed by the handler).
+    expect(log[2].filters).toEqual({ session_id: SID });
+    expect(log[3].payload).toEqual({ transcript: null, recording_url: null });
+    expect(log[3].filters).toEqual({ id: SID, user_id: ME });
   });
 
   it("does not touch feedback", async () => {

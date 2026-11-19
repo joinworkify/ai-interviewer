@@ -18,6 +18,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { RubricEditor } from "@/components/admin/rubric-editor";
+import { TableRowsSkeleton } from "@/components/admin/skeletons";
+import { parseRubric, type RubricCriterion } from "@/lib/evaluation/rubric";
 import { formatPayRate, validatePayRate, type PayType } from "@/lib/candidate/pay";
 
 type Bullet = {
@@ -36,6 +39,7 @@ type Role = {
   about: string;
   responsibilities: Bullet[];
   requirements: Bullet[];
+  rubric: RubricCriterion[];
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -53,6 +57,7 @@ type RoleForm = {
   about: string;
   responsibilities: string;
   requirements: string;
+  rubric: RubricCriterion[];
   is_active: boolean;
   sort_order: number;
 };
@@ -75,6 +80,7 @@ const emptyForm: RoleForm = {
   about: "",
   responsibilities: "",
   requirements: "",
+  rubric: [],
   is_active: true,
   sort_order: 0,
 };
@@ -117,15 +123,19 @@ function roleToForm(role: Role): RoleForm {
     about: role.about ?? "",
     responsibilities: bulletsToText(role.responsibilities),
     requirements: bulletsToText(role.requirements),
+    rubric: Array.isArray(role.rubric) ? role.rubric : [],
     is_active: role.is_active,
     sort_order: role.sort_order,
   };
 }
 
+const ROLES_PAGE_SIZE = 10;
+
 export function RolesManager() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState<RoleForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -193,6 +203,11 @@ export function RolesManager() {
     });
   }, [roles, search, filter]);
 
+  const pageCount = Math.max(1, Math.ceil(filteredRoles.length / ROLES_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * ROLES_PAGE_SIZE;
+  const pagedRoles = filteredRoles.slice(pageStart, pageStart + ROLES_PAGE_SIZE);
+
   function openCreateForm() {
     setEditingId(null);
     setForm(emptyForm);
@@ -239,6 +254,12 @@ export function RolesManager() {
       return;
     }
 
+    const rubric = parseRubric(form.rubric);
+    if (!rubric.ok) {
+      setError(rubric.message);
+      return;
+    }
+
     const payload = {
       ...(editingId ? {} : { id: form.id.trim() }),
       title: form.title.trim(),
@@ -253,6 +274,7 @@ export function RolesManager() {
       about: form.about.trim(),
       responsibilities: textToBullets(form.responsibilities),
       requirements: textToBullets(form.requirements),
+      rubric: rubric.rubric,
       is_active: form.is_active,
       sort_order: Number(form.sort_order),
     };
@@ -570,6 +592,10 @@ export function RolesManager() {
                 </p>
               </div>
 
+              <div className="sm:col-span-2">
+                <RubricEditor value={form.rubric} onChange={(next) => updateForm("rubric", next)} />
+              </div>
+
               <div className="space-y-1.5">
                 <label htmlFor="role-order" className="text-sm font-medium">
                   Sort order
@@ -630,7 +656,10 @@ export function RolesManager() {
           />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search role title, ID, or skill..."
             aria-label="Search roles"
             className="h-10 w-full rounded-md border bg-white pl-9 pr-3 text-sm"
@@ -639,7 +668,10 @@ export function RolesManager() {
 
         <select
           value={filter}
-          onChange={(event) => setFilter(event.target.value)}
+          onChange={(event) => {
+            setFilter(event.target.value);
+            setPage(1);
+          }}
           aria-label="Filter roles"
           className="h-10 rounded-md border bg-white px-3 text-sm"
         >
@@ -672,12 +704,7 @@ export function RolesManager() {
 
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                  <Loader2 size={20} className="mx-auto mb-2 animate-spin" />
-                  Loading roles...
-                </td>
-              </tr>
+              <TableRowsSkeleton rows={6} columns={5} />
             ) : filteredRoles.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
@@ -685,7 +712,7 @@ export function RolesManager() {
                 </td>
               </tr>
             ) : (
-              filteredRoles.map((role) => (
+              pagedRoles.map((role) => (
                 <tr
                   key={role.id}
                   className="border-b last:border-0 hover:bg-muted/30"
@@ -778,9 +805,39 @@ export function RolesManager() {
         </table>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Showing {filteredRoles.length} of {roles.length} roles.
-      </p>
+      <nav
+        aria-label="Pagination"
+        className="flex flex-wrap items-center justify-between gap-3 text-sm"
+      >
+        <p className="text-muted-foreground">
+          {filteredRoles.length === 0
+            ? `0 of ${roles.length} roles`
+            : `Showing ${pageStart + 1}–${Math.min(pageStart + ROLES_PAGE_SIZE, filteredRoles.length)} of ${filteredRoles.length} roles`}
+        </p>
+        {pageCount > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="rounded-md border bg-white px-3 py-2 hover:border-primary disabled:opacity-50 disabled:hover:border-border"
+            >
+              Previous
+            </button>
+            <span className="px-1 text-muted-foreground">
+              Page {currentPage} of {pageCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage >= pageCount}
+              className="rounded-md border bg-white px-3 py-2 hover:border-primary disabled:opacity-50 disabled:hover:border-border"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </nav>
     </div>
   );
 }

@@ -23,6 +23,8 @@ export interface DeletionStore {
   deleteTranscript(userId: string, sessionId: string): Promise<boolean>;
   /** Deletes one session; its feedback cascades. False when not the user's. */
   deleteSession(userId: string, sessionId: string): Promise<boolean>;
+  /** True when the session exists and belongs to the user. */
+  ownsSession(userId: string, sessionId: string): Promise<boolean>;
   /** Deletes the auth user; everything else cascades through profiles. */
   deleteAccount(userId: string): Promise<void>;
 }
@@ -56,9 +58,14 @@ export function createSupabaseDeletionStore(
   }
 
   return {
+    ownsSession: (userId, sessionId) => ownsSession(userId, sessionId, "ownsSession"),
+
     async deleteTranscript(userId, sessionId) {
       if (!(await ownsSession(userId, sessionId, "deleteTranscript"))) return false;
       await purge("deleteTranscript", userId, sessionId);
+      // The audio file is removed from S3 by the handler; drop its row too.
+      const recording = await client.from("interview_recordings").delete().eq("session_id", sessionId);
+      if (recording.error) fail("deleteTranscript", recording.error);
       const { error } = await client
         .from("interview_sessions")
         .update({ transcript: null, recording_url: null })
