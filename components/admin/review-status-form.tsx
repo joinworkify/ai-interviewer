@@ -9,6 +9,8 @@ export function ReviewStatusForm({ sessionId, status }: { sessionId: string; sta
   const router = useRouter();
   const [value, setValue] = useState<ReviewStatus>(status);
   const [saving, setSaving] = useState(false);
+  // Emailing is the admin's explicit choice. A rejection is never emailed by default.
+  const [notify, setNotify] = useState(true);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function save() {
@@ -18,7 +20,7 @@ export function ReviewStatusForm({ sessionId, status }: { sessionId: string; sta
       const res = await fetch(`/api/admin/sessions/${sessionId}/review`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: value }),
+        body: JSON.stringify({ status: value, notify: notify && value !== "pending" }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
@@ -38,7 +40,11 @@ export function ReviewStatusForm({ sessionId, status }: { sessionId: string; sta
     <div className="flex flex-wrap items-center gap-2">
       <select
         value={value}
-        onChange={(e) => setValue(e.target.value as ReviewStatus)}
+        onChange={(e) => {
+          const next = e.target.value as ReviewStatus;
+          setValue(next);
+          setNotify(next !== "rejected");
+        }}
         aria-label="Review status"
         className="h-10 rounded-md border bg-background px-3 text-sm"
       >
@@ -48,6 +54,12 @@ export function ReviewStatusForm({ sessionId, status }: { sessionId: string; sta
           </option>
         ))}
       </select>
+      {value !== "pending" && value !== status && (
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+          Email the candidate
+        </label>
+      )}
       <button
         onClick={save}
         disabled={saving || value === status}

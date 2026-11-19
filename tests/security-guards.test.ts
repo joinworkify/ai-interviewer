@@ -110,6 +110,8 @@ describe("the admin (service-role) client stays server-only", () => {
       "lib/candidate/resume-route-deps.ts", // 503 when the key is missing; resume rows are written with the admin client
       "lib/admin/server.ts", // 503 when the key is missing; admin reads and review writes use the admin client after an admin check
       "lib/dograh/route-deps.ts", // 503 when the key is missing; the webhook writes the transcript with the admin client
+      "lib/integrity/route-deps.ts", // 503 when the key is missing; integrity events are written with the admin client after an ownership check
+      "lib/integrity/identity-route-deps.ts", // 503 when the key is missing; the setup photo row is written with the admin client after an ownership check
       "lib/recording/route-deps.ts", // 503 when the key is missing; recording rows are written with the admin client after an ownership check
       "app/protected/interview/page.tsx", // server component: shows whether the key is set (never its value)
     ]);
@@ -130,7 +132,12 @@ describe("mutating routes check the request origin", () => {
       f === "app/api/candidate/attempts/route.ts" ||
       f === "app/api/candidate/profile/route.ts" ||
       f === "app/api/admin/sessions/[id]/review/route.ts" ||
-      f === "app/api/admin/sessions/[id]/evaluation/route.ts",
+      f === "app/api/admin/sessions/[id]/evaluation/route.ts" ||
+      f === "app/api/admin/sessions/[id]/audio-review/route.ts" ||
+      f === "app/api/admin/sessions/[id]/overrides/route.ts" ||
+      f === "app/api/admin/calibration/route.ts" ||
+      f === "app/api/admin/calibration/[id]/route.ts" ||
+      f === "app/api/admin/calibration/[id]/run/route.ts",
   );
 
   it("finds the session, account and Dograh session routes", () => {
@@ -160,7 +167,7 @@ describe("mutating routes check the request origin", () => {
       for (const { method, body } of mutating) {
         const guard = body.indexOf("guardSameOrigin(request");
         expect(guard, `${file} ${method} must call guardSameOrigin(request, ...)`).toBeGreaterThan(-1);
-        const work = body.search(/(?:run(?:Session|Deletion|Transcript|Attempt|Profile|Review|Recording)Route|handleDograhSession|evaluateSession)\(/);
+        const work = body.search(/(?:run(?:Session|Deletion|Transcript|Attempt|Profile|Review|Recording|Integrity|Identity)Route|handleDograhSession|evaluateSession|handleOverride|reviewSessionAudio|createAdminClient|readJsonBody|runCalibrationCase|runOverrideRoute)\(/);
         expect(guard, `${file} ${method} must guard before running`).toBeLessThan(work);
       }
     },

@@ -89,7 +89,7 @@ export default function ResultPage() {
             <p>Status: {STATUS_TEXT[result.status] ?? result.status}</p>
             <p>Summary: {result.summary}</p>
           </div>
-          <p className="text-xs text-muted-foreground">A person at DataSea will review it.</p>
+          <p className="text-xs text-muted-foreground">A person at DataSea will review it. Follow your application status any time, and we will email you when it changes.</p>
         </>
       )}
       {attemptId && (
@@ -97,9 +97,14 @@ export default function ResultPage() {
       )}
       {/* While the report form is open its Send report button is the action. */}
       {!reporting && !reportSent && (
-        <Button asChild className="w-32">
-          <Link href="/candidate/roles">Done</Link>
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link href="/candidate/applications">View application status</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/candidate/roles">Done</Link>
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -1,5 +1,8 @@
 import "server-only";
 
+import { after } from "next/server";
+
+import { reviewSessionAudio } from "@/lib/integrity/audio-review-server";
 import { createS3Client, createS3ResumeStorage, readResumeS3Config } from "@/lib/candidate/resume-s3";
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
@@ -50,6 +53,12 @@ export async function runRecordingRoute(
       },
       store: createSupabaseRecordingStore(createAdminClient()),
       storage: createS3ResumeStorage(createS3Client(s3.config), s3.config.bucket),
+      // After the response: the model listens to the recording (best effort).
+      onUploaded: ({ sessionId }) => {
+        after(async () => {
+          await reviewSessionAudio(sessionId);
+        });
+      },
     });
   } catch (err) {
     console.error("[recording] unhandled error", describeError(err));

@@ -17,6 +17,7 @@ const STATUS_STYLE: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
   in_progress: "bg-blue-100 text-blue-800",
   completed: "bg-green-100 text-green-800",
+  accepted: "bg-emerald-100 text-emerald-800",
   rejected: "bg-red-100 text-red-800",
 };
 
@@ -76,7 +77,7 @@ async function AdminPageContent({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {REVIEW_STATUSES.map((s) => (
           <Link
             key={s}

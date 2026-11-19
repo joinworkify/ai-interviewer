@@ -13,6 +13,7 @@ import { browserControllerDeps } from "@/lib/gemini-live/browser";
 import { LiveInterviewController, type SessionPhase } from "@/lib/gemini-live/controller";
 import { MAX_SESSION_SECONDS, validateLiveInterviewBody, type LiveInterviewDetails } from "@/lib/gemini-live/interview-details";
 import { attachTranscriptSync } from "@/lib/gemini-live/transcript-sync";
+import { startIntegrityMonitor, type IntegrityMonitor } from "@/lib/integrity/monitor";
 import { uploadRecording } from "@/lib/recording/client";
 import { startInterviewRecorder, type InterviewRecorder } from "@/lib/recording/recorder";
 import { ReportProblem } from "@/components/candidate/report-problem";
@@ -83,6 +84,28 @@ export function GeminiInterview() {
       }
     };
     return controller.subscribe(sync);
+  }, [controller, attemptId]);
+
+  // Note when the candidate leaves the interview (tab switch, lost focus,
+  // offline). Reported for the reviewer to weigh; never affects the interview.
+  const monitorRef = useRef<IntegrityMonitor | null>(null);
+  useEffect(() => {
+    if (!attemptId) return;
+    const sync = () => {
+      const { phase, startedAt } = controller.getSnapshot();
+      if (phase === "active" && startedAt !== null && !monitorRef.current) {
+        monitorRef.current = startIntegrityMonitor({ sessionId: attemptId, startedAt });
+      } else if ((phase === "ended" || phase === "error") && monitorRef.current) {
+        monitorRef.current.stop();
+        monitorRef.current = null;
+      }
+    };
+    const off = controller.subscribe(sync);
+    return () => {
+      off();
+      monitorRef.current?.stop();
+      monitorRef.current = null;
+    };
   }, [controller, attemptId]);
 
   // Wi-Fi off: end the call as a dropped connection right away.

@@ -4,7 +4,7 @@ import { isUuid } from "@/lib/sessions/validation";
 import { REVIEW_STATUSES, isReviewStatus, type ReviewStatus } from "./access";
 
 /**
- * `POST /api/admin/sessions/<id>/review { status }`: an admin sets the review
+ * `POST /api/admin/sessions/<id>/review { status, notify? }`: an admin sets the review
  * status of one interview attempt. Framework-agnostic (Request -> Response),
  * like lib/candidate/attempts.ts. Check order: signed in -> admin -> id/body ->
  * session exists -> write.
@@ -21,6 +21,8 @@ export interface ReviewHandlerDeps {
   /** The verified caller: null when signed out. */
   getCaller: () => Promise<{ userId: string; isAdmin: boolean } | null>;
   store: ReviewStore;
+  /** Runs after a status is saved; `notify` is the admin's choice to email the candidate. */
+  onStatusSet?: (change: { sessionId: string; status: ReviewStatus; notify: boolean }) => void;
 }
 
 function fail(status: number, error: string, message: string): Response {
@@ -44,9 +46,17 @@ export async function handleSetReviewStatus(
     return fail(400, "invalid_request", `status must be one of: ${REVIEW_STATUSES.join(", ")}.`);
   }
 
+  const notify = (body.value as Record<string, unknown> | null)?.notify === true;
+
   try {
     if (!(await deps.store.sessionExists(sessionId))) return fail(404, "not_found", "Interview not found.");
     const { updatedAt } = await deps.store.setStatus(sessionId, status, caller.userId);
+    try {
+      deps.onStatusSet?.({ sessionId, status, notify });
+    } catch {
+      // Emailing is best effort and never turns a saved status into an error.
+      console.error("[admin-review] status hook failed");
+    }
     return jsonResponse(200, { success: true, review: { sessionId, status, updatedAt } });
   } catch {
     return fail(500, "storage_failed", "Could not save the status.");

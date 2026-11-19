@@ -66,6 +66,8 @@ export function createSupabaseDeletionStore(
       // The audio file is removed from S3 by the handler; drop its row too.
       const recording = await client.from("interview_recordings").delete().eq("session_id", sessionId);
       if (recording.error) fail("deleteTranscript", recording.error);
+      const photo = await client.from("interview_identity_photos").delete().eq("session_id", sessionId);
+      if (photo.error) fail("deleteTranscript", photo.error);
       const { error } = await client
         .from("interview_sessions")
         .update({ transcript: null, recording_url: null })

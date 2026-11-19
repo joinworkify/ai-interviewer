@@ -4,6 +4,9 @@ import { createS3Client, createS3ResumeStorage, readResumeS3Config } from "@/lib
 import { normalizeTranscript, type TranscriptTurn } from "@/lib/sessions/transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toStoredEvaluation, type StoredEvaluation } from "@/lib/evaluation/store";
+import { applyOverrides, type ScoreOverride } from "@/lib/evaluation/overrides";
+import type { CriterionScore } from "@/lib/evaluation/evaluate";
+import { summarizeIntegrity, type IntegrityEvent, type IntegritySummary } from "@/lib/integrity/events";
 
 import type { ReviewStatus } from "./access";
 
@@ -50,15 +53,16 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
 
   const sessionIds = rows.map((s) => s.id);
   const userIds = [...new Set(rows.map((s) => s.user_id))];
-  const [consents, reviews, profiles, resumes, reports, evaluations] = await Promise.all([
+  const [consents, reviews, profiles, resumes, reports, evaluations, overrides] = await Promise.all([
     db.from("candidate_consents").select("session_id, role_id").in("session_id", sessionIds),
     db.from("interview_reviews").select("session_id, status").in("session_id", sessionIds),
     db.from("profiles").select("id, name, email").in("id", userIds),
     db.from("candidate_resumes").select("user_id").eq("status", "uploaded").in("user_id", userIds),
     db.from("interview_problem_reports").select("session_id").in("session_id", sessionIds),
-    db.from("interview_evaluations").select("session_id, overall_score").in("session_id", sessionIds),
+    db.from("interview_evaluations").select("session_id, overall_score, criteria").in("session_id", sessionIds),
+    db.from("evaluation_overrides").select("session_id, criterion, score, reason, updated_at").in("session_id", sessionIds),
   ]);
-  for (const [op, r] of [["consents", consents], ["reviews", reviews], ["profiles", profiles], ["resumes", resumes], ["reports", reports], ["evaluations", evaluations]] as const) {
+  for (const [op, r] of [["consents", consents], ["reviews", reviews], ["profiles", profiles], ["resumes", resumes], ["reports", reports], ["evaluations", evaluations], ["overrides", overrides]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -67,7 +71,21 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const withResume = new Set((resumes.data ?? []).map((r) => r.user_id));
   const reported = new Set((reports.data ?? []).map((r) => r.session_id));
-  const scoreBySession = new Map((evaluations.data ?? []).map((e) => [e.session_id, e.overall_score]));
+  // The score a reviewer sees: the AI's, with any reviewer overrides applied.
+  const overridesBySession = new Map<string, ScoreOverride[]>();
+  for (const o of overrides.data ?? []) {
+    overridesBySession.set(o.session_id, [
+      ...(overridesBySession.get(o.session_id) ?? []),
+      { criterion: o.criterion, score: o.score, reason: o.reason, updatedAt: o.updated_at },
+    ]);
+  }
+  const scoreBySession = new Map(
+    (evaluations.data ?? []).map((e) => {
+      const mine = overridesBySession.get(e.session_id);
+      if (!mine || !Array.isArray(e.criteria) || e.overall_score === null) return [e.session_id, e.overall_score] as const;
+      return [e.session_id, applyOverrides(e.criteria as unknown as CriterionScore[], mine).overallScore] as const;
+    }),
+  );
 
   const roleIds = [
     ...new Set(
@@ -132,6 +150,22 @@ export interface AttemptDetail {
   problemReports: { kind: string; message: string; createdAt: string }[];
   /** The AI rubric score, or why there is none; null before scoring ran. */
   evaluation: StoredEvaluation | null;
+  /** Reviewer overrides of criterion scores. */
+  overrides: ScoreOverride[];
+  /** What the browser saw during the call, and a rough level. */
+  integrity: { events: IntegrityEvent[]; summary: IntegritySummary };
+  /** The setup camera snapshot, with a short-lived link; null when skipped. */
+  identityPhotoUrl: string | null;
+  /** The model's review of the recording; null before it ran. */
+  audioReview: {
+    status: "completed" | "failed";
+    secondVoice: boolean | null;
+    readingAloud: boolean | null;
+    notes: string;
+    criteria: CriterionScore[];
+    overall: number | null;
+    errorCode: string | null;
+  } | null;
   /** The saved audio of the interview with a short-lived link; null when none. */
   recording: { url: string; contentType: string; sizeBytes: number; uploadedAt: string | null } | null;
 }
@@ -154,7 +188,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
   const s = session.data;
   if (!s) return null;
 
-  const [consent, review, profile, resume, reports, evaluation, recording] = await Promise.all([
+  const [consent, review, profile, resume, reports, evaluation, recording, overrideRows, integrityRows, photo, audio] = await Promise.all([
     db.from("candidate_consents").select("role_id, consent_version, accepted_at").eq("session_id", s.id).maybeSingle(),
     db.from("interview_reviews").select("status, updated_at").eq("session_id", s.id).maybeSingle(),
     db.from("profiles").select("name, email, phone, linkedin_url, portfolio_url").eq("id", s.user_id).maybeSingle(),
@@ -180,8 +214,12 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       .eq("session_id", s.id)
       .eq("status", "uploaded")
       .maybeSingle(),
+    db.from("evaluation_overrides").select("criterion, score, reason, updated_at").eq("session_id", s.id),
+    db.from("interview_integrity_events").select("kind, at_ms, duration_ms").eq("session_id", s.id).order("at_ms", { ascending: true }),
+    db.from("interview_identity_photos").select("s3_key").eq("session_id", s.id).maybeSingle(),
+    db.from("interview_audio_reviews").select("*").eq("session_id", s.id).maybeSingle(),
   ]);
-  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports], ["evaluation", evaluation], ["recording", recording]] as const) {
+  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports], ["evaluation", evaluation], ["recording", recording], ["overrides", overrideRows], ["integrity", integrityRows], ["photo", photo], ["audio", audio]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -214,6 +252,17 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       uploadedAt: recording.data.uploaded_at,
     };
   }
+
+  let identityPhotoUrl: string | null = null;
+  if (photo.data && s3.ok) {
+    const storage = createS3ResumeStorage(createS3Client(s3.config), s3.config.bucket);
+    identityPhotoUrl = await storage.presignGet(photo.data.s3_key, "photo.jpg", 300, "inline", "image/jpeg");
+  }
+  const integrityEvents: IntegrityEvent[] = (integrityRows.data ?? []).map((e) => ({
+    kind: e.kind,
+    atMs: e.at_ms,
+    ...(e.duration_ms !== null ? { durationMs: e.duration_ms } : {}),
+  }));
 
   let roleTitle: string | null = null;
   if (consent.data?.role_id) {
@@ -256,6 +305,20 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     transcript: transcriptTurns(s.transcript),
     problemReports: (reports.data ?? []).map((r) => ({ kind: r.kind, message: r.message, createdAt: r.created_at })),
     evaluation: evaluation.data ? toStoredEvaluation(evaluation.data) : null,
+    overrides: (overrideRows.data ?? []).map((o) => ({ criterion: o.criterion, score: o.score, reason: o.reason, updatedAt: o.updated_at })),
+    integrity: { events: integrityEvents, summary: summarizeIntegrity(integrityEvents) },
+    identityPhotoUrl,
+    audioReview: audio.data
+      ? {
+          status: audio.data.status,
+          secondVoice: audio.data.second_voice,
+          readingAloud: audio.data.reading_aloud,
+          notes: audio.data.notes,
+          criteria: Array.isArray(audio.data.audio_criteria) ? (audio.data.audio_criteria as unknown as CriterionScore[]) : [],
+          overall: audio.data.audio_overall,
+          errorCode: audio.data.error_code,
+        }
+      : null,
     recording: recordingInfo,
   };
 }

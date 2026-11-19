@@ -140,16 +140,17 @@ export async function deleteUserResumeFiles(
   await deletePrefix(client, bucket, `resumes/${userId}/`);
 }
 
-/** Deletes every interview recording under recordings/<userId>/ (delete-account). */
+/** Deletes every interview recording and identity photo of a user (delete-account). */
 export async function deleteUserRecordingFiles(
   client: S3Client,
   bucket: string,
   userId: string,
 ): Promise<void> {
   await deletePrefix(client, bucket, `recordings/${userId}/`);
+  await deletePrefix(client, bucket, `identity/${userId}/`);
 }
 
-/** Deletes one session's recording, whatever its file extension. */
+/** Deletes one session's recording and identity photo, whatever the file extension. */
 export async function deleteSessionRecordingFile(
   client: S3Client,
   bucket: string,
@@ -157,4 +158,16 @@ export async function deleteSessionRecordingFile(
   sessionId: string,
 ): Promise<void> {
   await deletePrefix(client, bucket, `recordings/${userId}/${sessionId}.`);
+  await deletePrefix(client, bucket, `identity/${userId}/${sessionId}.`);
+}
+
+/** Writes a small object from the server (identity photos). */
+export async function putS3Object(
+  client: S3Client,
+  bucket: string,
+  key: string,
+  bytes: Uint8Array,
+  contentType: string,
+): Promise<void> {
+  await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: contentType }));
 }

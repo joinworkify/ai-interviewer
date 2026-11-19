@@ -14,6 +14,7 @@ const WORDING: Record<string, string> = {
   "2026-11-13": "1bdc9756",
   "2026-11-18": "652572b2",
   "2026-11-19": "f26f3a74",
+  "2026-11-21": "ea272f0d",
 };
 
 function wordingHash(): string {

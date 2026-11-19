@@ -1,7 +1,10 @@
 
 import { jsonResponse } from "@/lib/http/json";
+import type { ReviewStatus } from "@/lib/admin/access";
 import { attemptProgress } from "@/lib/candidate/attempts";
 import { describeError } from "@/lib/log/safe-error";
+import { applicationStage } from "@/lib/candidate/stage";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -106,6 +109,19 @@ export async function GET(request: Request) {
       ]),
     );
 
+    // Reviewer statuses are not readable by browsers, so they are read with the
+    // service role, only for this candidate's own sessions (ids checked above),
+    // and only the derived stage is returned.
+    const reviewBySession = new Map<string, ReviewStatus>();
+    if (sessionById.size > 0) {
+      const { data: reviews, error: reviewError } = await createAdminClient()
+        .from("interview_reviews")
+        .select("session_id, status")
+        .in("session_id", [...sessionById.keys()]);
+      if (reviewError) throw reviewError;
+      for (const r of reviews ?? []) reviewBySession.set(r.session_id, r.status);
+    }
+
     const applications = consents.flatMap((consent) => {
       const session = sessionById.get(consent.session_id);
 
@@ -117,6 +133,7 @@ export async function GET(request: Request) {
         roleTitle: roleTitles.get(consent.role_id) ?? "Unknown role",
         appliedAt: consent.accepted_at,
         status: attemptProgress(session),
+        stage: applicationStage(attemptProgress(session), reviewBySession.get(session.id) ?? null),
       }];
     });
 
