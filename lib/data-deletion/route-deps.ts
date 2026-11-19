@@ -2,6 +2,8 @@ import "server-only";
 
 import {
   createS3Client,
+  deleteSessionRecordingFile,
+  deleteUserRecordingFiles,
   deleteUserResumeFiles,
   readResumeS3Config,
 } from "@/lib/candidate/resume-s3";
@@ -56,7 +58,16 @@ export async function runDeletionRoute(
       store: createSupabaseDeletionStore(createAdminClient()),
       // Resume files live in S3, which no database cascade reaches.
       deleteUserFiles: s3.ok
-        ? (userId) => deleteUserResumeFiles(createS3Client(s3.config), s3.config.bucket, userId)
+        ? async (userId) => {
+            const client = createS3Client(s3.config);
+            await deleteUserResumeFiles(client, s3.config.bucket, userId);
+            await deleteUserRecordingFiles(client, s3.config.bucket, userId);
+          }
+        : undefined,
+      // Interview audio lives in S3 too, so session deletion removes it.
+      deleteSessionFiles: s3.ok
+        ? (userId, sessionId) =>
+            deleteSessionRecordingFile(createS3Client(s3.config), s3.config.bucket, userId, sessionId)
         : undefined,
       // Clears the auth cookies of the account that no longer exists.
       afterAccountDeleted: async () => {

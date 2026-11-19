@@ -103,6 +103,8 @@ export interface LiveSessionLike {
 
 export interface MicHandle {
   readonly sampleRate: number;
+  /** The raw microphone stream, for recording; absent in tests. */
+  readonly stream?: MediaStream;
   stop(): void;
 }
 
@@ -111,6 +113,8 @@ export interface PlayerLike {
   enqueue(base64: string, sampleRate: number): void;
   clear(): void;
   remainingMs(): number;
+  /** The interviewer's voice as a stream, for recording; absent in tests. */
+  readonly outputStream?: MediaStream;
   close(): void;
 }
 
@@ -208,6 +212,13 @@ export class LiveInterviewController {
   };
 
   getSnapshot = (): ControllerState => this.state;
+
+  /** Live audio streams of this session (candidate mic, interviewer voice) for recording. */
+  getAudioStreams(): MediaStream[] {
+    return [this.res.mic?.stream, this.res.player?.outputStream].filter(
+      (s): s is MediaStream => s !== undefined,
+    );
+  }
 
   // --- commands --------------------------------------------------------------
 

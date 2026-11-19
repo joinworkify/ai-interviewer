@@ -3,6 +3,7 @@ import "server-only";
 import { createS3Client, createS3ResumeStorage, readResumeS3Config } from "@/lib/candidate/resume-s3";
 import { normalizeTranscript, type TranscriptTurn } from "@/lib/sessions/transcript";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toStoredEvaluation, type StoredEvaluation } from "@/lib/evaluation/store";
 
 import type { ReviewStatus } from "./access";
 
@@ -26,6 +27,8 @@ export interface AttemptListItem {
   hasResume: boolean;
   /** The candidate sent at least one problem report for this interview. */
   problemReported: boolean;
+  /** AI rubric score 0-100; null when not scored (yet). */
+  score: number | null;
   startedAt: string;
 }
 
@@ -47,14 +50,15 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
 
   const sessionIds = rows.map((s) => s.id);
   const userIds = [...new Set(rows.map((s) => s.user_id))];
-  const [consents, reviews, profiles, resumes, reports] = await Promise.all([
+  const [consents, reviews, profiles, resumes, reports, evaluations] = await Promise.all([
     db.from("candidate_consents").select("session_id, role_id").in("session_id", sessionIds),
     db.from("interview_reviews").select("session_id, status").in("session_id", sessionIds),
     db.from("profiles").select("id, name, email").in("id", userIds),
     db.from("candidate_resumes").select("user_id").eq("status", "uploaded").in("user_id", userIds),
     db.from("interview_problem_reports").select("session_id").in("session_id", sessionIds),
+    db.from("interview_evaluations").select("session_id, overall_score").in("session_id", sessionIds),
   ]);
-  for (const [op, r] of [["consents", consents], ["reviews", reviews], ["profiles", profiles], ["resumes", resumes], ["reports", reports]] as const) {
+  for (const [op, r] of [["consents", consents], ["reviews", reviews], ["profiles", profiles], ["resumes", resumes], ["reports", reports], ["evaluations", evaluations]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -63,6 +67,7 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const withResume = new Set((resumes.data ?? []).map((r) => r.user_id));
   const reported = new Set((reports.data ?? []).map((r) => r.session_id));
+  const scoreBySession = new Map((evaluations.data ?? []).map((e) => [e.session_id, e.overall_score]));
 
   const roleIds = [
     ...new Set(
@@ -89,6 +94,7 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
       reviewStatus: reviewBySession.get(s.id) ?? "pending",
       hasResume: withResume.has(s.user_id),
       problemReported: reported.has(s.id),
+      score: scoreBySession.get(s.id) ?? null,
       startedAt: s.started_at,
     };
   });
@@ -124,6 +130,10 @@ export interface AttemptDetail {
   /** The saved interview conversation in order; empty when there is none or it is unreadable. */
   transcript: TranscriptTurn[];
   problemReports: { kind: string; message: string; createdAt: string }[];
+  /** The AI rubric score, or why there is none; null before scoring ran. */
+  evaluation: StoredEvaluation | null;
+  /** The saved audio of the interview with a short-lived link; null when none. */
+  recording: { url: string; contentType: string; sizeBytes: number; uploadedAt: string | null } | null;
 }
 
 /** Saved transcript (any shape normalizeTranscript accepts) as ordered turns; [] if missing or unreadable. */
@@ -144,7 +154,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
   const s = session.data;
   if (!s) return null;
 
-  const [consent, review, profile, resume, reports] = await Promise.all([
+  const [consent, review, profile, resume, reports, evaluation, recording] = await Promise.all([
     db.from("candidate_consents").select("role_id, consent_version, accepted_at").eq("session_id", s.id).maybeSingle(),
     db.from("interview_reviews").select("status, updated_at").eq("session_id", s.id).maybeSingle(),
     db.from("profiles").select("name, email, phone, linkedin_url, portfolio_url").eq("id", s.user_id).maybeSingle(),
@@ -163,8 +173,15 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       .select("kind, message, created_at")
       .eq("session_id", s.id)
       .order("created_at", { ascending: true }),
+    db.from("interview_evaluations").select("*").eq("session_id", s.id).maybeSingle(),
+    db
+      .from("interview_recordings")
+      .select("s3_key, content_type, size_bytes, uploaded_at")
+      .eq("session_id", s.id)
+      .eq("status", "uploaded")
+      .maybeSingle(),
   ]);
-  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports]] as const) {
+  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports], ["evaluation", evaluation], ["recording", recording]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -177,6 +194,25 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     if (/\.pdf$/i.test(resume.data.file_name)) {
       previewUrl = await storage.presignGet(resume.data.s3_key, resume.data.file_name, 300, "inline");
     }
+  }
+
+  let recordingInfo: AttemptDetail["recording"] = null;
+  if (recording.data && s3.ok) {
+    const storage = createS3ResumeStorage(createS3Client(s3.config), s3.config.bucket);
+    // Longer than the resume links: a reviewer may listen for a while.
+    const url = await storage.presignGet(
+      recording.data.s3_key,
+      "interview-recording",
+      3600,
+      "inline",
+      recording.data.content_type,
+    );
+    recordingInfo = {
+      url,
+      contentType: recording.data.content_type,
+      sizeBytes: recording.data.size_bytes,
+      uploadedAt: recording.data.uploaded_at,
+    };
   }
 
   let roleTitle: string | null = null;
@@ -219,5 +255,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
       : null,
     transcript: transcriptTurns(s.transcript),
     problemReports: (reports.data ?? []).map((r) => ({ kind: r.kind, message: r.message, createdAt: r.created_at })),
+    evaluation: evaluation.data ? toStoredEvaluation(evaluation.data) : null,
+    recording: recordingInfo,
   };
 }

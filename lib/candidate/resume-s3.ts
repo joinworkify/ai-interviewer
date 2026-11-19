@@ -75,14 +75,14 @@ export function createS3ResumeStorage(client: S3Client, bucket: string): ResumeS
       );
     },
 
-    presignGet(key, fileName, ttlSeconds, disposition = "attachment") {
+    presignGet(key, fileName, ttlSeconds, disposition = "attachment", contentType) {
       return getSignedUrl(
         client,
         new GetObjectCommand({
           Bucket: bucket,
           Key: key,
           ResponseContentDisposition: disposition === "inline" ? "inline" : attachment(fileName),
-          ...(disposition === "inline" ? { ResponseContentType: "application/pdf" } : {}),
+          ...(disposition === "inline" ? { ResponseContentType: contentType ?? "application/pdf" } : {}),
         }),
         { expiresIn: ttlSeconds },
       );
@@ -113,13 +113,8 @@ export async function downloadResumeFile(client: S3Client, bucket: string, key: 
   return out.Body.transformToByteArray();
 }
 
-/** Deletes every file under resumes/<userId>/ (used by delete-account). */
-export async function deleteUserResumeFiles(
-  client: S3Client,
-  bucket: string,
-  userId: string,
-): Promise<void> {
-  const Prefix = `resumes/${userId}/`;
+/** Deletes every object whose key starts with `prefix`. */
+async function deletePrefix(client: S3Client, bucket: string, Prefix: string): Promise<void> {
   let ContinuationToken: string | undefined;
   do {
     const page = await client.send(
@@ -130,8 +125,36 @@ export async function deleteUserResumeFiles(
       const out = await client.send(
         new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: keys, Quiet: true } }),
       );
-      if (out.Errors?.length) throw new Error("deleteUserResumeFiles failed");
+      if (out.Errors?.length) throw new Error("deletePrefix failed");
     }
     ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
   } while (ContinuationToken);
+}
+
+/** Deletes every file under resumes/<userId>/ (used by delete-account). */
+export async function deleteUserResumeFiles(
+  client: S3Client,
+  bucket: string,
+  userId: string,
+): Promise<void> {
+  await deletePrefix(client, bucket, `resumes/${userId}/`);
+}
+
+/** Deletes every interview recording under recordings/<userId>/ (delete-account). */
+export async function deleteUserRecordingFiles(
+  client: S3Client,
+  bucket: string,
+  userId: string,
+): Promise<void> {
+  await deletePrefix(client, bucket, `recordings/${userId}/`);
+}
+
+/** Deletes one session's recording, whatever its file extension. */
+export async function deleteSessionRecordingFile(
+  client: S3Client,
+  bucket: string,
+  userId: string,
+  sessionId: string,
+): Promise<void> {
+  await deletePrefix(client, bucket, `recordings/${userId}/${sessionId}.`);
 }

@@ -13,6 +13,8 @@ import { browserControllerDeps } from "@/lib/gemini-live/browser";
 import { LiveInterviewController, type SessionPhase } from "@/lib/gemini-live/controller";
 import { MAX_SESSION_SECONDS, validateLiveInterviewBody, type LiveInterviewDetails } from "@/lib/gemini-live/interview-details";
 import { attachTranscriptSync } from "@/lib/gemini-live/transcript-sync";
+import { uploadRecording } from "@/lib/recording/client";
+import { startInterviewRecorder, type InterviewRecorder } from "@/lib/recording/recorder";
 import { ReportProblem } from "@/components/candidate/report-problem";
 import type { SaveTranscriptOutcome } from "@/lib/transcripts/client";
 
@@ -62,6 +64,25 @@ export function GeminiInterview() {
   useEffect(() => {
     if (!attemptId) return;
     return attachTranscriptSync(controller, { sessionId: attemptId, onOutcome: setSaved });
+  }, [controller, attemptId]);
+
+  // Record the call (candidate mic + interviewer voice) and upload the audio
+  // once it ends, for the reviewer. Best effort: the interview and its
+  // transcript never depend on it, and any failure is silent here.
+  const recorderRef = useRef<InterviewRecorder | null>(null);
+  useEffect(() => {
+    if (!attemptId) return;
+    const sync = () => {
+      const phase = controller.getSnapshot().phase;
+      if (phase === "active" && !recorderRef.current) {
+        recorderRef.current = startInterviewRecorder(controller.getAudioStreams());
+      } else if ((phase === "ended" || phase === "error") && recorderRef.current) {
+        const recorder = recorderRef.current;
+        recorderRef.current = null;
+        void recorder.stop().then((audio) => (audio ? uploadRecording({ sessionId: attemptId, audio }) : undefined));
+      }
+    };
+    return controller.subscribe(sync);
   }, [controller, attemptId]);
 
   // Wi-Fi off: end the call as a dropped connection right away.

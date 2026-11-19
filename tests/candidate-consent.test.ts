@@ -13,6 +13,7 @@ import { CONSENT_LABEL, CONSENT_POINTS, CONSENT_VERSION } from "@/lib/candidate/
 const WORDING: Record<string, string> = {
   "2026-11-13": "1bdc9756",
   "2026-11-18": "652572b2",
+  "2026-11-19": "f26f3a74",
 };
 
 function wordingHash(): string {

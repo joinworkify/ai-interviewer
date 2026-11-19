@@ -18,7 +18,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { RubricEditor } from "@/components/admin/rubric-editor";
 import { TableRowsSkeleton } from "@/components/admin/skeletons";
+import { parseRubric, type RubricCriterion } from "@/lib/evaluation/rubric";
 import { formatPayRate, validatePayRate, type PayType } from "@/lib/candidate/pay";
 
 type Bullet = {
@@ -37,6 +39,7 @@ type Role = {
   about: string;
   responsibilities: Bullet[];
   requirements: Bullet[];
+  rubric: RubricCriterion[];
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -54,6 +57,7 @@ type RoleForm = {
   about: string;
   responsibilities: string;
   requirements: string;
+  rubric: RubricCriterion[];
   is_active: boolean;
   sort_order: number;
 };
@@ -76,6 +80,7 @@ const emptyForm: RoleForm = {
   about: "",
   responsibilities: "",
   requirements: "",
+  rubric: [],
   is_active: true,
   sort_order: 0,
 };
@@ -118,6 +123,7 @@ function roleToForm(role: Role): RoleForm {
     about: role.about ?? "",
     responsibilities: bulletsToText(role.responsibilities),
     requirements: bulletsToText(role.requirements),
+    rubric: Array.isArray(role.rubric) ? role.rubric : [],
     is_active: role.is_active,
     sort_order: role.sort_order,
   };
@@ -248,6 +254,12 @@ export function RolesManager() {
       return;
     }
 
+    const rubric = parseRubric(form.rubric);
+    if (!rubric.ok) {
+      setError(rubric.message);
+      return;
+    }
+
     const payload = {
       ...(editingId ? {} : { id: form.id.trim() }),
       title: form.title.trim(),
@@ -262,6 +274,7 @@ export function RolesManager() {
       about: form.about.trim(),
       responsibilities: textToBullets(form.responsibilities),
       requirements: textToBullets(form.requirements),
+      rubric: rubric.rubric,
       is_active: form.is_active,
       sort_order: Number(form.sort_order),
     };
@@ -577,6 +590,10 @@ export function RolesManager() {
                 <p className="text-xs text-muted-foreground">
                   One item per line, using Title|Description.
                 </p>
+              </div>
+
+              <div className="sm:col-span-2">
+                <RubricEditor value={form.rubric} onChange={(next) => updateForm("rubric", next)} />
               </div>
 
               <div className="space-y-1.5">

@@ -101,6 +101,7 @@ async function AdminPageContent({
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Interview</th>
               <th className="px-4 py-3">Resume</th>
+              <th className="px-4 py-3">AI score</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Started</th>
               <th className="px-4 py-3" />
@@ -110,7 +111,7 @@ async function AdminPageContent({
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   No interviews found.
@@ -136,6 +137,9 @@ async function AdminPageContent({
                   {r.interviewStatus.replace("_", " ")}
                 </td>
                 <td className="px-4 py-3">{r.hasResume ? "Yes" : "No"}</td>
+                <td className="px-4 py-3 tabular-nums">
+                  {r.score === null ? <span className="text-muted-foreground">—</span> : <span className="font-semibold">{r.score}</span>}
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`rounded-full px-2 py-1 font-ui text-xs font-medium ${STATUS_STYLE[r.reviewStatus]}`}

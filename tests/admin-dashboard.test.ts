@@ -107,11 +107,13 @@ describe("admin paths", () => {
     expect(read("app/admin/sessions/[id]/page.tsx")).toContain("await requireAdmin()");
   });
 
-  it("shows the transcript, not AI feedback or a recording", () => {
+  it("shows the transcript, the rubric score and the recording player, not the old per-answer AI feedback", () => {
     const page = read("app/admin/sessions/[id]/page.tsx");
     expect(page).toContain('title="Transcript"');
+    expect(page).toContain('title="AI score"');
+    expect(page).toContain('title="Recording"');
+    expect(page).toContain("<audio");
     expect(page).not.toContain("AI feedback");
-    expect(page).not.toMatch(/<audio|recording/i);
   });
 });
 
