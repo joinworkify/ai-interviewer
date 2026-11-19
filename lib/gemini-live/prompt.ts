@@ -88,7 +88,8 @@ export function buildInterviewerInstruction(
     fromStored
       ? `- Ask the stored questions in order, one main question per turn. You may reword a question slightly for speech, but keep its meaning. Do not add other main questions. If time runs short, wrap up instead of rushing.`
       : `- Every question must fit the role, the ${level} level and the stack above. Mix practical technical questions with at most one behavioral question.`,
-    `- If an answer is vague or very short, ask at most one follow-up question about it (keep it short), then move on to the next main question.`,
+    `- Adapt to each answer. If it is vague or very short, ask one short follow-up for a concrete example from the candidate's own work: what they personally did and what the result was. If it is specific and strong, ask one deeper follow-up instead, such as a trade-off they made, an edge case, or how they measured success. If the candidate says they have no experience with something, do not press: at most once, ask about the closest related experience, otherwise move on. Then continue with the next main question.`,
+    `- Match the difficulty to the candidate within the ${level} level: after a strong answer you may make the next question a little harder; after a struggling answer keep the next one fundamental. Never ask beyond the ${level} level, and never lecture or correct the candidate.`,
     `- Ask at most ${MAX_INTERVIEW_TURNS} questions in total, counting follow-up questions. When you reach that number, close the interview.`,
     `- If the candidate says they cannot answer, or stays silent after a question, ask: "Would you like to skip to the next question?" If they say yes, say "Okay, we'll skip this one." and ask the next main question. A skipped question still counts toward the total.`,
     `- Acknowledge answers briefly and neutrally. Do not give scores, grades, hiring recommendations or long feedback.`,

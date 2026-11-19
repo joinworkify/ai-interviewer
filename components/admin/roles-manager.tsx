@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/tooltip";
 
 import { RubricEditor } from "@/components/admin/rubric-editor";
+import { TaskEditor } from "@/components/admin/task-editor";
+import { parseTasks, type RoleTask } from "@/lib/tasks/tasks";
 import { TableRowsSkeleton } from "@/components/admin/skeletons";
 import { parseRubric, type RubricCriterion } from "@/lib/evaluation/rubric";
 import { formatPayRate, validatePayRate, type PayType } from "@/lib/candidate/pay";
@@ -40,6 +42,7 @@ type Role = {
   responsibilities: Bullet[];
   requirements: Bullet[];
   rubric: RubricCriterion[];
+  tasks: RoleTask[];
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -58,6 +61,7 @@ type RoleForm = {
   responsibilities: string;
   requirements: string;
   rubric: RubricCriterion[];
+  tasks: RoleTask[];
   is_active: boolean;
   sort_order: number;
 };
@@ -81,6 +85,7 @@ const emptyForm: RoleForm = {
   responsibilities: "",
   requirements: "",
   rubric: [],
+  tasks: [],
   is_active: true,
   sort_order: 0,
 };
@@ -124,6 +129,7 @@ function roleToForm(role: Role): RoleForm {
     responsibilities: bulletsToText(role.responsibilities),
     requirements: bulletsToText(role.requirements),
     rubric: Array.isArray(role.rubric) ? role.rubric : [],
+    tasks: Array.isArray(role.tasks) ? role.tasks : [],
     is_active: role.is_active,
     sort_order: role.sort_order,
   };
@@ -260,6 +266,12 @@ export function RolesManager() {
       return;
     }
 
+    const tasks = parseTasks(form.tasks);
+    if (!tasks.ok) {
+      setError(tasks.message);
+      return;
+    }
+
     const payload = {
       ...(editingId ? {} : { id: form.id.trim() }),
       title: form.title.trim(),
@@ -275,6 +287,7 @@ export function RolesManager() {
       responsibilities: textToBullets(form.responsibilities),
       requirements: textToBullets(form.requirements),
       rubric: rubric.rubric,
+      tasks: tasks.tasks,
       is_active: form.is_active,
       sort_order: Number(form.sort_order),
     };
@@ -594,6 +607,10 @@ export function RolesManager() {
 
               <div className="sm:col-span-2">
                 <RubricEditor value={form.rubric} onChange={(next) => updateForm("rubric", next)} />
+              </div>
+
+              <div className="sm:col-span-2">
+                <TaskEditor value={form.tasks} onChange={(next) => updateForm("tasks", next)} />
               </div>
 
               <div className="space-y-1.5">

@@ -6,6 +6,7 @@ import { createSupabaseUsageStore } from "@/lib/ai/usage";
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
 import { evaluateSession } from "@/lib/evaluation/store";
+import { announceStage } from "@/lib/notifications/events";
 import { evaluateStoredSession } from "@/lib/sessions/auto-evaluate";
 import { createSupabaseSessionStore } from "@/lib/sessions/store";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -80,6 +81,10 @@ export async function runTranscriptRoute(
           }
           // Score against the role's rubric (never throws; failures are saved).
           await evaluateSession(sessionId);
+          // Tell the candidate we have their interview (only if they spoke).
+          if (transcript.some((t) => t.role === "candidate" && t.text.trim().length > 0)) {
+            await announceStage(sessionId, "received", { email: true });
+          }
         });
       },
     });

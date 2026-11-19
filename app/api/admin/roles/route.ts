@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { describeError } from "@/lib/log/safe-error";
 import { isRoleBullets, isRolePay } from "@/lib/admin/role-validation";
 import { loadRubrics, saveRubric } from "@/lib/admin/rubrics";
+import { loadTasks, saveTasks } from "@/lib/admin/tasks-store";
+import { parseTasks } from "@/lib/tasks/tasks";
 import { parseRubric } from "@/lib/evaluation/rubric";
 
 import { requireAdmin } from "@/lib/admin/server";
@@ -23,8 +25,8 @@ export async function GET() {
 
     if (error) throw error;
 
-    const rubrics = await loadRubrics(supabase);
-    const roles = (data ?? []).map((role) => ({ ...role, rubric: rubrics.get(role.id) ?? [] }));
+    const [rubrics, tasks] = await Promise.all([loadRubrics(supabase), loadTasks(supabase)]);
+    const roles = (data ?? []).map((role) => ({ ...role, rubric: rubrics.get(role.id) ?? [], tasks: tasks.get(role.id) ?? [] }));
 
     return NextResponse.json({ success: true, roles });
   } catch (error) {
@@ -63,6 +65,7 @@ export async function POST(request: Request) {
       responsibilities = [],
       requirements = [],
       rubric = [],
+      tasks = [],
       is_active = true,
       sort_order = 0,
     } = body as Record<string, unknown>;
@@ -70,6 +73,11 @@ export async function POST(request: Request) {
     const parsedRubric = parseRubric(rubric);
     if (!parsedRubric.ok) {
       return NextResponse.json({ success: false, message: parsedRubric.message }, { status: 400 });
+    }
+
+    const parsedTasks = parseTasks(tasks);
+    if (!parsedTasks.ok) {
+      return NextResponse.json({ success: false, message: parsedTasks.message }, { status: 400 });
     }
 
     if (
@@ -139,7 +147,17 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, role: { ...data, rubric: parsedRubric.rubric } }, { status: 201 });
+    try {
+      await saveTasks(supabase, id, parsedTasks.tasks);
+    } catch (taskError) {
+      console.error("[admin-roles] tasks save failed:", describeError(taskError));
+      return NextResponse.json(
+        { success: false, message: "Role created, but its tasks could not be saved. Edit the role to retry." },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ success: true, role: { ...data, rubric: parsedRubric.rubric, tasks: parsedTasks.tasks } }, { status: 201 });
   } catch (error) {
     console.error("[admin-roles] POST failed:", describeError(error));
 

@@ -68,6 +68,8 @@ export function createSupabaseDeletionStore(
       if (recording.error) fail("deleteTranscript", recording.error);
       const photo = await client.from("interview_identity_photos").delete().eq("session_id", sessionId);
       if (photo.error) fail("deleteTranscript", photo.error);
+      const work = await client.from("task_submissions").delete().eq("session_id", sessionId);
+      if (work.error) fail("deleteTranscript", work.error);
       const { error } = await client
         .from("interview_sessions")
         .update({ transcript: null, recording_url: null })

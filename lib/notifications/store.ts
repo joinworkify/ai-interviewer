@@ -34,7 +34,7 @@ export function createSupabaseNotifyStore(db: SupabaseClient<Database>): NotifyS
         if (role.error) fail("load role", role.error);
         roleTitle = role.data?.title ?? null;
       }
-      return { email: profile.data.email, name: profile.data.name, roleTitle };
+      return { userId: session.data.user_id, email: profile.data.email, name: profile.data.name, roleTitle };
     },
 
     async claim(sessionId, stage) {

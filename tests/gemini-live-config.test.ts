@@ -117,7 +117,7 @@ describe("buildInterviewerInstruction", () => {
   it("enforces one question at a time, max one follow-up, stop handling and the tool", () => {
     const text = buildInterviewerInstruction(details);
     expect(text).toMatch(/exactly one question/i);
-    expect(text).toMatch(/at most one follow-up/i);
+    expect(text).toMatch(/one short follow-up/i);
     expect(text).toMatch(/stop|bye/i);
     expect(text).toContain(END_INTERVIEW_TOOL);
     expect(text).toMatch(/20 minutes/);
@@ -204,6 +204,25 @@ describe("SlidingWindowLimiter", () => {
     const l = new SlidingWindowLimiter({ limit: 1, windowMs: 1000, maxKeys: 3 });
     for (let i = 0; i < 10; i++) l.hit(`u${i}`, i * 2000);
     expect(l.size).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("adaptive follow-ups", () => {
+  const text = buildInterviewerInstruction({ role: "Data Scientist", level: "mid" as const, techstack: ["Python", "SQL"] });
+  it("probes vague answers for a concrete example and strong answers for depth", () => {
+    expect(text).toMatch(/concrete example from the candidate's own work/i);
+    expect(text).toMatch(/trade-off/i);
+  });
+  it("does not press a candidate who lacks experience", () => {
+    expect(text).toMatch(/do not press/i);
+  });
+  it("adapts difficulty within the level and never lectures", () => {
+    expect(text).toMatch(/difficulty/i);
+    expect(text).toMatch(/never ask beyond the/i);
+    expect(text).toMatch(/never lecture/i);
+  });
+  it("still caps the total number of questions", () => {
+    expect(text).toMatch(/at most 8 questions in total/i);
   });
 });
 

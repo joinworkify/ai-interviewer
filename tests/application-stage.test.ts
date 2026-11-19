@@ -54,11 +54,11 @@ describe("composeStageEmail", () => {
   });
 });
 
-function fakeStore(over: { target?: { email: string; name: string | null; roleTitle: string | null } | null; claimed?: boolean } = {}) {
+function fakeStore(over: { target?: { userId: string; email: string; name: string | null; roleTitle: string | null } | null; claimed?: boolean } = {}) {
   const claim = vi.fn(async () => over.claimed ?? true);
   const release = vi.fn(async () => {});
   const store: NotifyStore = {
-    load: async () => (over.target === undefined ? { email: "a@example.com", name: "Aye", roleTitle: "Analyst" } : over.target),
+    load: async () => (over.target === undefined ? { userId: "u", email: "a@example.com", name: "Aye", roleTitle: "Analyst" } : over.target),
     claim,
     release,
   };

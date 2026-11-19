@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
 import { createEmailSender } from "@/lib/notifications/email";
+import { createSupabaseInboxWriter } from "@/lib/notifications/inbox-store";
 import { composeBookingEmail } from "@/lib/notifications/booking-email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -75,16 +76,24 @@ export async function runBookingRoute(run: (deps: BookingHandlerDeps) => Promise
         },
       },
       // After the response: confirmation email (best effort).
-      onCreated: ({ userId, roleId, startsAt }) => {
+      onCreated: ({ userId, bookingId, roleId, startsAt }) => {
         after(async () => {
           try {
-            const send = createEmailSender(process.env);
-            if (!send) return;
             const [profile, role] = await Promise.all([
               db.from("profiles").select("name, email").eq("id", userId).maybeSingle(),
               db.from("roles").select("title").eq("id", roleId).maybeSingle(),
             ]);
-            if (!profile.data?.email) return;
+            // In-app notice first: it works without an email provider.
+            await createSupabaseInboxWriter(db).add({
+              userId,
+              kind: "booking",
+              sessionId: bookingId,
+              title: "Your interview is booked",
+              body: `${role.data?.title ?? "Your interview"} · ${startsAt.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC`,
+              link: "/candidate/applications",
+            });
+            const send = createEmailSender(process.env);
+            if (!send || !profile.data?.email) return;
             const origin = process.env.APP_ORIGIN?.trim().replace(/\/+$/, "");
             const message = composeBookingEmail("confirmation", {
               name: profile.data.name,

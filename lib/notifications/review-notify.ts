@@ -13,12 +13,14 @@ import type { EmailMessage, SendEmail } from "./email";
  */
 
 export interface NotifyTarget {
+  userId: string;
   email: string;
   name: string | null;
   roleTitle: string | null;
 }
 
-export type NotifyStage = NonNullable<ReturnType<typeof notifiableStage>>;
+/** Every stage that can be emailed or shown in the inbox. */
+export type NotifyStage = NonNullable<ReturnType<typeof notifiableStage>> | "received" | "unfinished";
 
 export interface NotifyStore {
   load(sessionId: string): Promise<NotifyTarget | null>;
@@ -38,6 +40,14 @@ export function composeStageEmail(
   const role = target.roleTitle ? ` for ${target.roleTitle}` : "";
   const status = link ? `\n\nYou can follow your application any time: ${link}` : "";
   const body: Record<NotifyStage, { subject: string; lines: string[] }> = {
+    received: {
+      subject: `We received your DataSea interview`,
+      lines: [`Thank you for completing your interview${role}. A person at DataSea will review it and we will email you when its status changes.`],
+    },
+    unfinished: {
+      subject: `Finish your DataSea application`,
+      lines: [`You started an interview${role} but it was not finished. You can try again whenever you are ready, with a quiet place and about 20 minutes.`],
+    },
     in_review: {
       subject: `Your DataSea application is in review`,
       lines: [`A person at DataSea has started reviewing your interview${role}. We will be in touch when there is a decision.`],
@@ -58,26 +68,38 @@ export function composeStageEmail(
   return { subject, text: `${hello}\n\n${lines.join("\n\n")}${status}\n\nThe DataSea team` };
 }
 
+/** Emails a candidate about one stage, once per session and stage. */
+export async function notifyStage(args: {
+  store: NotifyStore;
+  send: SendEmail | null;
+  sessionId: string;
+  stage: NotifyStage;
+  /** Absolute URL of the candidate's applications page, when the app origin is known. */
+  link: string | null;
+}): Promise<NotifyOutcome> {
+  if (!args.send) return "skipped";
+  const target = await args.store.load(args.sessionId);
+  if (!target?.email) return "skipped";
+
+  if (!(await args.store.claim(args.sessionId, args.stage))) return "already_sent";
+  const message = composeStageEmail(args.stage, target, args.link);
+  const ok = await args.send({ to: target.email, ...message });
+  if (!ok) {
+    await args.store.release(args.sessionId, args.stage);
+    return "failed";
+  }
+  return "sent";
+}
+
+/** Emails the candidate when a reviewer moves their application to a new status. */
 export async function notifyCandidate(args: {
   store: NotifyStore;
   send: SendEmail | null;
   sessionId: string;
   status: ReviewStatus;
-  /** Absolute URL of the candidate's applications page, when the app origin is known. */
   link: string | null;
 }): Promise<NotifyOutcome> {
   const stage = notifiableStage(args.status);
-  if (!stage || !args.send) return "skipped";
-
-  const target = await args.store.load(args.sessionId);
-  if (!target?.email) return "skipped";
-
-  if (!(await args.store.claim(args.sessionId, stage))) return "already_sent";
-  const message = composeStageEmail(stage, target, args.link);
-  const ok = await args.send({ to: target.email, ...message });
-  if (!ok) {
-    await args.store.release(args.sessionId, stage);
-    return "failed";
-  }
-  return "sent";
+  if (!stage) return "skipped";
+  return notifyStage({ store: args.store, send: args.send, sessionId: args.sessionId, stage, link: args.link });
 }

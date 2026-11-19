@@ -6,6 +6,7 @@ import { normalizeTranscript, type TranscriptTurn } from "@/lib/sessions/transcr
 
 import {
   buildEvaluationMessages,
+  type TaskAnswer,
   candidateWordCount,
   MIN_CANDIDATE_WORDS,
   parseEvaluation,
@@ -42,6 +43,8 @@ export interface EvaluationInput {
   transcript: unknown;
   roleTitle: string | null;
   rubric: unknown;
+  /** Submitted work-sample answers, if the role has tasks. */
+  tasks?: TaskAnswer[];
 }
 
 export interface EvaluationStore {
@@ -109,7 +112,7 @@ export async function runRubricEvaluation(
   try {
     const { data, model } = await chatJson(
       llm.config,
-      buildEvaluationMessages({ roleTitle: input.roleTitle ?? "the role", rubric, turns }),
+      buildEvaluationMessages({ roleTitle: input.roleTitle ?? "the role", rubric, turns, tasks: input.tasks }),
       (parsed) => parseEvaluation(parsed, rubric),
       {
         fetch: deps.fetch,

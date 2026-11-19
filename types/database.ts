@@ -701,20 +701,143 @@ export type Database = {
           },
         ];
       };
+      candidate_inbox: {
+        Row: {
+          id: string;
+          user_id: string;
+          kind: "received" | "in_review" | "accepted" | "not_selected" | "unfinished" | "booking" | "booking_reminder";
+          session_id: string;
+          title: string;
+          body: string;
+          link: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          kind: "received" | "in_review" | "accepted" | "not_selected" | "unfinished" | "booking" | "booking_reminder";
+          session_id?: string;
+          title: string;
+          body?: string;
+          link?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          kind?: "received" | "in_review" | "accepted" | "not_selected" | "unfinished" | "booking" | "booking_reminder";
+          session_id?: string;
+          title?: string;
+          body?: string;
+          link?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      role_tasks: {
+        Row: {
+          id: string;
+          role_id: string;
+          kind: "writing" | "coding" | "case";
+          title: string;
+          prompt: string;
+          minutes: number;
+          position: number;
+        };
+        Insert: {
+          id?: string;
+          role_id: string;
+          kind: "writing" | "coding" | "case";
+          title: string;
+          prompt: string;
+          minutes?: number;
+          position?: number;
+        };
+        Update: {
+          id?: string;
+          role_id?: string;
+          kind?: "writing" | "coding" | "case";
+          title?: string;
+          prompt?: string;
+          minutes?: number;
+          position?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "role_tasks_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      task_submissions: {
+        Row: {
+          id: string;
+          session_id: string;
+          task_id: string;
+          answer: string;
+          started_at: string;
+          submitted_at: string | null;
+          paste_count: number;
+          away_ms: number;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          task_id: string;
+          answer?: string;
+          started_at?: string;
+          submitted_at?: string | null;
+          paste_count?: number;
+          away_ms?: number;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          task_id?: string;
+          answer?: string;
+          started_at?: string;
+          submitted_at?: string;
+          paste_count?: number;
+          away_ms?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "task_submissions_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        
+          {
+            foreignKeyName: "task_submissions_task_id_fkey";
+            columns: ["task_id"];
+            isOneToOne: false;
+            referencedRelation: "role_tasks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       candidate_notifications: {
         Row: {
           session_id: string;
-          stage: "in_review" | "accepted" | "not_selected";
+          stage: "in_review" | "accepted" | "not_selected" | "received" | "unfinished";
           sent_at: string;
         };
         Insert: {
           session_id: string;
-          stage: "in_review" | "accepted" | "not_selected";
+          stage: "in_review" | "accepted" | "not_selected" | "received" | "unfinished";
           sent_at?: string;
         };
         Update: {
           session_id?: string;
-          stage?: "in_review" | "accepted" | "not_selected";
+          stage?: "in_review" | "accepted" | "not_selected" | "received" | "unfinished";
           sent_at?: string;
         };
         Relationships: [
