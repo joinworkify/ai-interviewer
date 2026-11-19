@@ -84,7 +84,7 @@ export function InterviewsSkeleton() {
         <Bone className="h-10 w-20" />
       </div>
       <TableCard
-        headers={["Candidate", "Role", "Interview", "Resume", "AI score", "Status", "Started", ""]}
+        headers={["", "Candidate", "Role", "Interview", "Resume", "AI score", "Status", "Started", ""]}
         rows={8}
       />
     </Busy>

@@ -4,10 +4,11 @@ import { Suspense } from "react";
 import {
   REVIEW_STATUSES,
   REVIEW_STATUS_LABELS,
-  isReviewStatus,
 } from "@/lib/admin/access";
 import { listAttempts } from "@/lib/admin/data";
-import { requireAdmin } from "@/lib/admin/server";
+import { getCaller, requireAdmin } from "@/lib/admin/server";
+import { applyListQuery, listQueryString, parseListQuery } from "@/lib/admin/list-query";
+import { BulkActions } from "@/components/admin/bulk-actions";
 import { InterviewsSkeleton } from "@/components/admin/skeletons";
 import AdminFilters from "./admin-filters";
 
@@ -21,6 +22,8 @@ const STATUS_STYLE: Record<string, string> = {
   rejected: "bg-red-100 text-red-800",
 };
 
+type ListParams = { status?: string; q?: string; page?: string; minScore?: string; sort?: string; assigned?: string };
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-GB", {
     dateStyle: "medium",
@@ -31,21 +34,17 @@ function formatDate(iso: string) {
 async function AdminPageContent({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
+  searchParams: Promise<ListParams>;
 }) {
   await requireAdmin();
-  const { status, q, page: pageParam } = await searchParams;
-  const statusFilter = isReviewStatus(status) ? status : null;
-  const query = (q ?? "").trim().toLowerCase();
+  const raw = await searchParams;
+  const { page: pageParam } = raw;
+  const parsed = parseListQuery(raw);
+  const statusFilter = parsed.status;
 
   const all = await listAttempts();
-  const rows = all.filter(
-    (r) =>
-      (!statusFilter || r.reviewStatus === statusFilter) &&
-      (!query ||
-        (r.name ?? "").toLowerCase().includes(query) ||
-        (r.email ?? "").toLowerCase().includes(query)),
-  );
+  const me = (await getCaller())?.userId ?? null;
+  const rows = applyListQuery(all, parsed, me);
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const requested = Number.parseInt(pageParam ?? "1", 10);
   const page = Math.min(
@@ -54,13 +53,12 @@ async function AdminPageContent({
   );
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const pageHref = (n: number) => {
-    const params = new URLSearchParams();
-    if (query) params.set("q", q!.trim());
-    if (statusFilter) params.set("status", statusFilter);
+    const params = new URLSearchParams(listQueryString(raw));
     if (n > 1) params.set("page", String(n));
     const qs = params.toString();
     return qs ? `/admin?${qs}` : "/admin";
   };
+  const exportHref = `/admin/export${listQueryString(raw) ? `?${listQueryString(raw)}` : ""}`;
   const counts = Object.fromEntries(
     REVIEW_STATUSES.map((s) => [
       s,
@@ -94,10 +92,13 @@ async function AdminPageContent({
 
       <AdminFilters />
 
+      <BulkActions exportHref={exportHref} />
+
       <div className="overflow-x-auto rounded-xl border bg-white dark:bg-card">
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-muted/40 font-ui text-xs uppercase text-muted-foreground">
             <tr>
+              <th className="w-8 px-4 py-3" aria-label="Select" />
               <th className="px-4 py-3">Candidate</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Interview</th>
@@ -112,7 +113,7 @@ async function AdminPageContent({
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   No interviews found.
@@ -124,6 +125,9 @@ async function AdminPageContent({
                 key={r.sessionId}
                 className="border-b last:border-0 hover:bg-muted/30"
               >
+                <td className="px-4 py-3">
+                  <input type="checkbox" name="select-session" value={r.sessionId} aria-label={`Select ${r.name || r.email || "candidate"}`} />
+                </td>
                 <td className="px-4 py-3">
                   <div className="font-medium">{r.name || "No name"}</div>
                   <div className="text-xs text-muted-foreground">{r.email}</div>
@@ -210,7 +214,7 @@ async function AdminPageContent({
 }
 
 export default function AdminPage(props: {
-  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
+  searchParams: Promise<ListParams>;
 }) {
   return (
     <Suspense fallback={<InterviewsSkeleton />}>

@@ -30,8 +30,10 @@ export interface AttemptListItem {
   hasResume: boolean;
   /** The candidate sent at least one problem report for this interview. */
   problemReported: boolean;
-  /** AI rubric score 0-100; null when not scored (yet). */
+  /** AI rubric score 0-100 (reviewer overrides applied); null when not scored (yet). */
   score: number | null;
+  /** The admin responsible for reviewing it; null when unassigned. */
+  assignedTo: string | null;
   startedAt: string;
 }
 
@@ -55,7 +57,7 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
   const userIds = [...new Set(rows.map((s) => s.user_id))];
   const [consents, reviews, profiles, resumes, reports, evaluations, overrides] = await Promise.all([
     db.from("candidate_consents").select("session_id, role_id").in("session_id", sessionIds),
-    db.from("interview_reviews").select("session_id, status").in("session_id", sessionIds),
+    db.from("interview_reviews").select("session_id, status, assigned_to").in("session_id", sessionIds),
     db.from("profiles").select("id, name, email").in("id", userIds),
     db.from("candidate_resumes").select("user_id").eq("status", "uploaded").in("user_id", userIds),
     db.from("interview_problem_reports").select("session_id").in("session_id", sessionIds),
@@ -68,6 +70,7 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
 
   const roleBySession = new Map((consents.data ?? []).map((c) => [c.session_id, c.role_id]));
   const reviewBySession = new Map((reviews.data ?? []).map((r) => [r.session_id, r.status]));
+  const assigneeBySession = new Map((reviews.data ?? []).map((r) => [r.session_id, r.assigned_to]));
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const withResume = new Set((resumes.data ?? []).map((r) => r.user_id));
   const reported = new Set((reports.data ?? []).map((r) => r.session_id));
@@ -113,6 +116,7 @@ export async function listAttempts(): Promise<AttemptListItem[]> {
       hasResume: withResume.has(s.user_id),
       problemReported: reported.has(s.id),
       score: scoreBySession.get(s.id) ?? null,
+      assignedTo: assigneeBySession.get(s.id) ?? null,
       startedAt: s.started_at,
     };
   });
@@ -127,7 +131,9 @@ export interface AttemptDetail {
   endedReason: string | null;
   roleTitle: string | null;
   consent: { version: string; acceptedAt: string } | null;
-  review: { status: ReviewStatus; updatedAt: string | null };
+  review: { status: ReviewStatus; updatedAt: string | null; assignedTo: string | null };
+  /** Internal notes by admins, oldest first. */
+  notes: { id: string; authorId: string | null; authorName: string; body: string; createdAt: string }[];
   candidate: {
     name: string | null;
     email: string | null;
@@ -188,9 +194,9 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
   const s = session.data;
   if (!s) return null;
 
-  const [consent, review, profile, resume, reports, evaluation, recording, overrideRows, integrityRows, photo, audio] = await Promise.all([
+  const [consent, review, profile, resume, reports, evaluation, recording, overrideRows, integrityRows, photo, audio, noteRows] = await Promise.all([
     db.from("candidate_consents").select("role_id, consent_version, accepted_at").eq("session_id", s.id).maybeSingle(),
-    db.from("interview_reviews").select("status, updated_at").eq("session_id", s.id).maybeSingle(),
+    db.from("interview_reviews").select("status, updated_at, assigned_to").eq("session_id", s.id).maybeSingle(),
     db.from("profiles").select("name, email, phone, linkedin_url, portfolio_url").eq("id", s.user_id).maybeSingle(),
     db
       .from("candidate_resumes")
@@ -218,8 +224,9 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     db.from("interview_integrity_events").select("kind, at_ms, duration_ms").eq("session_id", s.id).order("at_ms", { ascending: true }),
     db.from("interview_identity_photos").select("s3_key").eq("session_id", s.id).maybeSingle(),
     db.from("interview_audio_reviews").select("*").eq("session_id", s.id).maybeSingle(),
+    db.from("reviewer_notes").select("id, author_id, author_name, body, created_at").eq("session_id", s.id).order("created_at", { ascending: true }),
   ]);
-  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports], ["evaluation", evaluation], ["recording", recording], ["overrides", overrideRows], ["integrity", integrityRows], ["photo", photo], ["audio", audio]] as const) {
+  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports], ["evaluation", evaluation], ["recording", recording], ["overrides", overrideRows], ["integrity", integrityRows], ["photo", photo], ["audio", audio], ["notes", noteRows]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -285,7 +292,9 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     review: {
       status: review.data?.status ?? "pending",
       updatedAt: review.data?.updated_at ?? null,
+      assignedTo: review.data?.assigned_to ?? null,
     },
+    notes: (noteRows.data ?? []).map((n) => ({ id: n.id, authorId: n.author_id, authorName: n.author_name, body: n.body, createdAt: n.created_at })),
     candidate: {
       name: profile.data?.name ?? null,
       email: profile.data?.email ?? null,

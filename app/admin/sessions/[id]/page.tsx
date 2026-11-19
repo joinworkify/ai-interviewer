@@ -2,13 +2,15 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { AssignPicker, Notes } from "@/components/admin/assign-and-notes";
 import { EvaluationPanel } from "@/components/admin/evaluation-panel";
 import { IntegrityPanel } from "@/components/admin/integrity-panel";
 import { ResumeViewer } from "@/components/admin/resume-viewer-lazy";
 import { ReviewStatusForm } from "@/components/admin/review-status-form";
 import { REVIEW_STATUS_LABELS } from "@/lib/admin/access";
 import { getAttempt } from "@/lib/admin/data";
-import { requireAdmin } from "@/lib/admin/server";
+import { getCaller, requireAdmin } from "@/lib/admin/server";
+import { listAdmins } from "@/lib/admin/workflow-server";
 import { isUuid } from "@/lib/sessions/validation";
 
 
@@ -57,6 +59,9 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
   if (!isUuid(id)) notFound();
   const a = await getAttempt(id);
   if (!a) notFound();
+  const me = (await getCaller())?.userId ?? "";
+  // The picker is a convenience: if the admin list cannot load, the page still works.
+  const admins = await listAdmins().catch(() => []);
 
   return (
     <>
@@ -75,6 +80,8 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
             {a.review.updatedAt && ` · updated ${formatDate(a.review.updatedAt)}`}
           </div>
           <ReviewStatusForm sessionId={a.sessionId} status={a.review.status} />
+          <div className="mt-3 mb-1 text-xs uppercase text-muted-foreground">Assigned reviewer</div>
+          <AssignPicker sessionId={a.sessionId} assignedTo={a.review.assignedTo} admins={admins} />
         </div>
       </div>
 
@@ -181,6 +188,10 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
 
       <Section title="Integrity">
         <IntegrityPanel a={a} />
+      </Section>
+
+      <Section title="Reviewer notes">
+        <Notes sessionId={a.sessionId} notes={a.notes} meId={me} />
       </Section>
 
       <Section title="Transcript">
