@@ -12,11 +12,30 @@ const inserts: { table: string; row: Record<string, unknown> }[] = [];
 let existingAttempts = 0;
 const createAdminClient = vi.fn(() => ({
   from(table: string) {
-    // Reads/updates used by the attempt limit: update().eq()..., select(.., {head}).eq()...
+    if (table === "roles") {
+      const roleChain: Record<string, unknown> = {
+        select: () => roleChain,
+        eq: () => roleChain,
+        maybeSingle: async () => ({
+          data: {
+            id: "software-engineer",
+            title: "Software Engineer",
+            responsibilities: [],
+            requirements: [
+              { title: "Programming Foundations", text: "Working proficiency." },
+            ],
+          },
+          error: null,
+        }),
+      };
+      return roleChain;
+    }
+
+    // Reads/updates used by the attempt limit: update().eq()..., select("…interview_sessions!inner…").eq()...
     const query: Record<string, unknown> = {};
     for (const m of ["update", "eq", "neq", "is", "lt"]) query[m] = () => query;
-    query.then = (resolve: (v: { count: number; error: null }) => void) =>
-      resolve({ count: existingAttempts, error: null });
+    query.then = (resolve: (v: { data: unknown[]; error: null }) => void) =>
+      resolve({ data: Array.from({ length: existingAttempts }, () => ({ interview_sessions: { ended_reason: "user_ended" } })), error: null });
     const chain = {
       insert(row: Record<string, unknown>) {
         inserts.push({ table, row });
@@ -27,8 +46,8 @@ const createAdminClient = vi.fn(() => ({
         resolve({ error: null });
       },
       update: query.update,
-      // A select with `head: true` is the attempt count; otherwise it follows an insert.
-      select: (_cols?: string, opts?: { head?: boolean }) => (opts?.head ? query : chain),
+      // The attempt count selects the joined sessions; any other select follows an insert.
+      select: (cols?: string) => (cols?.includes("interview_sessions!inner") ? query : chain),
       single: async () => ({
         data: { id: table === "interviews" ? "iv-1" : "22222222-2222-4222-8222-222222222222" },
         error: null,
@@ -205,7 +224,7 @@ describe("GET /api/candidate/attempts/[id]", () => {
     started_at: "2026-11-13T00:00:00Z",
     ended_at: null,
     transcript: [{ role: "interviewer", text: "Q?" }, { role: "candidate", text: "SECRET-ANSWER" }],
-    transcript_source: "dograh_webhook",
+    transcript_source: "client_gemini_live",
     ...over,
   });
 

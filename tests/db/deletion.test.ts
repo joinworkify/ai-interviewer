@@ -25,6 +25,7 @@ const KNOWN_USER_TABLES = [
   "candidate_resumes", // cascade from profiles; the S3 files go first (deleteUserFiles)
   "capability_uses", // cascade from profiles
   "feedback", // cascade from profiles (and from its session)
+  "interview_problem_reports", // cascade from auth.users (and from its session)
   "interview_sessions", // cascade from profiles (and from its interview)
   "interviews", // cascade from profiles
 ];
@@ -39,6 +40,9 @@ insert into public.ai_usage (user_id, feature, model) values
 insert into public.candidate_consents (user_id, session_id, role_id, consent_version) values
   ('${A}', '${IDS.sessionA}', 'generalist', 'v1'),
   ('${B}', '${IDS.sessionB}', 'generalist', 'v1');
+insert into public.interview_problem_reports (user_id, session_id, kind, message) values
+  ('${A}', '${IDS.sessionA}', 'lost_internet', 'wifi dropped'),
+  ('${B}', '${IDS.sessionB}', 'other', '');
 insert into public.candidate_resumes (user_id, s3_key, file_name, content_type, size_bytes, status) values
   ('${A}', 'resumes/${A}/a.pdf', 'a.pdf', 'application/pdf', 10, 'uploaded'),
   ('${B}', 'resumes/${B}/b.pdf', 'b.pdf', 'application/pdf', 10, 'uploaded');

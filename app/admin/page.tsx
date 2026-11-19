@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { REVIEW_STATUSES, REVIEW_STATUS_LABELS, isReviewStatus } from "@/lib/admin/access";
+import {
+  REVIEW_STATUSES,
+  REVIEW_STATUS_LABELS,
+  isReviewStatus,
+} from "@/lib/admin/access";
 import { listAttempts } from "@/lib/admin/data";
 import { requireAdmin } from "@/lib/admin/server";
-
+import AdminFilters from "./admin-filters";
 
 const PAGE_SIZE = 10;
 
@@ -16,7 +20,10 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 async function AdminPageContent({
@@ -39,7 +46,10 @@ async function AdminPageContent({
   );
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const requested = Number.parseInt(pageParam ?? "1", 10);
-  const page = Math.min(Math.max(Number.isFinite(requested) ? requested : 1, 1), pageCount);
+  const page = Math.min(
+    Math.max(Number.isFinite(requested) ? requested : 1, 1),
+    pageCount,
+  );
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const pageHref = (n: number) => {
     const params = new URLSearchParams();
@@ -50,7 +60,10 @@ async function AdminPageContent({
     return qs ? `/admin?${qs}` : "/admin";
   };
   const counts = Object.fromEntries(
-    REVIEW_STATUSES.map((s) => [s, all.filter((r) => r.reviewStatus === s).length]),
+    REVIEW_STATUSES.map((s) => [
+      s,
+      all.filter((r) => r.reviewStatus === s).length,
+    ]),
   );
 
   return (
@@ -67,43 +80,21 @@ async function AdminPageContent({
           <Link
             key={s}
             href={statusFilter === s ? "/admin" : `/admin?status=${s}`}
-            className={`rounded-xl border bg-white p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
+            className={`rounded-xl border bg-card p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
           >
-            <div className="text-sm text-muted-foreground">{REVIEW_STATUS_LABELS[s]}</div>
+            <div className="text-sm text-muted-foreground">
+              {REVIEW_STATUS_LABELS[s]}
+            </div>
             <div className="text-2xl font-bold">{counts[s]}</div>
           </Link>
         ))}
       </div>
 
-      <form className="flex flex-wrap gap-2" action="/admin">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search name or email"
-          aria-label="Search name or email"
-          className="h-10 min-w-0 flex-1 rounded-md border bg-white px-3 text-sm"
-        />
-        <select
-          name="status"
-          defaultValue={statusFilter ?? ""}
-          aria-label="Filter by status"
-          className="h-10 rounded-md border bg-white px-3 text-sm"
-        >
-          <option value="">All statuses</option>
-          {REVIEW_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {REVIEW_STATUS_LABELS[s]}
-            </option>
-          ))}
-        </select>
-        <button className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
-          Filter
-        </button>
-      </form>
+      <AdminFilters />
 
-      <div className="overflow-x-auto rounded-xl border bg-white">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-left text-sm">
-          <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="border-b bg-muted/40 font-ui text-xs uppercase text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Candidate</th>
               <th className="px-4 py-3">Role</th>
@@ -117,28 +108,48 @@ async function AdminPageContent({
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={7}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
                   No interviews found.
                 </td>
               </tr>
             )}
             {pageRows.map((r) => (
-              <tr key={r.sessionId} className="border-b last:border-0 hover:bg-muted/30">
+              <tr
+                key={r.sessionId}
+                className="border-b last:border-0 hover:bg-muted/30"
+              >
                 <td className="px-4 py-3">
                   <div className="font-medium">{r.name || "No name"}</div>
                   <div className="text-xs text-muted-foreground">{r.email}</div>
+                  {r.problemReported && (
+                    <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                      Problem reported
+                    </span>
+                  )}
                 </td>
-                <td className="px-4 py-3">{r.roleTitle ?? "—"}</td>
-                <td className="px-4 py-3 capitalize">{r.interviewStatus.replace("_", " ")}</td>
+                <td className="px-4 py-3">{r.roleTitle ?? "â€”"}</td>
+                <td className="px-4 py-3 capitalize">
+                  {r.interviewStatus.replace("_", " ")}
+                </td>
                 <td className="px-4 py-3">{r.hasResume ? "Yes" : "No"}</td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_STYLE[r.reviewStatus]}`}>
+                  <span
+                    className={`rounded-full px-2 py-1 font-ui text-xs font-medium ${STATUS_STYLE[r.reviewStatus]}`}
+                  >
                     {REVIEW_STATUS_LABELS[r.reviewStatus]}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3">{formatDate(r.startedAt)}</td>
+                <td className="whitespace-nowrap px-4 py-3">
+                  {formatDate(r.startedAt)}
+                </td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/sessions/${r.sessionId}`} className="font-medium text-primary hover:underline">
+                  <Link
+                    href={`/admin/sessions/${r.sessionId}`}
+                    className="font-medium text-primary hover:underline"
+                  >
                     Review
                   </Link>
                 </td>
@@ -149,27 +160,41 @@ async function AdminPageContent({
       </div>
 
       {rows.length > 0 && (
-        <nav aria-label="Pagination" className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <nav
+          aria-label="Pagination"
+          className="flex flex-wrap items-center justify-between gap-3 text-sm"
+        >
           <p className="text-muted-foreground">
-            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
+            Showing {(page - 1) * PAGE_SIZE + 1}â€“
+            {Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
           </p>
           <div className="flex items-center gap-2">
             {page > 1 ? (
-              <Link href={pageHref(page - 1)} className="rounded-md border bg-white px-3 py-2 hover:border-primary">
+              <Link
+                href={pageHref(page - 1)}
+                className="rounded-md border bg-background px-3 py-2 hover:border-primary"
+              >
                 Previous
               </Link>
             ) : (
-              <span className="rounded-md border bg-white px-3 py-2 opacity-50">Previous</span>
+              <span className="rounded-md border bg-background px-3 py-2 opacity-50">
+                Previous
+              </span>
             )}
             <span className="px-1 text-muted-foreground">
               Page {page} of {pageCount}
             </span>
             {page < pageCount ? (
-              <Link href={pageHref(page + 1)} className="rounded-md border bg-white px-3 py-2 hover:border-primary">
+              <Link
+                href={pageHref(page + 1)}
+                className="rounded-md border bg-background px-3 py-2 hover:border-primary"
+              >
                 Next
               </Link>
             ) : (
-              <span className="rounded-md border bg-white px-3 py-2 opacity-50">Next</span>
+              <span className="rounded-md border bg-background px-3 py-2 opacity-50">
+                Next
+              </span>
             )}
           </div>
         </nav>
@@ -182,7 +207,9 @@ export default function AdminPage(props: {
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+    <Suspense
+      fallback={<p className="text-sm text-muted-foreground">Loadingâ€¦</p>}
+    >
       <AdminPageContent {...props} />
     </Suspense>
   );

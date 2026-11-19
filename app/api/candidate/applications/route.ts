@@ -1,7 +1,6 @@
 
 import { jsonResponse } from "@/lib/http/json";
 import { attemptProgress } from "@/lib/candidate/attempts";
-import roles from "@/lib/candidate/roles.json";
 import { describeError } from "@/lib/log/safe-error";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,15 +43,25 @@ export async function GET(request: Request) {
     }
 
     const sessionIds = consents.map((item) => item.session_id);
+    const roleIds = [
+      ...new Set(consents.map((item) => item.role_id).filter(Boolean)),
+    ];
 
-    // Load only the candidate's own interview sessions.
-    const { data: sessions, error: sessionError } = await supabase
-      .from("interview_sessions")
-      .select("id, user_id, interview_id, status, transcript")
-      .eq("user_id", userId)
-      .in("id", sessionIds);
+    // Load only the candidate's own interview sessions and the referenced roles.
+    const [{ data: sessions, error: sessionError }, { data: rolesData, error: rolesError }] =
+      await Promise.all([
+        supabase
+          .from("interview_sessions")
+          .select("id, user_id, interview_id, status, transcript")
+          .eq("user_id", userId)
+          .in("id", sessionIds),
+        roleIds.length > 0
+          ? supabase.from("roles").select("id, title").in("id", roleIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
     if (sessionError) throw sessionError;
+    if (rolesError) throw rolesError;
 
     const validSessions = (sessions ?? []).filter(
       (session) => session.user_id === userId,
@@ -91,7 +100,7 @@ export async function GET(request: Request) {
     );
 
     const roleTitles = new Map(
-      (roles as { id: string; title: string }[]).map((role) => [
+      (rolesData ?? []).map((role) => [
         role.id,
         role.title,
       ]),

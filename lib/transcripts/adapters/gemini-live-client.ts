@@ -21,7 +21,7 @@ export interface GeminiLiveClientPayload {
   endedReason: EndedReason;
 }
 
-/** The Live session is capped at 5 minutes; anything near an hour is bogus. */
+/** The Live session is capped at 20 minutes; anything near an hour is bogus. */
 const MAX_DURATION_SECONDS = 3600;
 
 const PAYLOAD_KEYS = ["entries", "durationSeconds", "endedReason"];

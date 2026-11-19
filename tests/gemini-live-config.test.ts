@@ -120,7 +120,27 @@ describe("buildInterviewerInstruction", () => {
     expect(text).toMatch(/at most one follow-up/i);
     expect(text).toMatch(/stop|bye/i);
     expect(text).toContain(END_INTERVIEW_TOOL);
-    expect(text).toMatch(/5 minutes/);
+    expect(text).toMatch(/20 minutes/);
+  });
+
+  it("keeps the interview in English: reminds, then ends after the third reminder as non_english", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toMatch(/English only/i);
+    expect(text).toMatch(/language other than English/i);
+    expect(text).toMatch(/answer the same question again in English/i);
+    expect(text).toMatch(/after the third reminder/i);
+    // Accented short replies ("yeah" heard as "Oh, ja") must not count.
+    expect(text).toMatch(/Short, mixed or unclear replies .* are never another language/);
+    expect(text).toMatch(/Would you like to end the interview now\?/);
+    expect(text).toMatch(/could you repeat that/i);
+    expect(text).toContain(`${END_INTERVIEW_TOOL} function with reason "non_english"`);
+  });
+
+  it("caps the interview at 8 questions including follow-ups and offers to skip", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toMatch(/at most 8 questions in total, counting follow-up/i);
+    expect(text).toContain("Would you like to skip to the next question?");
+    expect(text).toContain("Okay, we'll skip this one.");
   });
 });
 
@@ -135,11 +155,11 @@ describe("buildEphemeralTokenConfig", () => {
       new Date(now + NEW_SESSION_WINDOW_SECONDS * 1000).toISOString(),
     );
     expect(NEW_SESSION_WINDOW_SECONDS).toBe(60);
-    // Start window + 5 minute session + 30 s grace.
+    // Start window + 20 minute session + 30 s grace.
     expect(cfg.expireTime).toBe(
       new Date(now + (60 + MAX_SESSION_SECONDS + 30) * 1000).toISOString(),
     );
-    expect(MAX_SESSION_SECONDS).toBe(300);
+    expect(MAX_SESSION_SECONDS).toBe(1200);
     // No lockAdditionalFields: every field of the constraints is locked.
     expect(cfg).not.toHaveProperty("lockAdditionalFields");
 
@@ -147,6 +167,7 @@ describe("buildEphemeralTokenConfig", () => {
     expect(constraints.model).toBe("gemini-3.8-live");
     const c = constraints.config!;
     expect(c.responseModalities).toEqual(["AUDIO"]);
+    expect(c.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName).toBe("Charon");
     expect(c.inputAudioTranscription).toEqual({});
     expect(c.outputAudioTranscription).toEqual({});
     expect(String(c.systemInstruction)).toContain('"SRE"');

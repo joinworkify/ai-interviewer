@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser } }) }));
 vi.mock("@/lib/candidate/api", () => ({
-  getRole: async () => ({ id: "engineer", title: "Engineer", skills: [], responsibilities: [], requirements: [] }),
+  getRole: async () => ({ id: "engineer", title: "Engineer", payMin: 10, payMax: 15, payType: "hour", skills: [], responsibilities: [], requirements: [] }),
 }));
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let container: HTMLDivElement;
@@ -31,6 +31,24 @@ afterEach(async () => {
   container.remove();
 });
 describe("public role Apply", () => {
+  it("copies the public role URL without requiring sign-in", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    const share = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.trim() === "Share")!;
+    await act(async () => share.click());
+    expect(writeText).toHaveBeenCalledWith(window.location.href);
+    expect(share.textContent).toContain("Copied");
+    expect(getUser).not.toHaveBeenCalled();
+    expect(applyButton()).toBeDefined();
+  });
+
+  it("reports clipboard failures while retaining the Apply action", async () => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
+    const share = Array.from(container.querySelectorAll("button")).find((button) => button.textContent?.trim() === "Share")!;
+    await act(async () => share.click());
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Unable to copy link");
+    expect(applyButton().disabled).toBe(false);
+  });
   it.each([true, false])("routes an authenticated=%s visitor to the appropriate entry point", async (signedIn) => {
     getUser.mockResolvedValue({ data: { user: signedIn ? { id: "candidate" } : null }, error: null });
     await act(async () => applyButton().click());

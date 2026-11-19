@@ -318,6 +318,41 @@ export type Database = {
           },
         ];
       };
+      interview_problem_reports: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          kind: "lost_internet" | "microphone" | "audio" | "other";
+          message: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          user_id: string;
+          kind: "lost_internet" | "microphone" | "audio" | "other";
+          message?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          user_id?: string;
+          kind?: "lost_internet" | "microphone" | "audio" | "other";
+          message?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_problem_reports_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       interview_reviews: {
         Row: {
           session_id: string;
@@ -398,7 +433,10 @@ export type Database = {
         Row: {
           id: string;
           title: string;
-          pay_rate: string;
+          pay_rate: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
           job_type: string;
           skills: string[];
           about: string;
@@ -412,7 +450,10 @@ export type Database = {
         Insert: {
           id: string;
           title: string;
-          pay_rate: string;
+          pay_rate?: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
           job_type: string;
           skills?: string[];
           about?: string;
@@ -426,7 +467,10 @@ export type Database = {
         Update: {
           id?: string;
           title?: string;
-          pay_rate?: string;
+          pay_rate?: string | null;
+          pay_min?: number;
+          pay_max?: number;
+          pay_type?: "hour" | "task";
           job_type?: string;
           skills?: string[];
           about?: string;
@@ -468,6 +512,28 @@ export type Database = {
           p_session_id?: string | null;
         };
         Returns: number;
+      };
+      search_roles: {
+        Args: {
+          p_query: string;
+        };
+        Returns: {
+          id: string;
+          title: string;
+          pay_rate: string | null;
+          pay_min: number;
+          pay_max: number;
+          pay_type: "hour" | "task";
+          job_type: string;
+          skills: string[];
+          about: string;
+          responsibilities: Json;
+          requirements: Json;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        }[];
       };
     };
     Enums: { [_ in never]: never };

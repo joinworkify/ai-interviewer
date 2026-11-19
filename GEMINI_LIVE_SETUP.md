@@ -1,13 +1,14 @@
-# Gemini Live voice interviewer (prototype)
+# Gemini Live voice interviewer
 
 A browser voice **interviewer** that talks to Google Gemini Live directly.
-It does **not** use Vapi or Dograh, and it is a practice tool: the candidate
-screening flow (`/candidate/*`) runs on Dograh (`DOGRAH_SETUP.md`). The
-existing Vapi interview generator (`/protected/interview`, `VAPI_SETUP.md`) is
-unchanged and independent.
+It is the candidate interview engine: the live step of the candidate flow
+(`/candidate/live`) runs on it, in English only, asking the attempt's stored
+questions (written from the role and the candidate's resume). The Vapi
+interview generator (`/protected/interview`, `VAPI_SETUP.md`) is unchanged
+and independent.
 
-- Page: **`/protected/interview/gemini`** (signed-in users only; linked from
-  `/protected` and `/protected/interview`)
+- Page: **`/candidate/live?attempt=<id>&role=<id>`** (reached from the candidate
+  flow after consent and the mic check)
 - Token API: **`POST /api/gemini-live/token`**
 
 Official references:
@@ -62,7 +63,7 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
 
 - `uses: 1` — one session per token.
 - `newSessionExpireTime`: now + 60 s (the browser must connect within 1 min).
-- `expireTime`: now + 60 s + 5 min + 30 s grace.
+- `expireTime`: now + 60 s + 20 min + 30 s grace.
 - `liveConnectConstraints` lock the model, `responseModalities: [AUDIO]`,
   the interviewer system instruction (built from the validated
   role/level/stack), the `end_interview` function tool, and input/output
@@ -167,8 +168,8 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
 
 ## 4. Session length and reconnection
 
-- **Prototype cap: 5 minutes per session.** 30 s before the cap the model is
-  told to wrap up and call `end_interview`; at 5:00 the client hard-stops.
+- **Cap: 20 minutes per session.** 30 s before the cap the model is
+  told to wrap up and call `end_interview`; at 20:00 the client hard-stops.
 - Live WebSocket connections are limited to roughly 10 minutes and need
   session resumption to go longer (see Session management docs). **Session
   resumption, context-window compression and seamless reconnect are not
@@ -188,9 +189,8 @@ speaker ◄─ gapless queue ◄─ PCM16 24 kHz ◄─ every modelTurn audio pa
   production.
 - No audio is recorded or stored by this app. Google's data-use terms for the
   Gemini API apply to audio sent to Google.
-- Transcript storage is opt-in per run. Open
-  `/protected/interview/gemini?sessionId=<interview session id>` (a session
-  created with `POST /api/sessions`). The token request then carries the
+- Every candidate interview is linked to its attempt: the live page sends the
+  attempt id (the interview session created on consent). The token request then carries the
   `sessionId`, the server checks the session is yours and still open, and the
   interviewer is told to ask that interview's stored questions (treated as
   data: delimited, length-capped). When the session ends (End button, time
@@ -240,7 +240,7 @@ npm run test && npm run typecheck && npm run lint && npm run build
 
 ## 7. Current limitations
 
-- No session resumption or reconnect; 5-minute cap (see §4).
+- No session resumption or reconnect; 20-minute cap (see §4).
 - In-memory, per-instance throttle only (see §5).
 - Behind a proxy that changes the scheme or Host, you must set
   `GEMINI_LIVE_APP_ORIGIN`. Without it, requests are rejected with
