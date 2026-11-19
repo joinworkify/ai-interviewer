@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin/access";
 import { listAttempts } from "@/lib/admin/data";
 import { requireAdmin } from "@/lib/admin/server";
+import { InterviewsSkeleton } from "@/components/admin/skeletons";
 import AdminFilters from "./admin-filters";
 
 const PAGE_SIZE = 10;
@@ -207,9 +208,7 @@ export default function AdminPage(props: {
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   return (
-    <Suspense
-      fallback={<p className="text-sm text-muted-foreground">Loading…</p>}
-    >
+    <Suspense fallback={<InterviewsSkeleton />}>
       <AdminPageContent {...props} />
     </Suspense>
   );

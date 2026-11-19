@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronRight, Loader2, Search } from "lucide-react";
+import { ChevronRight, Loader2, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,7 +88,7 @@ export default function RolesPage() {
             <Input
               aria-label="Search jobs"
               placeholder="Search jobs"
-              className="h-11 rounded-lg bg-white pl-11 pr-11 text-base"
+              className="h-11 rounded-lg bg-white pl-11 pr-16 text-base"
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -97,8 +97,18 @@ export default function RolesPage() {
             {searching && results && (
               <Loader2
                 aria-hidden="true"
-                className="absolute right-4 top-3.5 h-4 w-4 animate-spin text-muted-foreground"
+                className={`absolute top-3.5 h-4 w-4 animate-spin text-muted-foreground ${query ? "right-11" : "right-4"}`}
               />
+            )}
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <X aria-hidden="true" className="h-4 w-4" />
+              </button>
             )}
           </div>
           <PayRateFilter value={payFilter} onChange={(value) => { setPayFilter(value); setCurrentPage(1); }} />

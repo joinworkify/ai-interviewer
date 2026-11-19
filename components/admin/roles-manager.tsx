@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { TableRowsSkeleton } from "@/components/admin/skeletons";
 import { formatPayRate, validatePayRate, type PayType } from "@/lib/candidate/pay";
 
 type Bullet = {
@@ -686,12 +687,7 @@ export function RolesManager() {
 
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                  <Loader2 size={20} className="mx-auto mb-2 animate-spin" />
-                  Loading roles...
-                </td>
-              </tr>
+              <TableRowsSkeleton rows={6} columns={5} />
             ) : filteredRoles.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
