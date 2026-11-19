@@ -6,6 +6,7 @@ import type {
   PlayerLike,
 } from "./controller";
 import { MicUnavailableError } from "./errors";
+import { createSpeechCaptions } from "./speech-captions";
 import {
   connectLiveTransport,
   DEFAULT_SETUP_TIMEOUT_MS,
@@ -132,4 +133,5 @@ export const browserControllerDeps: ControllerDeps = {
   requestToken: requestLiveToken,
   connect: connectGeminiLive,
   createPlayer: createBrowserPlayer,
+  createCaptions: (onText) => (typeof window === "undefined" ? null : createSpeechCaptions(onText)),
 };

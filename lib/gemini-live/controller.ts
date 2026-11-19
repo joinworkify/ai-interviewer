@@ -11,6 +11,7 @@ import {
   MAX_SESSION_SECONDS,
   type LiveInterviewDetails,
 } from "./interview-details";
+import type { SpeechCaptions } from "./speech-captions";
 import type { EndedReason } from "@/lib/transcripts/types";
 import {
   initialTranscript,
@@ -128,6 +129,12 @@ export interface ControllerDeps {
     signal: AbortSignal;
   }): Promise<LiveSessionLike>;
   createPlayer(onPlayingChange: (playing: boolean) => void): PlayerLike;
+  /**
+   * Optional browser speech recognition for the candidate's captions. When it
+   * is present it replaces Gemini's own (late and less accurate) input
+   * transcription as the source of the candidate's words.
+   */
+  createCaptions?(onText: (text: string, final: boolean) => void): SpeechCaptions | null;
   now?: () => number;
 }
 
@@ -180,6 +187,7 @@ interface Resources {
   encoder?: MicChunkEncoder;
   abort?: AbortController;
   session?: LiveSessionLike;
+  captions?: SpeechCaptions;
   timers: ReturnType<typeof setTimeout>[];
 }
 
@@ -312,6 +320,7 @@ export class LiveInterviewController {
 
     // 4. Active: arm the hard cap and kick off the interviewer's greeting.
     this.set({ phase: "active", startedAt: this.now() });
+    this.startCaptions(attempt);
     const capSeconds =
       grant.maxSessionSeconds > 0
         ? Math.min(grant.maxSessionSeconds, MAX_SESSION_SECONDS)
@@ -378,11 +387,27 @@ export class LiveInterviewController {
     }
   }
 
+  private startCaptions(attempt: number) {
+    const captions = this.deps.createCaptions?.((text, final) => {
+      if (attempt !== this.attempt || this.state.phase !== "active") return;
+      if (this.now() < this.micMutedUntil) return;
+      const next = reduceTranscript(this.transcript, { type: "captions", text, final });
+      if (next !== this.transcript) {
+        this.transcript = next;
+        this.set({ transcript: next.entries });
+      }
+    });
+    if (!captions) return;
+    this.res.captions = captions;
+    captions.start();
+  }
+
   private teardown() {
     const res = this.res;
     this.res = { timers: [] };
     for (const t of res.timers) clearTimeout(t);
     res.abort?.abort();
+    res.captions?.stop();
     try {
       res.mic?.stop();
     } catch {
@@ -423,7 +448,15 @@ export class LiveInterviewController {
     // Don't send the mic while the interviewer is speaking (echo guard).
     const playing = this.res.player?.remainingMs() ?? 0;
     if (playing > 0) this.micMutedUntil = this.now() + playing + ECHO_TAIL_MS;
-    if (this.now() < this.micMutedUntil) return;
+    const muted = this.now() < this.micMutedUntil;
+    // The recognizer has no echo cancellation: keep it off while the
+    // interviewer speaks so their voice is not captioned as the candidate's.
+    const captions = this.res.captions;
+    if (captions) {
+      if (muted && captions.listening) captions.stop();
+      else if (!muted && !captions.listening) captions.start();
+    }
+    if (muted) return;
     for (const data of encoder.push(frames)) {
       this.send({ audio: { data, mimeType: INPUT_MIME_TYPE } });
     }
@@ -470,7 +503,7 @@ export class LiveInterviewController {
         if (blob.mimeType && !blob.mimeType.toLowerCase().startsWith("audio/pcm")) continue;
         this.res.player?.enqueue(blob.data, parsePcmSampleRate(blob.mimeType));
       }
-      if (sc.inputTranscription) {
+      if (sc.inputTranscription && !this.res.captions) {
         events.push({
           type: "input",
           text: sc.inputTranscription.text ?? "",

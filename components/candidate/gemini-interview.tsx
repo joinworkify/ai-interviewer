@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Bot, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRole } from "@/lib/candidate/api";
@@ -183,13 +184,13 @@ export function GeminiInterview() {
         )}
       </div>
 
-      <div className="flex flex-col items-center gap-6 rounded-xl border bg-card p-8 shadow-sm">
+      <div className="flex flex-col items-center gap-6 rounded-xl border bg-white p-8 shadow-sm">
         <div
-          className={`flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 ${
+          className={`flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/10 ${
             state.interviewerSpeaking ? "animate-pulse ring-4 ring-primary/40" : ""
           }`}
         >
-          <Bot className="h-12 w-12" aria-hidden="true" />
+          <LogoMark size={72} className="rounded-2xl" />
         </div>
 
         {state.phase === "idle" ? (

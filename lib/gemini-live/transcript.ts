@@ -34,6 +34,8 @@ export interface TranscriptState {
 
 export type TranscriptEvent =
   | { type: "input"; text: string; finished?: boolean }
+  /** Candidate speech from the browser's recognizer: replaces the open entry's text. */
+  | { type: "captions"; text: string; final: boolean }
   | { type: "output"; text: string; finished?: boolean }
   | { type: "interrupted" }
   | { type: "turnComplete" }
@@ -105,6 +107,26 @@ function append(
   return finished ? finalize(next, speaker) : next;
 }
 
+/** Sets the open candidate entry to `text` (the recognizer repeats the whole phrase each time). */
+function setCandidateText(state: TranscriptState, text: string, final: boolean): TranscriptState {
+  const idx = indexOf(state, state.openCandidate);
+  let next = state;
+  if (idx >= 0) {
+    const entries = state.entries.slice();
+    entries[idx] = { ...entries[idx], text };
+    next = { ...state, entries };
+  } else if (text.trim().length > 0) {
+    const entry: TranscriptEntry = { id: state.nextId, speaker: "candidate", text, final: false };
+    next = {
+      ...state,
+      entries: [...state.entries, entry],
+      nextId: state.nextId + 1,
+      openCandidate: entry.id,
+    };
+  }
+  return final ? finalize(next, "candidate") : next;
+}
+
 /** Ends the current model turn (normally or by interruption). */
 function closeTurn(state: TranscriptState, interrupted: boolean): TranscriptState {
   const interviewerIdx = indexOf(state, state.openInterviewer);
@@ -131,6 +153,8 @@ export function reduceTranscript(
   switch (event.type) {
     case "input":
       return append(state, "candidate", event.text, event.finished);
+    case "captions":
+      return setCandidateText(state, event.text, event.final);
     case "output":
       return append(state, "interviewer", event.text, event.finished);
     case "interrupted":
