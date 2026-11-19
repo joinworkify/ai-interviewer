@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { ProblemKind } from "@/lib/candidate/problem-reports";
 import { whenOnline } from "@/lib/http/online";
@@ -22,10 +22,16 @@ export function ReportProblem({
   sessionId,
   initialKind = "lost_internet",
   defaultOpen = false,
+  onOpenChange,
+  onSent,
 }: {
   sessionId: string;
   initialKind?: ProblemKind;
   defaultOpen?: boolean;
+  /** Tells the page when the form opens or closes, so it can swap its own buttons. */
+  onOpenChange?: (open: boolean) => void;
+  /** Called once the report was accepted. */
+  onSent?: () => void;
 }) {
   const id = useId();
   const [open, setOpen] = useState(defaultOpen);
@@ -33,6 +39,17 @@ export function ReportProblem({
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+
+  const toggle = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
+
+  // A form that starts open counts as open for the page too.
+  useEffect(() => {
+    if (defaultOpen) onOpenChange?.(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function send() {
     setError("");
@@ -46,7 +63,11 @@ export function ReportProblem({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ kind, message }),
         });
-        if (res.ok) return setStatus("sent");
+        if (res.ok) {
+          setStatus("sent");
+          onSent?.();
+          return;
+        }
         const body = (await res.json().catch(() => null)) as { message?: string } | null;
         setError(body?.message ?? "Could not send your report. Please try again.");
         return setStatus("failed");
@@ -67,7 +88,7 @@ export function ReportProblem({
   }
   if (!open) {
     return (
-      <Button type="button" variant="link" size="sm" onClick={() => setOpen(true)}>
+      <Button type="button" variant="link" size="sm" onClick={() => toggle(true)}>
         Report a problem
       </Button>
     );
@@ -117,9 +138,14 @@ export function ReportProblem({
           You&apos;re offline. We&apos;ll send this when your internet is back.
         </p>
       )}
-      <Button type="submit" size="sm" disabled={busy} className="self-start">
-        {status === "sending" ? "Sending…" : "Send report"}
-      </Button>
+      <div className="flex items-center gap-2 self-start">
+        <Button type="submit" size="sm" disabled={busy}>
+          {status === "sending" ? "Sending…" : "Send report"}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => toggle(false)}>
+          Cancel
+        </Button>
+      </div>
     </form>
   );
 }
