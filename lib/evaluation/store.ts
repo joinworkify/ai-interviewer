@@ -52,12 +52,29 @@ export function createSupabaseEvaluationStore(db: SupabaseClient<Database>): Eva
         roleTitle = role.data?.title ?? null;
         rubric = rubricRow.data?.criteria ?? [];
       }
+      // Work samples the candidate submitted (empty for roles with no tasks).
+      const subs = await db
+        .from("task_submissions")
+        .select("answer, task_id")
+        .eq("session_id", sessionId)
+        .not("submitted_at", "is", null);
+      if (subs.error) fail("load tasks", subs.error);
+      let tasks: { title: string; kind: string; answer: string }[] = [];
+      if ((subs.data ?? []).length > 0) {
+        const defs = await db.from("role_tasks").select("id, title, kind").in("id", subs.data!.map((x) => x.task_id));
+        if (defs.error) fail("load task definitions", defs.error);
+        tasks = subs.data!.flatMap((x) => {
+          const d = defs.data?.find((t) => t.id === x.task_id);
+          return d ? [{ title: d.title, kind: d.kind, answer: x.answer }] : [];
+        });
+      }
       return {
         sessionId,
         userId: session.data.user_id,
         transcript: session.data.transcript,
         roleTitle,
         rubric,
+        tasks,
       };
     },
 

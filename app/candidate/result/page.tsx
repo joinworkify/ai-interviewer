@@ -22,6 +22,8 @@ export default function ResultPage() {
   const router = useRouter();
   const [reporting, setReporting] = useState(false);
   const [reportSent, setReportSent] = useState(false);
+  // Work-sample tasks still to do for this role (none for most roles).
+  const [pendingTasks, setPendingTasks] = useState(0);
 
   // After a report is sent, close the screen by returning to the roles.
   useEffect(() => {
@@ -29,6 +31,14 @@ export default function ResultPage() {
     const t = setTimeout(() => router.push("/candidate/roles"), 1500);
     return () => clearTimeout(t);
   }, [reportSent, router]);
+
+  useEffect(() => {
+    if (!attemptId) return;
+    fetch(`/api/candidate/attempts/${encodeURIComponent(attemptId)}/tasks`, { credentials: "same-origin", cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => Array.isArray(j.tasks) && setPendingTasks(j.tasks.filter((t: { status: string }) => t.status !== "submitted").length))
+      .catch(() => {});
+  }, [attemptId]);
 
   // The result is the real state of the stored attempt. The transcript reaches
   // us a few seconds after the call ends, so this waits for it.
@@ -98,7 +108,12 @@ export default function ResultPage() {
       {/* While the report form is open its Send report button is the action. */}
       {!reporting && !reportSent && (
         <div className="flex flex-wrap justify-center gap-2">
-          <Button asChild>
+          {pendingTasks > 0 && (
+            <Button asChild>
+              <Link href={`/candidate/task?attempt=${encodeURIComponent(attemptId)}`}>Continue to the work sample</Link>
+            </Button>
+          )}
+          <Button asChild variant={pendingTasks > 0 ? "outline" : "default"}>
             <Link href="/candidate/applications">View application status</Link>
           </Button>
           <Button asChild variant="outline">

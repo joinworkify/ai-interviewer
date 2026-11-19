@@ -190,6 +190,29 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
         <IntegrityPanel a={a} />
       </Section>
 
+      {a.taskWork.length > 0 && (
+        <Section title="Work samples">
+          <ul className="grid gap-5">
+            {a.taskWork.map((t) => (
+              <li key={t.taskId} className="grid gap-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-medium">{t.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t.submitted ? (t.secondsOver > 120 ? `Submitted ${Math.round(t.secondsOver / 60)} min late` : "On time") : "Not submitted"}
+                    {t.submitted && ` · ${t.pasteCount} paste${t.pasteCount === 1 ? "" : "s"} · ${Math.round(t.awayMs / 1000)} s away from the page`}
+                  </p>
+                </div>
+                {t.submitted ? (
+                  <pre className={`max-h-96 overflow-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-sm ${t.kind === "coding" ? "font-mono" : "font-sans"}`}>{t.answer}</pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground">The candidate did not submit this task.</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
       <Section title="Reviewer notes">
         <Notes sessionId={a.sessionId} notes={a.notes} meId={me} />
       </Section>

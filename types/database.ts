@@ -782,7 +782,7 @@ export type Database = {
           task_id: string;
           answer: string;
           started_at: string;
-          submitted_at: string;
+          submitted_at: string | null;
           paste_count: number;
           away_ms: number;
         };
@@ -790,9 +790,9 @@ export type Database = {
           id?: string;
           session_id: string;
           task_id: string;
-          answer: string;
-          started_at: string;
-          submitted_at?: string;
+          answer?: string;
+          started_at?: string;
+          submitted_at?: string | null;
           paste_count?: number;
           away_ms?: number;
         };

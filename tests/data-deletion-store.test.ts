@@ -24,6 +24,7 @@ describe("deleteTranscript", () => {
       "rpc:purge_vapi_events",
       "interview_recordings:delete",
       "interview_identity_photos:delete",
+      "task_submissions:delete",
       "interview_sessions:update",
     ]);
     expect(log[0].filters).toEqual({ id: SID, user_id: ME });
@@ -31,8 +32,9 @@ describe("deleteTranscript", () => {
     // The audio recording row goes too (its S3 file is removed by the handler).
     expect(log[2].filters).toEqual({ session_id: SID });
     expect(log[3].filters).toEqual({ session_id: SID });
-    expect(log[4].payload).toEqual({ transcript: null, recording_url: null });
-    expect(log[4].filters).toEqual({ id: SID, user_id: ME });
+    expect(log[4].filters).toEqual({ session_id: SID });
+    expect(log[5].payload).toEqual({ transcript: null, recording_url: null });
+    expect(log[5].filters).toEqual({ id: SID, user_id: ME });
   });
 
   it("does not touch feedback", async () => {

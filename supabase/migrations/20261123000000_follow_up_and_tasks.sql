@@ -44,9 +44,11 @@ create table if not exists public.task_submissions (
   id            uuid primary key default gen_random_uuid(),
   session_id    uuid not null references public.interview_sessions (id) on delete cascade,
   task_id       uuid not null references public.role_tasks (id) on delete cascade,
-  answer        text not null check (char_length(answer) <= 20000),
-  started_at    timestamptz not null,
-  submitted_at  timestamptz not null default now(),
+  answer        text not null default '' check (char_length(answer) <= 20000),
+  -- Set by the server when the candidate opens the task: the time limit counts from here.
+  started_at    timestamptz not null default now(),
+  -- Null until the candidate submits.
+  submitted_at  timestamptz,
   -- What the browser saw while the task was open (signals, not proof).
   paste_count   integer not null default 0 check (paste_count >= 0),
   away_ms       integer not null default 0 check (away_ms >= 0),

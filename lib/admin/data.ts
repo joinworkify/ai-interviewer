@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { toStoredEvaluation, type StoredEvaluation } from "@/lib/evaluation/store";
 import { applyOverrides, type ScoreOverride } from "@/lib/evaluation/overrides";
 import type { CriterionScore } from "@/lib/evaluation/evaluate";
+import { secondsOver } from "@/lib/tasks/tasks";
 import { summarizeIntegrity, type IntegrityEvent, type IntegritySummary } from "@/lib/integrity/events";
 
 import type { ReviewStatus } from "./access";
@@ -156,6 +157,18 @@ export interface AttemptDetail {
   problemReports: { kind: string; message: string; createdAt: string }[];
   /** The AI rubric score, or why there is none; null before scoring ran. */
   evaluation: StoredEvaluation | null;
+  /** Work-sample answers the candidate gave, in task order; empty when the role has none. */
+  taskWork: {
+    taskId: string;
+    title: string;
+    kind: string;
+    minutes: number;
+    answer: string;
+    submitted: boolean;
+    secondsOver: number;
+    pasteCount: number;
+    awayMs: number;
+  }[];
   /** Reviewer overrides of criterion scores. */
   overrides: ScoreOverride[];
   /** What the browser saw during the call, and a rough level. */
@@ -194,7 +207,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
   const s = session.data;
   if (!s) return null;
 
-  const [consent, review, profile, resume, reports, evaluation, recording, overrideRows, integrityRows, photo, audio, noteRows] = await Promise.all([
+  const [consent, review, profile, resume, reports, evaluation, recording, overrideRows, integrityRows, photo, audio, noteRows, submissionRows] = await Promise.all([
     db.from("candidate_consents").select("role_id, consent_version, accepted_at").eq("session_id", s.id).maybeSingle(),
     db.from("interview_reviews").select("status, updated_at, assigned_to").eq("session_id", s.id).maybeSingle(),
     db.from("profiles").select("name, email, phone, linkedin_url, portfolio_url").eq("id", s.user_id).maybeSingle(),
@@ -225,8 +238,9 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     db.from("interview_identity_photos").select("s3_key").eq("session_id", s.id).maybeSingle(),
     db.from("interview_audio_reviews").select("*").eq("session_id", s.id).maybeSingle(),
     db.from("reviewer_notes").select("id, author_id, author_name, body, created_at").eq("session_id", s.id).order("created_at", { ascending: true }),
+    db.from("task_submissions").select("task_id, answer, started_at, submitted_at, paste_count, away_ms").eq("session_id", s.id),
   ]);
-  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports], ["evaluation", evaluation], ["recording", recording], ["overrides", overrideRows], ["integrity", integrityRows], ["photo", photo], ["audio", audio], ["notes", noteRows]] as const) {
+  for (const [op, r] of [["consent", consent], ["review", review], ["profile", profile], ["resume", resume], ["reports", reports], ["evaluation", evaluation], ["recording", recording], ["overrides", overrideRows], ["integrity", integrityRows], ["photo", photo], ["audio", audio], ["notes", noteRows], ["tasks", submissionRows]] as const) {
     if (r.error) fail(op, r.error);
   }
 
@@ -271,6 +285,31 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     ...(e.duration_ms !== null ? { durationMs: e.duration_ms } : {}),
   }));
 
+  let taskWork: AttemptDetail["taskWork"] = [];
+  if (consent.data?.role_id) {
+    const defs = await db
+      .from("role_tasks")
+      .select("id, title, kind, minutes")
+      .eq("role_id", consent.data.role_id)
+      .order("position", { ascending: true });
+    if (defs.error) fail("tasks", defs.error);
+    taskWork = (defs.data ?? []).map((d) => {
+      const sub = (submissionRows.data ?? []).find((x) => x.task_id === d.id);
+      const done = !!sub?.submitted_at;
+      return {
+        taskId: d.id,
+        title: d.title,
+        kind: d.kind,
+        minutes: d.minutes,
+        answer: sub?.answer ?? "",
+        submitted: done,
+        secondsOver: sub && done ? secondsOver({ startedAt: new Date(sub.started_at), submittedAt: new Date(sub.submitted_at!), minutes: d.minutes }) : 0,
+        pasteCount: sub?.paste_count ?? 0,
+        awayMs: sub?.away_ms ?? 0,
+      };
+    });
+  }
+
   let roleTitle: string | null = null;
   if (consent.data?.role_id) {
     const role = await db.from("roles").select("title").eq("id", consent.data.role_id).maybeSingle();
@@ -314,6 +353,7 @@ export async function getAttempt(sessionId: string): Promise<AttemptDetail | nul
     transcript: transcriptTurns(s.transcript),
     problemReports: (reports.data ?? []).map((r) => ({ kind: r.kind, message: r.message, createdAt: r.created_at })),
     evaluation: evaluation.data ? toStoredEvaluation(evaluation.data) : null,
+    taskWork,
     overrides: (overrideRows.data ?? []).map((o) => ({ criterion: o.criterion, score: o.score, reason: o.reason, updatedAt: o.updated_at })),
     integrity: { events: integrityEvents, summary: summarizeIntegrity(integrityEvents) },
     identityPhotoUrl,
