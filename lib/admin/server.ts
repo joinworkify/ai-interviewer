@@ -5,9 +5,8 @@ import { after, connection } from "next/server";
 
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
-import { createEmailSender } from "@/lib/notifications/email";
-import { notifyCandidate } from "@/lib/notifications/review-notify";
-import { createSupabaseNotifyStore } from "@/lib/notifications/store";
+import { announceStage } from "@/lib/notifications/events";
+import { notifiableStage } from "@/lib/candidate/stage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,23 +62,12 @@ export async function runReviewRoute(
     const admin = createAdminClient();
     return await run({
       getCaller,
-      // After the response: email the candidate when the admin asked to.
+      // After the response: tell the candidate in the app, and by email when
+      // the admin ticked "Email the candidate".
       onStatusSet: ({ sessionId, status, notify }) => {
-        if (!notify) return;
-        after(async () => {
-          try {
-            const origin = process.env.APP_ORIGIN?.trim().replace(/\/+$/, "");
-            await notifyCandidate({
-              store: createSupabaseNotifyStore(admin),
-              send: createEmailSender(process.env),
-              sessionId,
-              status,
-              link: origin ? `${origin}/candidate/applications` : null,
-            });
-          } catch (err) {
-            console.error("[admin-review] notification failed", describeError(err));
-          }
-        });
+        const stage = notifiableStage(status);
+        if (!stage) return;
+        after(() => announceStage(sessionId, stage, { email: notify }));
       },
       store: {
         async sessionExists(sessionId) {
