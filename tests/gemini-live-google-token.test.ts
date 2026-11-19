@@ -62,7 +62,7 @@ describe("createGeminiAuthToken (real SDK, stubbed network)", () => {
     expect(setup.generationConfig.responseModalities).toEqual(["AUDIO"]);
     expect(setup.systemInstruction.parts[0].text).toContain('"QA Engineer"');
     expect(setup.tools[0].functionDeclarations[0].name).toBe("end_interview");
-    expect(setup.inputAudioTranscription).toEqual({});
+    expect(setup.inputAudioTranscription).toEqual({ languageCodes: ["en-US"] });
     expect(setup.outputAudioTranscription).toEqual({});
   });
 

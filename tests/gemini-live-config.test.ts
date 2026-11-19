@@ -168,7 +168,7 @@ describe("buildEphemeralTokenConfig", () => {
     const c = constraints.config!;
     expect(c.responseModalities).toEqual(["AUDIO"]);
     expect(c.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName).toBe("Charon");
-    expect(c.inputAudioTranscription).toEqual({});
+    expect(c.inputAudioTranscription).toEqual({ languageCodes: ["en-US"] });
     expect(c.outputAudioTranscription).toEqual({});
     expect(String(c.systemInstruction)).toContain('"SRE"');
     expect(c.tools).toEqual([

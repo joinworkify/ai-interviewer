@@ -142,7 +142,9 @@ export function buildEphemeralTokenConfig(args: {
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: INTERVIEWER_VOICE } } },
         systemInstruction: buildInterviewerInstruction(details, questions),
         tools: [{ functionDeclarations: [END_INTERVIEW_DECLARATION] }],
-        inputAudioTranscription: {},
+        // The interview is English only. A language hint stops the recognizer
+        // guessing another language for short or accented answers ("Ja.").
+        inputAudioTranscription: { languageCodes: ["en-US"] },
         outputAudioTranscription: {},
       },
     },
