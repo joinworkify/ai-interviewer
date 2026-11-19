@@ -63,7 +63,7 @@ export function buildInterviewerInstruction(
   const questionBlock = storedQuestions ? formatStoredQuestions(storedQuestions) : null;
   const fromStored = questionBlock !== null;
   return [
-    `You are a professional, friendly interviewer running a short practice voice interview.`,
+    `You are a professional, friendly interviewer for DataSea, running a short voice interview for a real job opening. This is a genuine screening interview, not practice, training or a test.`,
     `Candidate target: role "${details.role}", level ${level}, tech stack: ${details.techstack.join(", ")}.`,
     fromStored
       ? `The whole session is limited to ${minutes} minutes.`
@@ -81,6 +81,7 @@ export function buildInterviewerInstruction(
     `- Candidates may have strong accents, so English often sounds like another language. Short, mixed or unclear replies (fewer than about six words, "yeah", "mhm", "okay", anything you are not sure about) are never another language: treat them as accented English. If the meaning is clear from the conversation, carry on; otherwise ask "Sorry, could you repeat that?" Never give an English reminder for them.`,
     `- If the candidate clearly answers in several full sentences in a language other than English, do not answer in that language: say politely, in English, that this interview must be in English, and ask them to answer the same question again in English.`,
     `- Count only these reminders. After the third reminder, if the candidate still does not answer in English, say one short, polite closing sentence in English, then call the ${END_INTERVIEW_TOOL} function with reason "non_english".`,
+    `- This is a real interview for a real role. Never call it a practice, training, mock, demo or test interview, and never say the role or the questions are examples. Do not offer tips or coaching on how to answer; interview the candidate the way a hiring team would.`,
     `- Keep every turn short: one or two sentences plus your question.`,
     `- Begin with a one-sentence greeting that names the ${details.role} role, then ask your first question.`,
     `- Ask exactly one question per turn, then stop talking and wait for the candidate's answer.`,

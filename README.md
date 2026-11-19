@@ -25,7 +25,7 @@ npm run db:push        # hosted project (after supabase:login + supabase:link)
 npm run dev            # http://localhost:3000
 ```
 
-The candidate interview needs `GEMINI_API_KEY` and `GEMINI_LIVE_MODEL` ([GEMINI_LIVE_SETUP.md](GEMINI_LIVE_SETUP.md)); without them the live screen runs a scripted practice interviewer. The Vapi prototype needs its own setup in [VAPI_SETUP.md](VAPI_SETUP.md); `npm run check:env` still asks for the Vapi variables for that reason.
+The candidate interview needs `GEMINI_API_KEY` and `GEMINI_LIVE_MODEL` ([GEMINI_LIVE_SETUP.md](GEMINI_LIVE_SETUP.md)); without them the live screen runs a scripted stand-in interviewer (local work only). The Vapi prototype needs its own setup in [VAPI_SETUP.md](VAPI_SETUP.md); `npm run check:env` still asks for the Vapi variables for that reason.
 
 Before deploying to a hosted Supabase project, run `npm run db:push` so every migration is applied. The candidate flow writes to `candidate_consents` (migration `20261113000000`) and fails without it.
 

@@ -6,7 +6,7 @@ import { readGeminiLiveConfig } from "@/lib/gemini-live/config";
 /**
  * Live interview on Gemini Live. The Gemini config is checked here, on the
  * server, so the API key never reaches the client. Without it (local work)
- * the screen runs the scripted practice interviewer instead.
+ * the screen runs the scripted stand-in interviewer instead.
  */
 export default function LivePage() {
   const gemini = readGeminiLiveConfig(process.env);

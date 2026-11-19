@@ -206,3 +206,17 @@ describe("SlidingWindowLimiter", () => {
     expect(l.size).toBeLessThanOrEqual(3);
   });
 });
+
+describe("interviewer instruction framing", () => {
+  const details = { role: "Software Engineer", level: "mid", techstack: ["TypeScript"] } as never;
+
+  it("presents the interview as real, never as practice", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toContain("real job opening");
+    expect(text).toMatch(/Never call it a practice, training, mock, demo or test interview/);
+    // The only mentions of "practice" are the prohibitions themselves.
+    expect(text.replace(/not practice, training or a test|a practice, training, mock, demo or test interview/g, "")).not.toMatch(
+      /practice interview|training interview|mock interview/i,
+    );
+  });
+});

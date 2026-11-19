@@ -21,7 +21,7 @@ const STATUS_LABEL: Record<VoiceStatus, string> = {
 };
 
 /**
- * Scripted practice interview, used only when Gemini Live is not configured
+ * Scripted stand-in interview, used only when Gemini Live is not configured
  * (local work without GEMINI_API_KEY). The real interview is GeminiInterview.
  */
 export function LiveInterview() {
