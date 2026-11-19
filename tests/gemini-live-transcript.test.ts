@@ -60,6 +60,43 @@ describe("reduceTranscript", () => {
     ]);
   });
 
+  it("places a late-transcribed answer above the reply it triggered", () => {
+    const s = run([
+      { type: "output", text: "Introduce yourself." },
+      { type: "turnComplete" },
+      // The answer was spoken before the reply, but transcribed after it began.
+      { type: "output", text: "Thanks. Next question?" },
+      { type: "input", text: "Hello, my name is" },
+      { type: "input", text: " Sam." },
+      { type: "turnComplete" },
+    ]);
+    expect(view(s)).toEqual([
+      { speaker: "interviewer", text: "Introduce yourself.", final: true },
+      { speaker: "candidate", text: "Hello, my name is Sam.", final: true },
+      { speaker: "interviewer", text: "Thanks. Next question?", final: true },
+    ]);
+  });
+
+  it("keeps successive late answers in separate entries in order", () => {
+    const s = run([
+      { type: "output", text: "Q1?" },
+      { type: "turnComplete" },
+      { type: "output", text: "Q2?" },
+      { type: "input", text: "Answer one." },
+      { type: "turnComplete" },
+      { type: "output", text: "Q3?" },
+      { type: "input", text: "Answer two." },
+      { type: "turnComplete" },
+    ]);
+    expect(view(s).map((e) => `${e.speaker}:${e.text}`)).toEqual([
+      "interviewer:Q1?",
+      "candidate:Answer one.",
+      "interviewer:Q2?",
+      "candidate:Answer two.",
+      "interviewer:Q3?",
+    ]);
+  });
+
   it("marks the interrupted reply and starts a fresh candidate entry after it", () => {
     const s = run([
       { type: "input", text: "Answer one." },
