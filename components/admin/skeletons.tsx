@@ -70,8 +70,8 @@ export function InterviewsSkeleton() {
   return (
     <Busy label="Loading interviews">
       <PageHeading />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="rounded-xl border bg-white p-4">
             <Bone className="h-4 w-20" />
             <Bone className="mt-3 h-7 w-10" />

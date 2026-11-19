@@ -4,15 +4,23 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  BadgeCheck,
   CalendarDays,
   ChevronRight,
   Clock3,
   FileCheck,
   FileClock,
   Search,
+  UserSearch,
+  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  STAGE_DESCRIPTIONS,
+  STAGE_LABELS,
+  type ApplicationStage,
+} from "@/lib/candidate/stage";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -23,53 +31,35 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-type ApplicationStatus = "processing" | "submitted" | "incomplete";
-type FilterStatus = "all" | ApplicationStatus;
+type FilterStatus = "all" | ApplicationStage;
 
 interface Application {
   id: string;
   roleId: string;
   roleTitle: string;
   appliedAt: string;
-  status: ApplicationStatus;
+  stage: ApplicationStage;
 }
 
 const PAGE_SIZE = 5;
 
 const FILTERS: { label: string; value: FilterStatus }[] = [
   { label: "All", value: "all" },
-  { label: "Processing", value: "processing" },
-  { label: "Submitted", value: "submitted" },
-  { label: "Incomplete", value: "incomplete" },
+  { label: STAGE_LABELS.applied, value: "applied" },
+  { label: STAGE_LABELS.in_review, value: "in_review" },
+  { label: STAGE_LABELS.accepted, value: "accepted" },
+  { label: STAGE_LABELS.not_selected, value: "not_selected" },
+  { label: STAGE_LABELS.processing, value: "processing" },
+  { label: STAGE_LABELS.incomplete, value: "incomplete" },
 ];
 
-const STATUS_DETAILS: Record<
-  ApplicationStatus,
-  {
-    label: string;
-    description: string;
-    className: string;
-    icon: typeof Clock3;
-  }
-> = {
-  processing: {
-    label: "Processing",
-    description: "Your interview transcript is being processed.",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-    icon: Clock3,
-  },
-  submitted: {
-    label: "Submitted",
-    description: "Your interview answers were received.",
-    className: "border-green-200 bg-green-50 text-green-700",
-    icon: FileCheck,
-  },
-  incomplete: {
-    label: "Incomplete",
-    description: "No interview answer was received.",
-    className: "border-red-200 bg-red-50 text-red-700",
-    icon: FileClock,
-  },
+const STAGE_STYLE: Record<ApplicationStage, { className: string; icon: typeof Clock3 }> = {
+  processing: { className: "border-amber-200 bg-amber-50 text-amber-700", icon: Clock3 },
+  applied: { className: "border-blue-200 bg-blue-50 text-blue-700", icon: FileCheck },
+  in_review: { className: "border-violet-200 bg-violet-50 text-violet-700", icon: UserSearch },
+  accepted: { className: "border-green-200 bg-green-50 text-green-700", icon: BadgeCheck },
+  not_selected: { className: "border-slate-200 bg-slate-50 text-slate-700", icon: XCircle },
+  incomplete: { className: "border-red-200 bg-red-50 text-red-700", icon: FileClock },
 };
 
 export default function ApplicationsPage() {
@@ -113,7 +103,7 @@ export default function ApplicationsPage() {
 
     return applications.filter((application) => {
       const matchesFilter =
-        filter === "all" || application.status === filter;
+        filter === "all" || application.stage === filter;
 
       const matchesSearch =
         !normalizedQuery ||
@@ -142,7 +132,7 @@ export default function ApplicationsPage() {
           Application Status
         </h1>
         <p className="text-sm text-muted-foreground">
-          View your interview application history and current status.
+          Follow each application from applied, to in review, to a decision. We also email you when it changes.
         </p>
       </div>
 
@@ -178,7 +168,7 @@ export default function ApplicationsPage() {
                 {item.value === "all"
                   ? applications.length
                   : applications.filter(
-                      (app) => app.status === item.value,
+                      (app) => app.stage === item.value,
                     ).length}
               </span>
             )}
@@ -232,13 +222,13 @@ export default function ApplicationsPage() {
         <>
           <ul className="flex flex-col gap-4">
             {paginatedApplications.map((application) => {
-              const status = STATUS_DETAILS[application.status];
-              const StatusIcon = status.icon;
+              const style = STAGE_STYLE[application.stage];
+              const StatusIcon = style.icon;
 
               return (
                 <li
                   key={application.id}
-                  className="rounded-xl border bg-card p-5 shadow-sm transition-colors hover:border-primary/40"
+                  className="rounded-xl border bg-white p-5 shadow-sm transition-colors hover:border-primary/40"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col gap-2">
@@ -260,16 +250,16 @@ export default function ApplicationsPage() {
                       </div>
 
                       <p className="text-sm text-muted-foreground">
-                        {status.description}
+                        {STAGE_DESCRIPTIONS[application.stage]}
                       </p>
                     </div>
 
                     <div className="flex flex-col items-start gap-3 sm:items-end">
                       <span
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-ui text-sm font-medium ${status.className}`}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-ui text-sm font-medium ${style.className}`}
                       >
                         <StatusIcon className="h-4 w-4" />
-                        {status.label}
+                        {STAGE_LABELS[application.stage]}
                       </span>
 
                       <Link
@@ -278,7 +268,7 @@ export default function ApplicationsPage() {
                         )}`}
                         className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                       >
-                        View interview status
+                        View details
                         <ChevronRight className="h-4 w-4" />
                       </Link>
                     </div>
