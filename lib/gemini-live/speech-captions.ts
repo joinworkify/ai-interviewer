@@ -43,6 +43,8 @@ export function speechCaptionsSupported(win: Window = window): boolean {
 /** Returns null when the browser has no speech recognition. */
 export function createSpeechCaptions(
   onText: (text: string, final: boolean) => void,
+  /** Called once when the recognizer cannot work (blocked, no network, unsupported). */
+  onFail: () => void = () => {},
   win: Window = window,
 ): SpeechCaptions | null {
   const w = win as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
@@ -67,7 +69,11 @@ export function createSpeechCaptions(
       }
     };
     r.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") denied = true;
+      // "no-speech" and "aborted" are normal; the rest mean it cannot work here.
+      if (e.error && e.error !== "no-speech" && e.error !== "aborted" && !denied) {
+        denied = true;
+        onFail();
+      }
     };
     r.onend = () => {
       recognition = null;

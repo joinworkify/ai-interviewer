@@ -133,5 +133,6 @@ export const browserControllerDeps: ControllerDeps = {
   requestToken: requestLiveToken,
   connect: connectGeminiLive,
   createPlayer: createBrowserPlayer,
-  createCaptions: (onText) => (typeof window === "undefined" ? null : createSpeechCaptions(onText)),
+  createCaptions: (onText, onFail) =>
+    typeof window === "undefined" ? null : createSpeechCaptions(onText, onFail),
 };

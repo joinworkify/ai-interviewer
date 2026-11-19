@@ -134,7 +134,7 @@ export interface ControllerDeps {
    * is present it replaces Gemini's own (late and less accurate) input
    * transcription as the source of the candidate's words.
    */
-  createCaptions?(onText: (text: string, final: boolean) => void): SpeechCaptions | null;
+  createCaptions?(onText: (text: string, final: boolean) => void, onFail: () => void): SpeechCaptions | null;
   now?: () => number;
 }
 
@@ -200,6 +200,8 @@ export class LiveInterviewController {
   /** Why the interviewer is closing; recorded when it calls the end tool. */
   private closingReason: EndedReason = "interviewer_ended";
   private micMutedUntil = 0;
+  /** The recognizer produced words this turn, so Gemini's own fragments are duplicates. */
+  private captionsHeardThisTurn = false;
   private readonly now: () => number;
 
   constructor(private readonly deps: ControllerDeps) {
@@ -388,15 +390,25 @@ export class LiveInterviewController {
   }
 
   private startCaptions(attempt: number) {
-    const captions = this.deps.createCaptions?.((text, final) => {
-      if (attempt !== this.attempt || this.state.phase !== "active") return;
-      if (this.now() < this.micMutedUntil) return;
-      const next = reduceTranscript(this.transcript, { type: "captions", text, final });
-      if (next !== this.transcript) {
-        this.transcript = next;
-        this.set({ transcript: next.entries });
-      }
-    });
+    this.captionsHeardThisTurn = false;
+    const captions = this.deps.createCaptions?.(
+      (text, final) => {
+        if (attempt !== this.attempt || this.state.phase !== "active") return;
+        if (this.now() < this.micMutedUntil) return;
+        this.captionsHeardThisTurn = true;
+        const next = reduceTranscript(this.transcript, { type: "captions", text, final });
+        if (next !== this.transcript) {
+          this.transcript = next;
+          this.set({ transcript: next.entries });
+        }
+      },
+      () => {
+        // Recognizer unusable here: go back to Gemini's transcription.
+        if (attempt !== this.attempt) return;
+        this.res.captions?.stop();
+        this.res.captions = undefined;
+      },
+    );
     if (!captions) return;
     this.res.captions = captions;
     captions.start();
@@ -503,7 +515,9 @@ export class LiveInterviewController {
         if (blob.mimeType && !blob.mimeType.toLowerCase().startsWith("audio/pcm")) continue;
         this.res.player?.enqueue(blob.data, parsePcmSampleRate(blob.mimeType));
       }
-      if (sc.inputTranscription && !this.res.captions) {
+      // Gemini's transcription is the fallback when the browser recognizer
+      // is unavailable, failed, or heard nothing this turn.
+      if (sc.inputTranscription && !(this.res.captions && this.captionsHeardThisTurn)) {
         events.push({
           type: "input",
           text: sc.inputTranscription.text ?? "",
@@ -517,7 +531,10 @@ export class LiveInterviewController {
           finished: sc.outputTranscription.finished,
         });
       }
-      if (sc.turnComplete) events.push({ type: "turnComplete" });
+      if (sc.turnComplete) {
+        events.push({ type: "turnComplete" });
+        this.captionsHeardThisTurn = false;
+      }
       if (events.length > 0) {
         const next = events.reduce(reduceTranscript, this.transcript);
         if (next !== this.transcript) {
