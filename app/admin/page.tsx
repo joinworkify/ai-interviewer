@@ -80,7 +80,7 @@ async function AdminPageContent({
           <Link
             key={s}
             href={statusFilter === s ? "/admin" : `/admin?status=${s}`}
-            className={`rounded-xl border bg-card p-4 hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
+            className={`rounded-xl border bg-white p-4 dark:bg-card hover:border-primary ${statusFilter === s ? "border-primary ring-1 ring-primary" : ""}`}
           >
             <div className="text-sm text-muted-foreground">
               {REVIEW_STATUS_LABELS[s]}
@@ -92,7 +92,7 @@ async function AdminPageContent({
 
       <AdminFilters />
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto rounded-xl border bg-white dark:bg-card">
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-muted/40 font-ui text-xs uppercase text-muted-foreground">
             <tr>
@@ -172,12 +172,12 @@ async function AdminPageContent({
             {page > 1 ? (
               <Link
                 href={pageHref(page - 1)}
-                className="rounded-md border bg-background px-3 py-2 hover:border-primary"
+                className="rounded-md border bg-white px-3 py-2 dark:bg-background hover:border-primary"
               >
                 Previous
               </Link>
             ) : (
-              <span className="rounded-md border bg-background px-3 py-2 opacity-50">
+              <span className="rounded-md border bg-white px-3 py-2 dark:bg-background opacity-50">
                 Previous
               </span>
             )}
@@ -187,12 +187,12 @@ async function AdminPageContent({
             {page < pageCount ? (
               <Link
                 href={pageHref(page + 1)}
-                className="rounded-md border bg-background px-3 py-2 hover:border-primary"
+                className="rounded-md border bg-white px-3 py-2 dark:bg-background hover:border-primary"
               >
                 Next
               </Link>
             ) : (
-              <span className="rounded-md border bg-background px-3 py-2 opacity-50">
+              <span className="rounded-md border bg-white px-3 py-2 dark:bg-background opacity-50">
                 Next
               </span>
             )}
