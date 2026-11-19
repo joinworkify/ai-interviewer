@@ -124,6 +124,11 @@ async function AdminPageContent({
                 <td className="px-4 py-3">
                   <div className="font-medium">{r.name || "No name"}</div>
                   <div className="text-xs text-muted-foreground">{r.email}</div>
+                  {r.problemReported && (
+                    <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                      Problem reported
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">{r.roleTitle ?? "â€”"}</td>
                 <td className="px-4 py-3 capitalize">

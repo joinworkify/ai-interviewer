@@ -1,3 +1,4 @@
+import type { ProblemReportStore } from "./problem-reports";
 import { jsonResponse, readJsonBody } from "@/lib/http/json";
 import { normalizeTranscript } from "@/lib/sessions/transcript";
 import { isUuid } from "@/lib/sessions/validation";
@@ -10,7 +11,7 @@ import { CONSENT_VERSION } from "./consent";
  * row holding the role's questions, an `interview_sessions` row for the
  * attempt and a `candidate_consents` row recording which consent wording the
  * candidate agreed to, and answers with the session id. Posting is the
- * agreement: without a current `consentVersion` no attempt is created. That id is what the Dograh call, the transcript webhook and
+ * agreement: without a current `consentVersion` no attempt is created. That id is what the Gemini Live call, the saved transcript and
  * the feedback route all hang off.
  *
  * Framework-agnostic (Request -> Response) with injected dependencies, like
@@ -22,9 +23,9 @@ import { CONSENT_VERSION } from "./consent";
  */
 
 export const MAX_ATTEMPT_BODY_BYTES = 1024;
-/** One intro question plus up to four about the role's requirements: about 5 minutes. */
+/** Prepared questions; the interviewer adds follow-ups up to 8 in all, within 20 minutes. */
 export const MAX_ATTEMPT_QUESTIONS = 5;
-export const ATTEMPT_DURATION_MINUTES = 5;
+export const ATTEMPT_DURATION_MINUTES = 20;
 /** A candidate may start this many attempts per role; abandoned ones do not count. */
 export const MAX_ATTEMPTS_PER_ROLE = 3;
 /**
@@ -45,6 +46,7 @@ export interface RoleRequirement {
 export interface AttemptRole {
   id: string;
   title: string;
+  responsibilities: RoleRequirement[];
   requirements: RoleRequirement[];
 }
 
@@ -79,7 +81,7 @@ export interface AttemptStore {
    * have no transcript as `abandoned`, so they stop counting as attempts.
    */
   abandonStaleAttempts(userId: string, cutoff: Date): Promise<void>;
-  /** How many non-abandoned attempts the user already has for this role. */
+  /** How many of the user's attempts for this role count (see attemptsTowardLimit). */
   countAttempts(userId: string, roleId: string): Promise<number>;
   /**
    * Creates the interview, its first session and the consent record, all or
@@ -108,6 +110,23 @@ export interface AttemptHandlerDeps {
   /** Looks up an active role by id to build interview questions. */
   roles?: RoleStore;
   getRole?: (id: string) => Promise<AttemptRole | null>;
+  /**
+   * Questions written for this candidate from the role and their resume, or
+   * null to use the fixed role questions. Optional so tests and setups
+   * without an LLM keep the fixed questions.
+   */
+  tailorQuestions?: (userId: string, role: AttemptRole) => Promise<string[] | null>;
+  /** Problem reports (POST /api/candidate/attempts/:id/report). */
+  problemReports?: ProblemReportStore;
+}
+
+/**
+ * Attempts that use up the limit, from the ended_reason of each non-abandoned
+ * attempt for one role. The first call that dropped (connection lost, ended
+ * reason "error") is a free retry; any later drop counts like a normal attempt.
+ */
+export function attemptsTowardLimit(endedReasons: readonly (string | null)[]): number {
+  return endedReasons.length - (endedReasons.includes("error") ? 1 : 0);
 }
 
 /**
@@ -220,7 +239,16 @@ export async function handleStartAttempt(
         "You have used all of your attempts for this role. Contact DataSea if you need another.",
       );
     }
-    const { sessionId } = await deps.store.createAttempt(userId, buildRoleQuestions(role), {
+    // Only after the checks above, so a blocked attempt never pays for an LLM call.
+    let tailored: string[] | null = null;
+    try {
+      tailored = (await deps.tailorQuestions?.(userId, role)) ?? null;
+    } catch {
+      tailored = null;
+    }
+    const questions =
+      tailored && tailored.length > 0 ? tailored.slice(0, MAX_ATTEMPT_QUESTIONS) : buildRoleQuestions(role);
+    const { sessionId } = await deps.store.createAttempt(userId, questions, {
       roleId: role.id,
       version: consentVersion,
     });

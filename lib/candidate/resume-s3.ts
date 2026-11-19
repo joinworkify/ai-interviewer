@@ -106,6 +106,13 @@ export function createS3ResumeStorage(client: S3Client, bucket: string): ResumeS
   };
 }
 
+/** The bytes of one stored resume (server side only, to read its text). */
+export async function downloadResumeFile(client: S3Client, bucket: string, key: string): Promise<Uint8Array> {
+  const out = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  if (!out.Body) throw new Error("downloadResumeFile: empty body");
+  return out.Body.transformToByteArray();
+}
+
 /** Deletes every file under resumes/<userId>/ (used by delete-account). */
 export async function deleteUserResumeFiles(
   client: S3Client,

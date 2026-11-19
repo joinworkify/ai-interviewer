@@ -141,7 +141,7 @@ export async function getInstructions(roleId: string): Promise<string> {
 /**
  * POST /api/candidate/attempts. Creates the interview (the role's questions)
  * and its session on the server; the attempt id is the interview session id,
- * which the Dograh call, the transcript webhook and feedback all use. The
+ * which the Gemini Live call, the saved transcript and feedback all use. The
  * request also records the consent: it sends the version of the consent text
  * the page showed, and the server stores it with the attempt.
  */
@@ -249,8 +249,8 @@ export interface WaitForResultOptions {
 }
 
 /**
- * After the call ends the transcript reaches us a few seconds later (Dograh's
- * webhook). Polls until the attempt is no longer "processing". At the timeout
+ * After the call ends the transcript is saved a few seconds later (the live
+ * screen sends it when the call closes). Polls until the attempt is no longer "processing". At the timeout
  * it returns the last "processing" result so the screen can say so; it throws
  * only when every poll failed.
  */

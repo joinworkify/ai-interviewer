@@ -11,12 +11,16 @@ export interface CanonicalTurn {
   text: string;
   /** ISO timestamp, when the provider reports one. */
   at?: string;
+  /** The raw caption, kept when the AI clean-up corrected `text` (see cleanup.ts). */
+  original?: string;
 }
 
 /**
  * Values allowed by the `interview_sessions_transcript_source_check`
  * constraint. Extending this list needs a migration that re-creates it.
  */
+// "dograh_webhook" stays only because rows saved before Dograh was removed
+// still carry it; nothing writes it any more.
 export const TRANSCRIPT_SOURCES = ["client_gemini_live", "dograh_webhook"] as const;
 export type TranscriptSource = (typeof TRANSCRIPT_SOURCES)[number];
 
@@ -26,6 +30,8 @@ export const ENDED_REASONS = [
   "time_limit",
   "page_closed",
   "error",
+  // The interviewer ended after repeated reminders to answer in English.
+  "non_english",
 ] as const;
 export type EndedReason = (typeof ENDED_REASONS)[number];
 

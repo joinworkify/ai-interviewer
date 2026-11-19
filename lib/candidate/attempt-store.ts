@@ -5,6 +5,7 @@ import type { Database } from "@/types/database";
 
 import {
   ATTEMPT_DURATION_MINUTES,
+  attemptsTowardLimit,
   type AttemptRole,
   type AttemptStore,
   type RoleRequirement,
@@ -39,17 +40,17 @@ export function createSupabaseAttemptStore(client: SupabaseClient<Database>): At
 
     async countAttempts(userId, roleId) {
       // Each attempt has exactly one consent row, which carries the role.
-      const { count, error } = await client
+      const { data, error } = await client
         .from("candidate_consents")
-        .select("session_id, interview_sessions!inner(status)", { count: "exact", head: true })
+        .select("session_id, interview_sessions!inner(status, ended_reason)")
         .eq("user_id", userId)
         .eq("role_id", roleId)
         .neq("interview_sessions.status", "abandoned");
-      if (error || count == null) {
+      if (error || !data) {
         console.error("[candidate-attempts] count attempts failed:", describeError(error));
         throw new Error("countAttempts failed");
       }
-      return count;
+      return attemptsTowardLimit(data.map((row) => row.interview_sessions?.ended_reason ?? null));
     },
 
     async createAttempt(userId, questions, consent) {
@@ -108,7 +109,7 @@ export function createSupabaseAttemptStore(client: SupabaseClient<Database>): At
   };
 }
 
-function parseRequirements(v: unknown): RoleRequirement[] {
+function parseRoleItems(v: unknown): RoleRequirement[] {
   if (!Array.isArray(v)) return [];
   return v
     .filter(
@@ -129,7 +130,7 @@ export function createSupabaseRoleStore(client: SupabaseClient<Database>): RoleS
     async getRole(id: string): Promise<AttemptRole | null> {
       const { data, error } = await client
         .from("roles")
-        .select("id, title, requirements")
+        .select("id, title, responsibilities, requirements")
         .eq("id", id)
         .eq("is_active", true)
         .maybeSingle();
@@ -141,7 +142,8 @@ export function createSupabaseRoleStore(client: SupabaseClient<Database>): RoleS
       return {
         id: data.id,
         title: data.title,
-        requirements: parseRequirements(data.requirements),
+        responsibilities: parseRoleItems(data.responsibilities),
+        requirements: parseRoleItems(data.requirements),
       };
     },
   };

@@ -318,6 +318,41 @@ export type Database = {
           },
         ];
       };
+      interview_problem_reports: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          kind: "lost_internet" | "microphone" | "audio" | "other";
+          message: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          user_id: string;
+          kind: "lost_internet" | "microphone" | "audio" | "other";
+          message?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          user_id?: string;
+          kind?: "lost_internet" | "microphone" | "audio" | "other";
+          message?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_problem_reports_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       interview_reviews: {
         Row: {
           session_id: string;
