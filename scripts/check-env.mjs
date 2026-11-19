@@ -3,7 +3,7 @@
 //
 // Two kinds of variable:
 //  - always required: Supabase and the evaluation LLM;
-//  - voice providers (Gemini Live, Vapi): at least one must be fully
+//  - voice providers (Dograh, Gemini Live, Vapi): at least one must be fully
 //    configured, and a provider with only some of its variables set is a
 //    mistake. A deployment that uses a single provider does not need the
 //    others' variables.
@@ -21,6 +21,18 @@ const ALWAYS_REQUIRED = [
 const OPTIONAL = ["LLM_BASE_URL", "LLM_TIMEOUT_MS"];
 
 const PROVIDERS = [
+  {
+    name: "Dograh",
+    required: [
+      "DOGRAH_API_URL",
+      "DOGRAH_WEBHOOK_SECRET",
+      "DOGRAH_SESSION_SIGNING_SECRET",
+      "NEXT_PUBLIC_DOGRAH_WIDGET_SRC",
+    ],
+    optional: ["DOGRAH_STORAGE_URL"],
+    minLength: ["DOGRAH_WEBHOOK_SECRET", "DOGRAH_SESSION_SIGNING_SECRET"],
+    mustDiffer: ["DOGRAH_WEBHOOK_SECRET", "DOGRAH_SESSION_SIGNING_SECRET"],
+  },
   {
     name: "Gemini Live",
     required: ["GEMINI_API_KEY", "GEMINI_LIVE_MODEL"],
@@ -93,10 +105,14 @@ for (const p of PROVIDERS) {
       ok = false;
     }
   }
+  if (p.mustDiffer && get(p.mustDiffer[0]) === get(p.mustDiffer[1])) {
+    problems.push(`${p.mustDiffer[1]} must differ from ${p.mustDiffer[0]}`);
+    ok = false;
+  }
   if (ok) configured.push(p.name);
 }
 
-if (configured.length === 0 && !problems.some((p) => /is partly configured|at least/.test(p))) {
+if (configured.length === 0 && !problems.some((p) => /is partly configured|at least|must differ/.test(p))) {
   problems.push(
     `No voice provider is configured. Set up at least one of: ${PROVIDERS.map((p) => p.name).join(", ")}`,
   );

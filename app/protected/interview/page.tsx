@@ -177,10 +177,16 @@ export default function InterviewPage() {
             ← Back to dashboard
           </Link>
           <Link
-            href="/candidate/roles"
+            href="/protected/interview/gemini"
             className="rounded-full border border-foreground/10 bg-background/60 px-4 py-1.5 text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
           >
-            Take a live interview with Gemini →
+            Practice a live interview with Gemini →
+          </Link>
+          <Link
+            href="/protected/interview/dograh"
+            className="rounded-full border border-foreground/10 bg-background/60 px-4 py-1.5 text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
+          >
+            Practice with Dograh →
           </Link>
         </nav>
         <h1 className="relative text-3xl font-bold tracking-tight sm:text-4xl">
