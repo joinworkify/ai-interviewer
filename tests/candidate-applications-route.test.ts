@@ -137,6 +137,7 @@ describe("GET /api/candidate/applications", () => {
           roleTitle: "Software Engineer",
           appliedAt: "2026-11-18T10:00:00Z",
           status: "submitted",
+          attemptsLeft: 2,
           stage: "applied",
         },
         {
@@ -145,6 +146,7 @@ describe("GET /api/candidate/applications", () => {
           roleTitle: "Unknown role",
           appliedAt: "2026-11-17T10:00:00Z",
           status: "processing",
+          attemptsLeft: 2,
           stage: "processing",
         },
       ],

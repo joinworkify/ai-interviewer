@@ -359,18 +359,21 @@ export type Database = {
           status: "pending" | "in_progress" | "completed" | "accepted" | "rejected";
           updated_at: string;
           updated_by: string | null;
+          assigned_to: string | null;
         };
         Insert: {
           session_id: string;
           status?: "pending" | "in_progress" | "completed" | "accepted" | "rejected";
           updated_at?: string;
           updated_by?: string | null;
+          assigned_to?: string | null;
         };
         Update: {
           session_id?: string;
           status?: "pending" | "in_progress" | "completed" | "accepted" | "rejected";
           updated_at?: string;
           updated_by?: string | null;
+          assigned_to?: string | null;
         };
         Relationships: [
           {
@@ -621,6 +624,79 @@ export type Database = {
             columns: ["case_id"];
             isOneToOne: false;
             referencedRelation: "calibration_cases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      reviewer_notes: {
+        Row: {
+          id: string;
+          session_id: string;
+          author_id: string | null;
+          author_name: string;
+          body: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          author_id?: string | null;
+          author_name: string;
+          body: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          author_id?: string | null;
+          author_name?: string;
+          body?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reviewer_notes_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      interview_bookings: {
+        Row: {
+          id: string;
+          user_id: string;
+          role_id: string;
+          starts_at: string;
+          status: "scheduled" | "cancelled";
+          reminder_sent_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role_id: string;
+          starts_at: string;
+          status?: "scheduled" | "cancelled";
+          reminder_sent_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          role_id?: string;
+          starts_at?: string;
+          status?: "scheduled" | "cancelled";
+          reminder_sent_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_bookings_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
             referencedColumns: ["id"];
           },
         ];

@@ -39,6 +39,15 @@ interface Application {
   roleTitle: string;
   appliedAt: string;
   stage: ApplicationStage;
+  /** Interview attempts still available for this role. */
+  attemptsLeft: number;
+}
+
+interface Booking {
+  id: string;
+  roleId: string;
+  roleTitle: string | null;
+  startsAt: string;
 }
 
 const PAGE_SIZE = 5;
@@ -64,6 +73,7 @@ const STAGE_STYLE: Record<ApplicationStage, { className: string; icon: typeof Cl
 
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[] | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterStatus>("all");
@@ -94,6 +104,11 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     void load();
+    // Upcoming booked times; the page works without them.
+    fetch("/api/candidate/bookings", { credentials: "same-origin", cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => Array.isArray(j.bookings) && setBookings(j.bookings as Booking[]))
+      .catch(() => {});
   }, [load]);
 
   const shown = useMemo(() => {
@@ -135,6 +150,25 @@ export default function ApplicationsPage() {
           Follow each application from applied, to in review, to a decision. We also email you when it changes.
         </p>
       </div>
+
+      {bookings.length > 0 && (
+        <section aria-label="Upcoming bookings" className="flex flex-col gap-2 rounded-xl border bg-white p-4">
+          <h2 className="text-sm font-semibold">Upcoming interviews you booked</h2>
+          <ul className="flex flex-col gap-1 text-sm">
+            {bookings.map((b) => (
+              <li key={b.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  {b.roleTitle ?? b.roleId} ·{" "}
+                  {new Date(b.startsAt).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                </span>
+                <Link href={`/candidate/schedule?role=${encodeURIComponent(b.roleId)}`} className="text-primary hover:underline">
+                  Change
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="relative w-full max-w-md">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -261,6 +295,15 @@ export default function ApplicationsPage() {
                         <StatusIcon className="h-4 w-4" />
                         {STAGE_LABELS[application.stage]}
                       </span>
+
+                      {application.stage === "incomplete" && application.attemptsLeft > 0 && (
+                        <Link
+                          href={`/candidate/roles/${encodeURIComponent(application.roleId)}`}
+                          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                        >
+                          Try again ({application.attemptsLeft} {application.attemptsLeft === 1 ? "attempt" : "attempts"} left)
+                        </Link>
+                      )}
 
                       <Link
                         href={`/candidate/result?attempt=${encodeURIComponent(

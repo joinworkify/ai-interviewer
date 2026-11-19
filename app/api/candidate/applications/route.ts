@@ -1,7 +1,7 @@
 
 import { jsonResponse } from "@/lib/http/json";
 import type { ReviewStatus } from "@/lib/admin/access";
-import { attemptProgress } from "@/lib/candidate/attempts";
+import { attemptProgress, attemptsTowardLimit, MAX_ATTEMPTS_PER_ROLE } from "@/lib/candidate/attempts";
 import { describeError } from "@/lib/log/safe-error";
 import { applicationStage } from "@/lib/candidate/stage";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       await Promise.all([
         supabase
           .from("interview_sessions")
-          .select("id, user_id, interview_id, status, transcript")
+          .select("id, user_id, interview_id, status, transcript, ended_reason")
           .eq("user_id", userId)
           .in("id", sessionIds),
         roleIds.length > 0
@@ -122,6 +122,17 @@ export async function GET(request: Request) {
       for (const r of reviews ?? []) reviewBySession.set(r.session_id, r.status);
     }
 
+    // Attempts left per role, counted like the start-an-attempt check does:
+    // abandoned attempts and the first dropped call are free.
+    const reasonsByRole = new Map<string, (string | null)[]>();
+    for (const consent of consents) {
+      const session = sessionById.get(consent.session_id);
+      if (!session || session.status === "abandoned") continue;
+      reasonsByRole.set(consent.role_id, [...(reasonsByRole.get(consent.role_id) ?? []), session.ended_reason ?? null]);
+    }
+    const attemptsLeft = (roleId: string) =>
+      Math.max(0, MAX_ATTEMPTS_PER_ROLE - attemptsTowardLimit(reasonsByRole.get(roleId) ?? []));
+
     const applications = consents.flatMap((consent) => {
       const session = sessionById.get(consent.session_id);
 
@@ -133,6 +144,7 @@ export async function GET(request: Request) {
         roleTitle: roleTitles.get(consent.role_id) ?? "Unknown role",
         appliedAt: consent.accepted_at,
         status: attemptProgress(session),
+        attemptsLeft: attemptsLeft(consent.role_id),
         stage: applicationStage(attemptProgress(session), reviewBySession.get(session.id) ?? null),
       }];
     });
