@@ -82,25 +82,27 @@ export default function RolesPage() {
           </p>
         )}
 
-        <div className="relative w-full max-w-xl">
-          <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            aria-label="Search jobs"
-            placeholder="Search jobs"
-            className="h-11 rounded-lg pl-11 pr-11 text-base"
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-            }}
-          />
-          {searching && results && (
-            <Loader2
-              aria-hidden="true"
-              className="absolute right-4 top-3.5 h-4 w-4 animate-spin text-muted-foreground"
+        <div className="flex w-full max-w-3xl flex-col items-stretch gap-3 sm:flex-row sm:items-start">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              aria-label="Search jobs"
+              placeholder="Search jobs"
+              className="h-11 rounded-lg bg-white pl-11 pr-11 text-base"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+              }}
             />
-          )}
+            {searching && results && (
+              <Loader2
+                aria-hidden="true"
+                className="absolute right-4 top-3.5 h-4 w-4 animate-spin text-muted-foreground"
+              />
+            )}
+          </div>
+          <PayRateFilter value={payFilter} onChange={(value) => { setPayFilter(value); setCurrentPage(1); }} />
         </div>
-        <PayRateFilter value={payFilter} onChange={(value) => { setPayFilter(value); setCurrentPage(1); }} />
       </div>
 
       {failed ? (
@@ -146,7 +148,7 @@ export default function RolesPage() {
             <li key={r.id}>
               <Link
                 href={`/candidate/roles/${r.id}`}
-                className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group flex h-full min-h-56 flex-col gap-4 rounded-xl border bg-white p-6 shadow-sm transition-colors hover:border-primary hover:bg-accent focus-visible:border-primary focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex flex-col gap-1">
                   <span className="font-heading text-xl font-semibold leading-snug">
