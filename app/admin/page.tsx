@@ -130,7 +130,7 @@ async function AdminPageContent({
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">{r.roleTitle ?? "â€”"}</td>
+                <td className="px-4 py-3">{r.roleTitle ?? "—"}</td>
                 <td className="px-4 py-3 capitalize">
                   {r.interviewStatus.replace("_", " ")}
                 </td>
@@ -165,7 +165,7 @@ async function AdminPageContent({
           className="flex flex-wrap items-center justify-between gap-3 text-sm"
         >
           <p className="text-muted-foreground">
-            Showing {(page - 1) * PAGE_SIZE + 1}â€“
+            Showing {(page - 1) * PAGE_SIZE + 1}–
             {Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
           </p>
           <div className="flex items-center gap-2">
@@ -208,7 +208,7 @@ export default function AdminPage(props: {
 }) {
   return (
     <Suspense
-      fallback={<p className="text-sm text-muted-foreground">Loadingâ€¦</p>}
+      fallback={<p className="text-sm text-muted-foreground">Loading…</p>}
     >
       <AdminPageContent {...props} />
     </Suspense>
