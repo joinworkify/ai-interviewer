@@ -7,6 +7,7 @@ import { StepGate } from "@/components/candidate/step-gate";
 import { Button } from "@/components/ui/button";
 import { MicLevel } from "@/components/candidate/mic-level";
 import { listAudioDevices, useMic } from "@/components/candidate/use-mic";
+import { IdentityCapture } from "@/components/candidate/identity-capture";
 import { setupGate } from "@/lib/candidate/setup";
 import { stepHref } from "@/lib/candidate/steps";
 
@@ -148,6 +149,8 @@ function SetupStep() {
           </p>
         )}
       </section>
+
+      <IdentityCapture attemptId={attemptId} />
 
       <div className="flex flex-col items-center gap-3 text-center">
         <Button

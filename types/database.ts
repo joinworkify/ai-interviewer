@@ -408,6 +408,223 @@ export type Database = {
           },
         ];
       };
+      interview_integrity_events: {
+        Row: {
+          id: string;
+          session_id: string;
+          kind: "tab_hidden" | "window_blur" | "offline" | "paste" | "fullscreen_exit";
+          at_ms: number;
+          duration_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          kind: "tab_hidden" | "window_blur" | "offline" | "paste" | "fullscreen_exit";
+          at_ms?: number;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          kind?: "tab_hidden" | "window_blur" | "offline" | "paste" | "fullscreen_exit";
+          at_ms?: number;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_integrity_events_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      interview_identity_photos: {
+        Row: {
+          session_id: string;
+          user_id: string;
+          s3_key: string;
+          size_bytes: number;
+          created_at: string;
+        };
+        Insert: {
+          session_id: string;
+          user_id: string;
+          s3_key: string;
+          size_bytes: number;
+          created_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          user_id?: string;
+          s3_key?: string;
+          size_bytes?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_identity_photos_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      interview_audio_reviews: {
+        Row: {
+          session_id: string;
+          status: "completed" | "failed";
+          second_voice: boolean | null;
+          reading_aloud: boolean | null;
+          notes: string;
+          audio_criteria: Json;
+          audio_overall: number | null;
+          model: string | null;
+          error_code: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          session_id: string;
+          status: "completed" | "failed";
+          second_voice?: boolean | null;
+          reading_aloud?: boolean | null;
+          notes?: string;
+          audio_criteria?: Json;
+          audio_overall?: number | null;
+          model?: string | null;
+          error_code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          status?: "completed" | "failed";
+          second_voice?: boolean | null;
+          reading_aloud?: boolean | null;
+          notes?: string;
+          audio_criteria?: Json;
+          audio_overall?: number | null;
+          model?: string | null;
+          error_code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_audio_reviews_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      evaluation_overrides: {
+        Row: {
+          session_id: string;
+          criterion: string;
+          score: number;
+          reason: string;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          session_id: string;
+          criterion: string;
+          score: number;
+          reason: string;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          criterion?: string;
+          score?: number;
+          reason?: string;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_overrides_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      calibration_cases: {
+        Row: {
+          id: string;
+          title: string;
+          role_title: string;
+          rubric: Json;
+          transcript: Json;
+          human_scores: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          role_title: string;
+          rubric: Json;
+          transcript: Json;
+          human_scores: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          role_title?: string;
+          rubric?: Json;
+          transcript?: Json;
+          human_scores?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      calibration_runs: {
+        Row: {
+          id: string;
+          case_id: string;
+          ai_scores: Json;
+          overall: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          case_id: string;
+          ai_scores: Json;
+          overall: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          case_id?: string;
+          ai_scores?: Json;
+          overall?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "calibration_runs_case_id_fkey";
+            columns: ["case_id"];
+            isOneToOne: false;
+            referencedRelation: "calibration_cases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       candidate_notifications: {
         Row: {
           session_id: string;

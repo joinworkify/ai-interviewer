@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { EvaluationPanel } from "@/components/admin/evaluation-panel";
+import { IntegrityPanel } from "@/components/admin/integrity-panel";
 import { ResumeViewer } from "@/components/admin/resume-viewer-lazy";
 import { ReviewStatusForm } from "@/components/admin/review-status-form";
 import { REVIEW_STATUS_LABELS } from "@/lib/admin/access";
@@ -155,7 +156,7 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
       </div>
 
       <Section title="AI score">
-        <EvaluationPanel sessionId={a.sessionId} evaluation={a.evaluation} hasTranscript={a.transcript.length > 0} />
+        <EvaluationPanel sessionId={a.sessionId} evaluation={a.evaluation} hasTranscript={a.transcript.length > 0} overrides={a.overrides} />
       </Section>
 
       <Section title="Recording">
@@ -176,6 +177,10 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
             browser could not record or upload, have none.
           </p>
         )}
+      </Section>
+
+      <Section title="Integrity">
+        <IntegrityPanel a={a} />
       </Section>
 
       <Section title="Transcript">

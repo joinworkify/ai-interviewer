@@ -55,6 +55,8 @@ export interface RecordingHandlerDeps {
   getUserId: () => Promise<string | null>;
   store: RecordingStore;
   storage: RecordingStorage;
+  /** Runs once a recording is confirmed uploaded (e.g. the audio review). */
+  onUploaded?: (done: { userId: string; sessionId: string }) => void;
 }
 
 type ErrorCode =
@@ -161,6 +163,11 @@ export async function handleConfirmRecording(
       return fail(422, "upload_mismatch", "The uploaded recording does not match.");
     }
     await deps.store.markUploaded(sessionId);
+    try {
+      deps.onUploaded?.({ userId, sessionId });
+    } catch {
+      console.error("[recording] upload hook failed");
+    }
     return jsonResponse(200, { success: true });
   } catch {
     return fail(500, "storage_failed", "Could not store the recording.");

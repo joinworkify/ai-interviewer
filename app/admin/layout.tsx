@@ -40,6 +40,12 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
             >
               Roles
             </Link>
+            <Link
+              href="/admin/calibration"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Calibration
+            </Link>
             <LogoutButton />
           </nav>
         </div>
