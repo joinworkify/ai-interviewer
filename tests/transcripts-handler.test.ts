@@ -114,6 +114,22 @@ function put(body: unknown, headers: Record<string, string> = {}) {
 const valid = (p = payload()) => ({ source: "client_gemini_live", payload: p });
 
 describe("handlePutTranscript", () => {
+  it("starts the clean-up and feedback once, only when a transcript is newly stored", async () => {
+    const onStored = vi.fn();
+    expect((await handlePutTranscript(put(valid()), SID, deps({ onStored }))).status).toBe(200);
+    expect(onStored).toHaveBeenCalledTimes(1);
+    expect(onStored).toHaveBeenCalledWith({
+      userId: ME,
+      sessionId: SID,
+      transcript: [
+        { role: "interviewer", text: "Tell me about indexes." },
+        { role: "candidate", text: "They speed up reads." },
+      ],
+    });
+    expect((await handlePutTranscript(put(valid()), SID, deps({ onStored }))).status).toBe(409);
+    expect(onStored).toHaveBeenCalledTimes(1);
+  });
+
   it("stores the canonical transcript with source, duration and reason", async () => {
     const res = await handlePutTranscript(put(valid()), SID, deps());
     expect(res.status).toBe(200);

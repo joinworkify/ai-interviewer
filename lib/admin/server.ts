@@ -1,10 +1,12 @@
 import "server-only";
 
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 
 import { jsonResponse } from "@/lib/http/json";
 import { describeError } from "@/lib/log/safe-error";
+import { announceStage } from "@/lib/notifications/events";
+import { notifiableStage } from "@/lib/candidate/stage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,6 +65,13 @@ export async function runReviewRoute(
     const admin = createAdminClient();
     return await run({
       getCaller,
+      // After the response: tell the candidate in the app, and by email when
+      // the admin ticked "Email the candidate".
+      onStatusSet: ({ sessionId, status, notify }) => {
+        const stage = notifiableStage(status);
+        if (!stage) return;
+        after(() => announceStage(sessionId, stage, { email: notify }));
+      },
       store: {
         async sessionExists(sessionId) {
           const { data, error } = await admin

@@ -43,11 +43,74 @@ describe("isAdminClaims", () => {
 });
 
 describe("isReviewStatus", () => {
-  it("knows the four statuses", () => {
-    for (const s of ["pending", "in_progress", "completed", "rejected"])
+  it("knows the five statuses", () => {
+    for (const s of ["pending", "in_progress", "completed", "accepted", "rejected"])
       expect(isReviewStatus(s)).toBe(true);
     expect(isReviewStatus("done")).toBe(false);
     expect(isReviewStatus(1)).toBe(false);
+  });
+});
+
+describe("handleSetReviewStatus notifications", () => {
+  it("tells the hook whether the admin chose to email the candidate", async () => {
+    const onStatusSet = vi.fn();
+    const { d } = deps({ userId: ADMIN, isAdmin: true });
+    await handleSetReviewStatus(post({ status: "accepted", notify: true }), SESSION, {
+      ...d,
+      onStatusSet,
+    });
+    await handleSetReviewStatus(post({ status: "rejected" }), SESSION, { ...d, onStatusSet });
+    await handleSetReviewStatus(post({ status: "completed", notify: "yes" }), SESSION, {
+      ...d,
+      onStatusSet,
+    });
+    expect(onStatusSet.mock.calls.map(([c]) => c)).toEqual([
+      { sessionId: SESSION, status: "accepted", notify: true },
+      { sessionId: SESSION, status: "rejected", notify: false },
+      { sessionId: SESSION, status: "completed", notify: false },
+    ]);
+  });
+
+  it("does not call the hook when the save fails or the caller is not an admin", async () => {
+    const onStatusSet = vi.fn();
+    const failing = deps(
+      { userId: ADMIN, isAdmin: true },
+      {
+        setStatus: vi.fn(async () => {
+          throw new Error("db");
+        }),
+      },
+    );
+    expect(
+      (
+        await handleSetReviewStatus(post({ status: "accepted", notify: true }), SESSION, {
+          ...failing.d,
+          onStatusSet,
+        })
+      ).status,
+    ).toBe(500);
+    const stranger = deps({ userId: ADMIN, isAdmin: false });
+    expect(
+      (
+        await handleSetReviewStatus(post({ status: "accepted", notify: true }), SESSION, {
+          ...stranger.d,
+          onStatusSet,
+        })
+      ).status,
+    ).toBe(403);
+    expect(onStatusSet).not.toHaveBeenCalled();
+  });
+
+  it("still saves when the hook throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { d } = deps({ userId: ADMIN, isAdmin: true });
+    const res = await handleSetReviewStatus(post({ status: "accepted", notify: true }), SESSION, {
+      ...d,
+      onStatusSet: () => {
+        throw new Error("boom");
+      },
+    });
+    expect(res.status).toBe(200);
   });
 });
 
@@ -130,11 +193,13 @@ describe("admin paths", () => {
     expect(read("app/admin/sessions/[id]/page.tsx")).toContain("await requireAdmin()");
   });
 
-  it("shows the transcript, not AI feedback or a recording", () => {
+  it("shows the transcript, the rubric score and the recording player, not the old per-answer AI feedback", () => {
     const page = read("app/admin/sessions/[id]/page.tsx");
     expect(page).toContain('title="Transcript"');
+    expect(page).toContain('title="AI score"');
+    expect(page).toContain('title="Recording"');
+    expect(page).toContain("<audio");
     expect(page).not.toContain("AI feedback");
-    expect(page).not.toMatch(/<audio|recording/i);
   });
 });
 

@@ -101,7 +101,10 @@ function ConsentStep() {
           disabled={instructions === null || acceptedAttempt !== null}
           onCheckedChange={(v) => setAgreed(v === true)}
         />
-        <Label htmlFor="consent" className="text-[15px] font-medium leading-6">
+        <Label
+          htmlFor="consent"
+          className="text-[15px] font-medium leading-6 [font-family:inherit]"
+        >
           {CONSENT_LABEL}
           {acceptedAttempt && (
             <span className="mt-1 block text-sm font-normal text-green-700">

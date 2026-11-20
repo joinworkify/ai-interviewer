@@ -12,6 +12,9 @@ export default function AdminFilters() {
 
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [status, setStatus] = useState(searchParams.get("status") ?? "");
+  const [minScore, setMinScore] = useState(searchParams.get("minScore") ?? "");
+  const [sort, setSort] = useState(searchParams.get("sort") ?? "");
+  const [assigned, setAssigned] = useState(searchParams.get("assigned") ?? "");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -23,6 +26,15 @@ export default function AdminFilters() {
 
       if (status) params.set("status", status);
       else params.delete("status");
+
+      if (minScore) params.set("minScore", minScore);
+      else params.delete("minScore");
+
+      if (sort) params.set("sort", sort);
+      else params.delete("sort");
+
+      if (assigned) params.set("assigned", assigned);
+      else params.delete("assigned");
 
       params.delete("page");
 
@@ -38,7 +50,7 @@ export default function AdminFilters() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, status, pathname, router, searchParams]);
+  }, [query, status, minScore, sort, assigned, pathname, router, searchParams]);
 
   function handleManualFilter() {
     const params = new URLSearchParams(searchParams.toString());
@@ -48,6 +60,15 @@ export default function AdminFilters() {
 
     if (status) params.set("status", status);
     else params.delete("status");
+
+    if (minScore) params.set("minScore", minScore);
+    else params.delete("minScore");
+
+    if (sort) params.set("sort", sort);
+    else params.delete("sort");
+
+    if (assigned) params.set("assigned", assigned);
+    else params.delete("assigned");
 
     params.delete("page");
 
@@ -80,6 +101,40 @@ export default function AdminFilters() {
             {REVIEW_STATUS_LABELS[item]}
           </option>
         ))}
+      </select>
+
+      <input
+        name="minScore"
+        inputMode="numeric"
+        value={minScore}
+        onChange={(event) => setMinScore(event.target.value.replace(/\D/g, "").slice(0, 3))}
+        placeholder="Min score"
+        aria-label="Minimum AI score"
+        className="h-10 w-28 rounded-md border bg-white px-3 text-sm"
+      />
+
+      <select
+        name="assigned"
+        value={assigned}
+        onChange={(event) => setAssigned(event.target.value)}
+        aria-label="Filter by reviewer"
+        className="h-10 rounded-md border bg-white px-3 text-sm"
+      >
+        <option value="">Any reviewer</option>
+        <option value="me">Assigned to me</option>
+        <option value="none">Unassigned</option>
+      </select>
+
+      <select
+        name="sort"
+        value={sort}
+        onChange={(event) => setSort(event.target.value)}
+        aria-label="Sort"
+        className="h-10 rounded-md border bg-white px-3 text-sm"
+      >
+        <option value="">Newest first</option>
+        <option value="score_desc">Highest score</option>
+        <option value="score_asc">Lowest score</option>
       </select>
 
       <button

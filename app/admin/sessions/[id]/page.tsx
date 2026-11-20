@@ -2,11 +2,15 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
+import { AssignPicker, Notes } from "@/components/admin/assign-and-notes";
+import { EvaluationPanel } from "@/components/admin/evaluation-panel";
+import { IntegrityPanel } from "@/components/admin/integrity-panel";
 import { ResumeViewer } from "@/components/admin/resume-viewer-lazy";
 import { ReviewStatusForm } from "@/components/admin/review-status-form";
 import { REVIEW_STATUS_LABELS } from "@/lib/admin/access";
 import { getAttempt } from "@/lib/admin/data";
-import { requireAdmin } from "@/lib/admin/server";
+import { getCaller, requireAdmin } from "@/lib/admin/server";
+import { listAdmins } from "@/lib/admin/workflow-server";
 import { isUuid } from "@/lib/sessions/validation";
 
 function formatDate(iso: string | null) {
@@ -14,6 +18,13 @@ function formatDate(iso: string | null) {
     ? new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
     : "—";
 }
+
+const PROBLEM_LABELS: Record<string, string> = {
+  lost_internet: "Lost internet",
+  microphone: "Microphone problem",
+  audio: "Couldn't hear the interviewer",
+  other: "Other",
+};
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -54,6 +65,9 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
   if (!isUuid(id)) notFound();
   const a = await getAttempt(id);
   if (!a) notFound();
+  const me = (await getCaller())?.userId ?? "";
+  // The picker is a convenience: if the admin list cannot load, the page still works.
+  const admins = await listAdmins().catch(() => []);
 
   return (
     <>
@@ -74,8 +88,28 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
             {a.review.updatedAt && ` · updated ${formatDate(a.review.updatedAt)}`}
           </div>
           <ReviewStatusForm sessionId={a.sessionId} status={a.review.status} />
+          <div className="mt-3 mb-1 text-xs uppercase text-muted-foreground">Assigned reviewer</div>
+          <AssignPicker sessionId={a.sessionId} assignedTo={a.review.assignedTo} admins={admins} />
         </div>
       </div>
+
+      {a.problemReports.length > 0 && (
+        <div
+          role="note"
+          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+        >
+          <p className="font-semibold">The candidate reported a problem with this interview</p>
+          <ul className="mt-2 grid gap-2">
+            {a.problemReports.map((r) => (
+              <li key={r.createdAt}>
+                <span className="font-medium">{PROBLEM_LABELS[r.kind] ?? r.kind}</span>
+                <span className="text-red-800"> · {formatDate(r.createdAt)}</span>
+                {r.message && <p className="whitespace-pre-wrap">{r.message}</p>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="grid gap-6">
@@ -150,6 +184,78 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
+      <Section title="AI score">
+        <EvaluationPanel
+          sessionId={a.sessionId}
+          evaluation={a.evaluation}
+          hasTranscript={a.transcript.length > 0}
+          overrides={a.overrides}
+        />
+      </Section>
+
+      <Section title="Recording">
+        {a.recording ? (
+          <div className="grid gap-2">
+            {/* Short-lived signed link; the audio never passes through this server. */}
+            <audio controls preload="metadata" className="w-full" src={a.recording.url}>
+              Your browser cannot play this recording.
+            </audio>
+            <p className="text-xs text-muted-foreground">
+              Candidate and interviewer, mixed.{" "}
+              {Math.max(1, Math.round(a.recording.sizeBytes / 1024))} KB
+              {a.recording.uploadedAt && ` · saved ${formatDate(a.recording.uploadedAt)}`}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No recording for this interview. Interviews taken before recording was added, and ones
+            where the browser could not record or upload, have none.
+          </p>
+        )}
+      </Section>
+
+      <Section title="Integrity">
+        <IntegrityPanel a={a} />
+      </Section>
+
+      {a.taskWork.length > 0 && (
+        <Section title="Work samples">
+          <ul className="grid gap-5">
+            {a.taskWork.map((t) => (
+              <li key={t.taskId} className="grid gap-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-medium">{t.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t.submitted
+                      ? t.secondsOver > 120
+                        ? `Submitted ${Math.round(t.secondsOver / 60)} min late`
+                        : "On time"
+                      : "Not submitted"}
+                    {t.submitted &&
+                      ` · ${t.pasteCount} paste${t.pasteCount === 1 ? "" : "s"} · ${Math.round(t.awayMs / 1000)} s away from the page`}
+                  </p>
+                </div>
+                {t.submitted ? (
+                  <pre
+                    className={`max-h-96 overflow-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-sm ${t.kind === "coding" ? "font-mono" : "font-sans"}`}
+                  >
+                    {t.answer}
+                  </pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    The candidate did not submit this task.
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <Section title="Reviewer notes">
+        <Notes sessionId={a.sessionId} notes={a.notes} meId={me} />
+      </Section>
+
       <Section title="Transcript">
         {a.transcript.length === 0 ? (
           <p className="text-sm text-muted-foreground">No transcript yet.</p>
@@ -170,6 +276,14 @@ async function AdminSessionPageContent({ params }: { params: Promise<{ id: strin
                       {ai ? "AI interviewer" : t.role === "candidate" ? "Candidate" : "Speaker"}
                     </div>
                     <p className="whitespace-pre-wrap">{t.text}</p>
+                    {t.original && (
+                      <details className="mt-1 text-xs text-muted-foreground">
+                        <summary className="cursor-pointer">
+                          Corrected by AI: show original caption
+                        </summary>
+                        <p className="mt-1 whitespace-pre-wrap">{t.original}</p>
+                      </details>
+                    )}
                   </div>
                 </li>
               );

@@ -48,7 +48,14 @@ export class PcmPlayer {
   constructor(
     private readonly ctx: AudioContextLike,
     private readonly onPlayingChange?: (playing: boolean) => void,
+    /** Optional second destination so the interview can be recorded. */
+    private readonly tap?: { node: unknown; stream: MediaStream },
   ) {}
+
+  /** The interviewer's voice as a stream (for recording), when a tap was given. */
+  get outputStream(): MediaStream | undefined {
+    return this.tap?.stream;
+  }
 
   /** Call from a user gesture (Start click) so autoplay policies allow output. */
   async resume(): Promise<void> {
@@ -65,6 +72,7 @@ export class PcmPlayer {
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(this.ctx.destination as never);
+    if (this.tap) source.connect(this.tap.node as never);
 
     const startAt = Math.max(this.nextStartTime, this.ctx.currentTime + START_LEAD_SECONDS);
     source.start(startAt);

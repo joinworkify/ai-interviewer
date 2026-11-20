@@ -71,7 +71,7 @@ it("applies pay filtering to DB results and resets page two", async () => {
   await act(async () =>
     (container.querySelector('[aria-label="Go to page 2"]') as HTMLElement).click(),
   );
-  const input = container.querySelector('input[type="number"]')!;
+  const input = container.querySelector("input#pay-min")!;
   await act(async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "24");
     input.dispatchEvent(new Event("input", { bubbles: true }));

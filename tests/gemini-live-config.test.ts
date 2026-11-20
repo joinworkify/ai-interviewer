@@ -126,10 +126,30 @@ describe("buildInterviewerInstruction", () => {
   it("enforces one question at a time, max one follow-up, stop handling and the tool", () => {
     const text = buildInterviewerInstruction(details);
     expect(text).toMatch(/exactly one question/i);
-    expect(text).toMatch(/at most one follow-up/i);
+    expect(text).toMatch(/one short follow-up/i);
     expect(text).toMatch(/stop|bye/i);
     expect(text).toContain(END_INTERVIEW_TOOL);
-    expect(text).toMatch(/5 minutes/);
+    expect(text).toMatch(/20 minutes/);
+  });
+
+  it("keeps the interview in English: reminds, then ends after the third reminder as non_english", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toMatch(/English only/i);
+    expect(text).toMatch(/language other than English/i);
+    expect(text).toMatch(/answer the same question again in English/i);
+    expect(text).toMatch(/after the third reminder/i);
+    // Accented short replies ("yeah" heard as "Oh, ja") must not count.
+    expect(text).toMatch(/Short, mixed or unclear replies .* are never another language/);
+    expect(text).toMatch(/Would you like to end the interview now\?/);
+    expect(text).toMatch(/could you repeat that/i);
+    expect(text).toContain(`${END_INTERVIEW_TOOL} function with reason "non_english"`);
+  });
+
+  it("caps the interview at 8 questions including follow-ups and offers to skip", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toMatch(/at most 8 questions in total, counting follow-up/i);
+    expect(text).toContain("Would you like to skip to the next question?");
+    expect(text).toContain("Okay, we'll skip this one.");
   });
 });
 
@@ -144,11 +164,11 @@ describe("buildEphemeralTokenConfig", () => {
       new Date(now + NEW_SESSION_WINDOW_SECONDS * 1000).toISOString(),
     );
     expect(NEW_SESSION_WINDOW_SECONDS).toBe(60);
-    // Start window + 5 minute session + 30 s grace.
+    // Start window + 20 minute session + 30 s grace.
     expect(cfg.expireTime).toBe(
       new Date(now + (60 + MAX_SESSION_SECONDS + 30) * 1000).toISOString(),
     );
-    expect(MAX_SESSION_SECONDS).toBe(300);
+    expect(MAX_SESSION_SECONDS).toBe(1200);
     // No lockAdditionalFields: every field of the constraints is locked.
     expect(cfg).not.toHaveProperty("lockAdditionalFields");
 
@@ -156,7 +176,8 @@ describe("buildEphemeralTokenConfig", () => {
     expect(constraints.model).toBe("gemini-3.8-live");
     const c = constraints.config!;
     expect(c.responseModalities).toEqual(["AUDIO"]);
-    expect(c.inputAudioTranscription).toEqual({});
+    expect(c.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName).toBe("Charon");
+    expect(c.inputAudioTranscription).toEqual({ languageCodes: ["en-US"] });
     expect(c.outputAudioTranscription).toEqual({});
     expect(String(c.systemInstruction)).toContain('"SRE"');
     expect(c.tools).toEqual([
@@ -190,5 +211,45 @@ describe("SlidingWindowLimiter", () => {
     const l = new SlidingWindowLimiter({ limit: 1, windowMs: 1000, maxKeys: 3 });
     for (let i = 0; i < 10; i++) l.hit(`u${i}`, i * 2000);
     expect(l.size).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("adaptive follow-ups", () => {
+  const text = buildInterviewerInstruction({
+    role: "Data Scientist",
+    level: "mid" as const,
+    techstack: ["Python", "SQL"],
+  });
+  it("probes vague answers for a concrete example and strong answers for depth", () => {
+    expect(text).toMatch(/concrete example from the candidate's own work/i);
+    expect(text).toMatch(/trade-off/i);
+  });
+  it("does not press a candidate who lacks experience", () => {
+    expect(text).toMatch(/do not press/i);
+  });
+  it("adapts difficulty within the level and never lectures", () => {
+    expect(text).toMatch(/difficulty/i);
+    expect(text).toMatch(/never ask beyond the/i);
+    expect(text).toMatch(/never lecture/i);
+  });
+  it("still caps the total number of questions", () => {
+    expect(text).toMatch(/at most 8 questions in total/i);
+  });
+});
+
+describe("interviewer instruction framing", () => {
+  const details = { role: "Software Engineer", level: "mid", techstack: ["TypeScript"] } as never;
+
+  it("presents the interview as real, never as practice", () => {
+    const text = buildInterviewerInstruction(details);
+    expect(text).toContain("real job opening");
+    expect(text).toMatch(/Never call it a practice, training, mock, demo or test interview/);
+    // The only mentions of "practice" are the prohibitions themselves.
+    expect(
+      text.replace(
+        /not practice, training or a test|a practice, training, mock, demo or test interview/g,
+        "",
+      ),
+    ).not.toMatch(/practice interview|training interview|mock interview/i);
   });
 });

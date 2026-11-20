@@ -1,11 +1,11 @@
 import type { InterviewLevel } from "@/lib/gemini-live/interview-details";
 
 /**
- * What the Dograh agent is told about a candidate's role. Pure and free of
+ * What the Gemini Live interviewer is told about a candidate's role. Pure and free of
  * server imports, so the live screen (browser) and the attempt route (server)
  * build exactly the same values from a role.
  *
- * The output is passed through validateLiveInterviewBody by the Dograh session
+ * The output is passed through validateLiveInterviewBody by the Gemini Live token
  * route, so a role title or skill with unsupported characters is rejected there
  * rather than reaching the prompt.
  */

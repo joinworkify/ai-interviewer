@@ -1,6 +1,7 @@
 import type { GeminiLiveClientPayload } from "@/lib/transcripts/adapters/gemini-live-client";
 import { putTranscript, type SaveTranscriptOutcome } from "@/lib/transcripts/client";
 import { fitToLimits } from "@/lib/transcripts/limits";
+import { whenOnline } from "@/lib/http/online";
 
 import type { ControllerState } from "./controller";
 
@@ -15,8 +16,15 @@ export type SendTranscript = (args: {
   payload: GeminiLiveClientPayload;
 }) => Promise<SaveTranscriptOutcome>;
 
-const sendToServer: SendTranscript = ({ sessionId, payload }) =>
-  putTranscript({ sessionId, source: "client_gemini_live", payload });
+// A dropped connection often means the browser is offline: wait, then save.
+const sendToServer: SendTranscript = async ({ sessionId, payload }) => {
+  const put = () => putTranscript({ sessionId, source: "client_gemini_live", payload });
+  await whenOnline();
+  const outcome = await put();
+  if (outcome !== "failed" || navigator.onLine) return outcome;
+  await whenOnline();
+  return put();
+};
 
 /** Null until the session has started and settled. */
 export function buildGeminiPayload(state: ControllerState): GeminiLiveClientPayload | null {

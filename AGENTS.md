@@ -8,16 +8,16 @@ Keep it short: rules live here, explanations live in `docs/` and the setup guide
 
 Read the doc that matches your task before you write code.
 
-| Task                                    | Read                                                                         |
-| --------------------------------------- | ---------------------------------------------------------------------------- |
-| Run the app, env vars, scripts          | [README.md](README.md)                                                       |
-| Voice call, webhook, transcripts        | [DOGRAH_SETUP.md](DOGRAH_SETUP.md)                                           |
-| What is stored, who can read it, AI use | [docs/security-ai-data.md](docs/security-ai-data.md)                         |
-| Vapi or Gemini Live prototypes          | [VAPI_SETUP.md](VAPI_SETUP.md), [GEMINI_LIVE_SETUP.md](GEMINI_LIVE_SETUP.md) |
+| Task                                    | Read                                                 |
+| --------------------------------------- | ---------------------------------------------------- |
+| Run the app, env vars, scripts          | [README.md](README.md)                               |
+| Voice call, transcripts                 | [GEMINI_LIVE_SETUP.md](GEMINI_LIVE_SETUP.md)         |
+| What is stored, who can read it, AI use | [docs/security-ai-data.md](docs/security-ai-data.md) |
+| Vapi prototype                          | [VAPI_SETUP.md](VAPI_SETUP.md)                       |
 
 ## 2. What this project is
 
-A voice AI interviewer for DataSea. A candidate picks a role, agrees to the consent text, and has a short call with a Dograh voice agent. The transcript comes back by webhook and an LLM writes feedback for a reviewer. Candidates never see scores or feedback.
+A voice AI interviewer for DataSea. A candidate picks a role, agrees to the consent text, and has a short English-only voice interview on Gemini Live, with questions written from the role and their resume. The browser saves the transcript and an LLM writes feedback for a reviewer. Candidates never see scores or feedback.
 
 Stack: Next.js 16 (App Router), React 19, Tailwind + shadcn/ui, Supabase (Auth + Postgres + RLS), Vitest.
 

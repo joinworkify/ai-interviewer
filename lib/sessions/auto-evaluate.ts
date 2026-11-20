@@ -7,7 +7,7 @@ import { handleSubmitFeedback, type SessionHandlerDeps } from "./handlers";
  * the "already evaluated" guard and the prompt-injection handling all apply
  * unchanged. The feedback is stored for reviewers; nothing here returns it.
  *
- * `userId` must come from a verified source (the signed Dograh session token),
+ * `userId` must come from a verified source (the verified Supabase session),
  * never from a request body. Errors are reported as a short code only: model
  * output, transcript text and provider messages are never logged.
  */

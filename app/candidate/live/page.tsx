@@ -1,19 +1,16 @@
 import { StepGate } from "@/components/candidate/step-gate";
+import { GeminiInterview } from "@/components/candidate/gemini-interview";
 import { LiveInterview } from "@/components/candidate/live-interview";
-import { readDograhWidgetConfig } from "@/lib/dograh/config";
+import { readGeminiLiveConfig } from "@/lib/gemini-live/config";
 
 /**
- * Live interview. The Dograh widget URL is read here, on the server, so the
- * client component never imports the server-side Dograh config. When Dograh is
- * not set up, the screen falls back to the scripted fake interviewer.
+ * Live interview on Gemini Live. The Gemini config is checked here, on the
+ * server, so the API key never reaches the client. Without it (local work)
+ * the screen runs the scripted stand-in interviewer instead.
  */
 export default function LivePage() {
-  const widget = readDograhWidgetConfig(process.env);
-  return (
-    <StepGate step="interview">
-      <LiveInterview widgetSrc={widget.ok ? widget.src : null} />
-    </StepGate>
-  );
+  const gemini = readGeminiLiveConfig(process.env);
+  return <StepGate step="interview">{gemini.ok ? <GeminiInterview /> : <LiveInterview />}</StepGate>;
 }
 
 export const metadata = { title: "Live interview" };

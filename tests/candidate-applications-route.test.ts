@@ -8,6 +8,7 @@ let consentsData: unknown[] = [];
 let sessionsData: unknown[] = [];
 let interviewsData: unknown[] = [];
 let rolesData: unknown[] = [];
+let reviewsData: unknown[] = [];
 
 const createClient = vi.fn(async () => ({
   auth: { getClaims },
@@ -41,6 +42,23 @@ const createClient = vi.fn(async () => ({
 
 vi.mock("@/lib/supabase/server", () => ({ createClient }));
 
+// Reviewer statuses are read with the service role, for the candidate's own sessions only.
+const reviewFilters: unknown[] = [];
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({
+    from(table: string) {
+      const chain: Record<string, unknown> = {
+        select: () => chain,
+        in: (_col: string, ids: unknown) => (reviewFilters.push([table, ids]), chain),
+        then(resolve: (v: { data: unknown; error: unknown }) => void) {
+          resolve({ data: table === "interview_reviews" ? reviewsData : [], error: null });
+        },
+      };
+      return chain;
+    },
+  }),
+}));
+
 const { GET } = await import("@/app/api/candidate/applications/route");
 
 const USER = "11111111-2222-4333-8444-555555555555";
@@ -53,6 +71,8 @@ beforeEach(() => {
   sessionsData = [];
   interviewsData = [];
   rolesData = [];
+  reviewsData = [];
+  reviewFilters.length = 0;
   getClaims.mockReset();
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
@@ -145,6 +165,8 @@ describe("GET /api/candidate/applications", () => {
           roleTitle: "Software Engineer",
           appliedAt: "2026-11-18T10:00:00Z",
           status: "submitted",
+          attemptsLeft: 2,
+          stage: "applied",
         },
         {
           id: "c-2",
@@ -152,9 +174,51 @@ describe("GET /api/candidate/applications", () => {
           roleTitle: "Unknown role",
           appliedAt: "2026-11-17T10:00:00Z",
           status: "processing",
+          attemptsLeft: 2,
+          stage: "processing",
         },
       ],
     });
+  });
+
+  it("combines the interview with the reviewer's status into a candidate-safe stage", async () => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: USER } }, error: null });
+    consentsData = [
+      {
+        id: "c-1",
+        user_id: USER,
+        session_id: SESSION_1,
+        role_id: "software-engineer",
+        accepted_at: "2026-11-18T10:00:00Z",
+      },
+    ];
+    sessionsData = [
+      {
+        id: SESSION_1,
+        user_id: USER,
+        interview_id: "iv-1",
+        status: "completed",
+        transcript: [{ role: "user", message: "I can do this." }],
+      },
+    ];
+    interviewsData = [{ id: "iv-1", user_id: USER }];
+    rolesData = [{ id: "software-engineer", title: "Software Engineer" }];
+
+    for (const [review, stage] of [
+      ["in_progress", "in_review"],
+      ["accepted", "accepted"],
+      ["rejected", "not_selected"],
+    ] as const) {
+      reviewsData = [{ session_id: SESSION_1, status: review, internal_note: "secret" }];
+      const body = await (
+        await GET(new Request("http://localhost:3000/api/candidate/applications"))
+      ).json();
+      expect(body.applications[0].stage).toBe(stage);
+      // The reviewer's raw status and notes never reach the candidate.
+      expect(JSON.stringify(body)).not.toMatch(/in_progress|rejected|secret/);
+    }
+    // Only this candidate's own session ids were looked up.
+    expect(reviewFilters[0]).toEqual(["interview_reviews", [SESSION_1]]);
   });
 
   it("returns 500 when database throws an error", async () => {

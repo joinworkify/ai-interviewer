@@ -3,6 +3,7 @@ import { isUuid } from "@/lib/sessions/validation";
 
 import { MAX_TRANSCRIPT_BODY_BYTES } from "./limits";
 import type { TranscriptStore } from "./store";
+import type { CanonicalTurn } from "./types";
 import { validateTranscriptBody, type AdapterRegistry } from "./validation";
 
 /**
@@ -19,6 +20,8 @@ export interface TranscriptHandlerDeps {
   store: TranscriptStore;
   adapters: AdapterRegistry;
   now?: () => number;
+  /** Runs once a transcript is newly stored (clean-up and AI feedback). */
+  onStored?: (stored: { userId: string; sessionId: string; transcript: CanonicalTurn[] }) => void;
 }
 
 type ErrorCode =
@@ -73,6 +76,7 @@ export async function handlePutTranscript(
     if (outcome.kind === "already_stored") {
       return fail(409, "transcript_already_stored", "This session already has a transcript.");
     }
+    deps.onStored?.({ userId, sessionId, transcript: parsed.data.transcript });
     return jsonResponse(200, {
       success: true,
       session: { id: sessionId, status: outcome.status },

@@ -216,14 +216,23 @@ describe("waitForResult", () => {
 });
 
 describe("setupGate", () => {
-  it("only lets the candidate start once the mic check passed", () => {
-    expect(setupGate("ok")).toEqual({ canStart: true, fix: null });
+  it("only lets the candidate start once the mic and the speaker passed", () => {
+    expect(setupGate("ok", "ok")).toEqual({ canStart: true, fix: null });
     for (const s of ["idle", "checking", "blocked", "unsupported", "silent"] as const) {
-      const gate = setupGate(s);
+      const gate = setupGate(s, "ok");
       expect(gate.canStart).toBe(false);
       expect(gate.fix).toBeTruthy();
     }
-    expect(setupGate("blocked").fix).toBe("Fix: allow microphone access");
+    expect(setupGate("blocked", "ok").fix).toBe("Fix: allow microphone access");
+  });
+
+  it("holds the start button until the speaker has been tested", () => {
+    for (const speaker of ["idle", "playing", "failed"] as const) {
+      const gate = setupGate("ok", speaker);
+      expect(gate.canStart).toBe(false);
+      expect(gate.fix).toBeTruthy();
+    }
+    expect(setupGate("ok", "idle").fix).toBe("Fix: test your speaker with Play sound");
   });
 
   it("formats the reconnect countdown", () => {

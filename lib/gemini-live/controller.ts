@@ -1,3 +1,4 @@
+import { isClearlyNonEnglish } from "./language";
 import { INPUT_MIME_TYPE, MicChunkEncoder, parsePcmSampleRate } from "./audio";
 import {
   describeCloseEvent,
@@ -95,6 +96,8 @@ export interface LiveSessionLike {
 
 export interface MicHandle {
   readonly sampleRate: number;
+  /** The raw microphone stream, for recording; absent in tests. */
+  readonly stream?: MediaStream;
   stop(): void;
 }
 
@@ -103,6 +106,8 @@ export interface PlayerLike {
   enqueue(base64: string, sampleRate: number): void;
   clear(): void;
   remainingMs(): number;
+  /** The interviewer's voice as a stream, for recording; absent in tests. */
+  readonly outputStream?: MediaStream;
   close(): void;
 }
 
@@ -126,6 +131,19 @@ export interface ControllerDeps {
 export const WRAP_UP_LEAD_MS = 30_000;
 const CLOSING_GRACE_MS = 1_200;
 const CLOSING_MAX_MS = 10_000;
+
+/**
+ * The mic stays muted this long after the interviewer's audio ends. Browser
+ * echo cancellation misses Web Audio playback, so on laptop speakers the
+ * interviewer's own voice reached the mic, counted as the candidate talking
+ * over it, and cut every turn off before a word was heard.
+ */
+const ECHO_TAIL_MS = 500;
+
+/** Clearly non-English candidate answers needed before a "non_english" ending is allowed. */
+const NON_ENGLISH_ANSWERS_TO_END = 3;
+const NOT_NON_ENGLISH_TEXT =
+  "Do not end the interview. The candidate's answers were short or unclear, probably accented English, not another language. Say sorry, you may have misheard, ask them to repeat their answer, and continue the interview. Do not count this as a reminder.";
 
 const KICKOFF_TEXT = "The candidate has joined and is ready. Begin the interview now.";
 const WRAP_UP_TEXT =
@@ -167,6 +185,9 @@ export class LiveInterviewController {
   private attempt = 0;
   private res: Resources = { timers: [] };
   private transcript: TranscriptState = initialTranscript();
+  /** Why the interviewer is closing; recorded when it calls the end tool. */
+  private closingReason: EndedReason = "interviewer_ended";
+  private micMutedUntil = 0;
   private readonly now: () => number;
 
   constructor(private readonly deps: ControllerDeps) {
@@ -184,6 +205,13 @@ export class LiveInterviewController {
 
   getSnapshot = (): ControllerState => this.state;
 
+  /** Live audio streams of this session (candidate mic, interviewer voice) for recording. */
+  getAudioStreams(): MediaStream[] {
+    return [this.res.mic?.stream, this.res.player?.outputStream].filter(
+      (s): s is MediaStream => s !== undefined,
+    );
+  }
+
   // --- commands --------------------------------------------------------------
 
   /** Resolves true once the session is active; false if not started/aborted/failed. */
@@ -193,6 +221,8 @@ export class LiveInterviewController {
     const stale = () => attempt !== this.attempt;
 
     this.transcript = initialTranscript();
+    this.closingReason = "interviewer_ended";
+    this.micMutedUntil = 0;
     this.res = { timers: [] };
     this.set({
       ...INITIAL_STATE,
@@ -298,7 +328,7 @@ export class LiveInterviewController {
     this.timer(() => {
       if (!stale()) {
         this.finish(
-          `Reached the ${Math.round(capSeconds / 60)}-minute prototype session limit.`,
+          `Reached the ${Math.round(capSeconds / 60)}-minute session limit.`,
           "time_limit",
         );
       }
@@ -310,6 +340,14 @@ export class LiveInterviewController {
   /** End button: valid while connecting, active or closing. */
   end(): void {
     if (IN_PROGRESS.has(this.state.phase)) this.finish("You ended the interview.", "user_ended");
+  }
+
+  /**
+   * The browser went offline. The live socket can stay open for minutes
+   * without a network, so end the call now as a dropped connection.
+   */
+  connectionLost(): void {
+    if (IN_PROGRESS.has(this.state.phase)) this.fail("Your internet connection was lost.");
   }
 
   /** Unmount cleanup. The controller stays reusable (React StrictMode remounts). */
@@ -383,6 +421,10 @@ export class LiveInterviewController {
     if (attempt !== this.attempt || this.state.phase !== "active") return;
     const { encoder, session } = this.res;
     if (!encoder || !session) return;
+    // Don't send the mic while the interviewer is speaking (echo guard).
+    const playing = this.res.player?.remainingMs() ?? 0;
+    if (playing > 0) this.micMutedUntil = this.now() + playing + ECHO_TAIL_MS;
+    if (this.now() < this.micMutedUntil) return;
     for (const data of encoder.push(frames)) {
       this.send({ audio: { data, mimeType: INPUT_MIME_TYPE } });
     }
@@ -403,7 +445,7 @@ export class LiveInterviewController {
       onclose: (e) => {
         if (!current() || this.state.phase === "connecting") return;
         if (this.state.phase === "closing") {
-          this.finish("The interviewer ended the interview.", "interviewer_ended");
+          this.finish("The interviewer ended the interview.", this.closingReason);
         } else {
           this.fail(describeCloseEvent(e ?? {}));
         }
@@ -473,7 +515,20 @@ export class LiveInterviewController {
     let endRequested = false;
     const functionResponses = calls.map((call) => {
       if (call.name === END_INTERVIEW_TOOL) {
+        // Only end for language when the captions back it up: accented English
+        // is often heard as another language, and a wrong kick-out is unfair.
+        if (
+          call.args?.reason === "non_english" &&
+          this.nonEnglishAnswers() < NON_ENGLISH_ANSWERS_TO_END
+        ) {
+          return {
+            id: call.id,
+            name: call.name,
+            response: { output: { ended: false, instruction: NOT_NON_ENGLISH_TEXT } },
+          };
+        }
         endRequested = true;
+        if (call.args?.reason === "non_english") this.closingReason = "non_english";
         return { id: call.id, name: call.name, response: { output: { ended: true } } };
       }
       return {
@@ -488,6 +543,12 @@ export class LiveInterviewController {
       // Socket closing; onclose handles it.
     }
     if (endRequested && this.state.phase === "active") this.beginClosing();
+  }
+
+  private nonEnglishAnswers(): number {
+    return this.transcript.entries.filter(
+      (e) => e.speaker === "candidate" && isClearlyNonEnglish(e.text),
+    ).length;
   }
 
   /** Let the closing sentence finish playing, then end. Mic is released now. */
@@ -508,7 +569,7 @@ export class LiveInterviewController {
       const now = this.now();
       const remaining = this.res.player?.remainingMs() ?? 0;
       if (now >= deadline || (!first && remaining <= 0)) {
-        this.finish("The interviewer ended the interview.", "interviewer_ended");
+        this.finish("The interviewer ended the interview.", this.closingReason);
         return;
       }
       const wait = Math.min(

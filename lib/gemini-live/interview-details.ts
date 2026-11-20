@@ -7,7 +7,7 @@
  */
 
 /** Prototype hard cap for one Live session. */
-export const MAX_SESSION_SECONDS = 300;
+export const MAX_SESSION_SECONDS = 1200;
 /** Name of the Gemini function tool the interviewer calls to finish. */
 export const END_INTERVIEW_TOOL = "end_interview";
 

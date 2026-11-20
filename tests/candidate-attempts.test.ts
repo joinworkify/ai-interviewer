@@ -18,7 +18,6 @@ import {
 } from "@/lib/candidate/attempts";
 import { createSupabaseAttemptStore } from "@/lib/candidate/attempt-store";
 import { interviewDetailsForRole, levelForRole } from "@/lib/candidate/interview-details";
-import { sanitizeQuestions } from "@/lib/dograh/context";
 import { validateLiveInterviewBody } from "@/lib/gemini-live/interview-details";
 
 const USER = "11111111-2222-4333-8444-555555555555";
@@ -28,6 +27,7 @@ const FIXTURE_ROLES: AttemptRole[] = [
   {
     id: "software-engineer",
     title: "Software Engineer",
+    responsibilities: [],
     requirements: [
       { title: "Programming Foundations", text: "Working proficiency in backend languages." },
       { title: "Core CS Concepts", text: "Solid understanding of data structures." },
@@ -39,6 +39,7 @@ const FIXTURE_ROLES: AttemptRole[] = [
   {
     id: "data-annotation-generalist",
     title: "Generalist for Data Annotation",
+    responsibilities: [],
     requirements: [
       { title: "Annotation Experience", text: "Demonstrated experience in data annotation." },
       { title: "Detail Orientation", text: "Meticulous attention to detail." },
@@ -47,6 +48,7 @@ const FIXTURE_ROLES: AttemptRole[] = [
   {
     id: "mechanical-engineering-expert",
     title: "Mechanical Engineering Expert",
+    responsibilities: [],
     requirements: [
       { title: "Academic Background", text: "Degree in Mechanical Engineering." },
       { title: "Simulation & Modeling Experience", text: "Experience developing simulations." },
@@ -55,6 +57,7 @@ const FIXTURE_ROLES: AttemptRole[] = [
   {
     id: "senior-software-engineer",
     title: "Senior Software Engineer",
+    responsibilities: [],
     requirements: [
       { title: "Programming Proficiency", text: "Fluency in Go and TypeScript." },
       { title: "Computer Science Foundations", text: "Deep understanding of algorithms." },
@@ -63,6 +66,7 @@ const FIXTURE_ROLES: AttemptRole[] = [
   {
     id: "generalist",
     title: "Generalist",
+    responsibilities: [],
     requirements: [
       { title: "Professional Background", text: "2+ years of professional work experience." },
       { title: "AI Tool Familiarity", text: "Hands-on experience using AI tools." },
@@ -71,6 +75,7 @@ const FIXTURE_ROLES: AttemptRole[] = [
   {
     id: "semiconductor-engineering-expert",
     title: "Semiconductor Engineering Expert",
+    responsibilities: [],
     requirements: [
       { title: "Advanced Degree", text: "Degree in Electrical Engineering or Physics." },
       { title: "Domain Depth", text: "Deep technical expertise in semiconductors." },
@@ -142,8 +147,6 @@ describe("buildRoleQuestions", () => {
     expect(questions.length).toBeGreaterThanOrEqual(2);
     expect(questions.length).toBeLessThanOrEqual(MAX_ATTEMPT_QUESTIONS);
     expect(questions[0]).toContain(role.title);
-    // The Dograh context keeps every question as it is (nothing dropped or cleaned).
-    expect(sanitizeQuestions(questions)).toEqual(questions);
   });
 
   it("is deterministic", () => {
@@ -154,7 +157,7 @@ describe("buildRoleQuestions", () => {
 
 describe("interviewDetailsForRole", () => {
   it.each(FIXTURE_ROLES_WITH_SKILLS.map((r) => [r.id]))(
-    "gives details the Dograh session route accepts for %s",
+    "gives details the Gemini Live token route accepts for %s",
     (id) => {
       const role = FIXTURE_ROLES_WITH_SKILLS.find((r) => r.id === id)!;
       const result = validateLiveInterviewBody({
@@ -194,6 +197,49 @@ describe("handleStartAttempt", () => {
       roleId: "software-engineer",
       version: CONSENT_VERSION,
     });
+  });
+
+  it("uses questions tailored to the candidate when they are available", async () => {
+    const { deps: d, createAttempt } = deps();
+    const tailored = ["Tell me about Acme.", "Q2", "Q3", "Q4", "Q5", "Q6 is cut"];
+    const tailorQuestions = vi.fn(async () => tailored);
+    const res = await handleStartAttempt(post(valid()), { ...d, tailorQuestions });
+    expect(res.status).toBe(201);
+    expect(tailorQuestions).toHaveBeenCalledWith(
+      USER,
+      expect.objectContaining({ id: "software-engineer" }),
+    );
+    expect(createAttempt).toHaveBeenCalledWith(
+      USER,
+      tailored.slice(0, MAX_ATTEMPT_QUESTIONS),
+      expect.anything(),
+    );
+  });
+
+  it("falls back to the role's own questions when tailoring returns nothing or fails", async () => {
+    for (const tailorQuestions of [
+      vi.fn(async () => null),
+      vi.fn(async () => {
+        throw new Error("llm down");
+      }),
+    ]) {
+      const { deps: d, createAttempt } = deps();
+      const res = await handleStartAttempt(post(valid()), { ...d, tailorQuestions });
+      expect(res.status).toBe(201);
+      expect(createAttempt).toHaveBeenCalledWith(
+        USER,
+        buildRoleQuestions(FIXTURE_ROLES.find((r) => r.id === "software-engineer")!),
+        expect.anything(),
+      );
+    }
+  });
+
+  it("never pays for tailored questions when the attempt limit is reached", async () => {
+    const { deps: d } = deps({ attemptCount: 99 });
+    const tailorQuestions = vi.fn(async () => ["Q"]);
+    const res = await handleStartAttempt(post(valid()), { ...d, tailorQuestions });
+    expect(res.status).toBe(429);
+    expect(tailorQuestions).not.toHaveBeenCalled();
   });
 
   it("answers 409 and creates nothing when the consent text the page showed is out of date", async () => {
@@ -335,7 +381,7 @@ describe("handleStartAttempt", () => {
 });
 
 describe("createSupabaseAttemptStore attempt limits", () => {
-  function recordingClient(result: { count?: number | null; error?: unknown }) {
+  function recordingClient(result: { data?: unknown[] | null; error?: unknown }) {
     const ops: [string, ...unknown[]][] = [];
     const chain: Record<string, unknown> = {};
     for (const m of ["update", "select", "eq", "neq", "is", "lt"]) {
@@ -345,7 +391,7 @@ describe("createSupabaseAttemptStore attempt limits", () => {
       };
     }
     chain.then = (resolve: (v: unknown) => void) =>
-      resolve({ count: result.count ?? null, error: result.error ?? null });
+      resolve({ data: result.data ?? null, error: result.error ?? null });
     return { client: { from: (t: string) => (ops.push(["from", t]), chain) }, ops };
   }
 
@@ -361,8 +407,9 @@ describe("createSupabaseAttemptStore attempt limits", () => {
     expect(ops).toContainEqual(["lt", "started_at", cutoff.toISOString()]);
   });
 
-  it("counts the user's non-abandoned attempts for the role", async () => {
-    const { client, ops } = recordingClient({ count: 2 });
+  it("counts the user's non-abandoned attempts for the role, minus one dropped call", async () => {
+    const row = (ended_reason: string | null) => ({ interview_sessions: { ended_reason } });
+    const { client, ops } = recordingClient({ data: [row("user_ended"), row("error"), row(null)] });
     expect(
       await createSupabaseAttemptStore(client as never).countAttempts(USER, "generalist"),
     ).toBe(2);

@@ -12,6 +12,10 @@ import { CONSENT_LABEL, CONSENT_POINTS, CONSENT_VERSION } from "@/lib/candidate/
 
 const WORDING: Record<string, string> = {
   "2026-11-13": "1bdc9756",
+  "2026-11-18": "652572b2",
+  "2026-11-19": "f26f3a74",
+  "2026-11-21": "ea272f0d",
+  "2026-11-23": "b8e27ce3",
 };
 
 function wordingHash(): string {
@@ -32,9 +36,9 @@ describe("consent wording", () => {
     );
   });
 
-  it("tells the candidate about recording, Dograh, AI feedback, human review and deletion", () => {
+  it("tells the candidate about the voice service, transcript, English only, AI feedback, human review and deletion", () => {
     const text = [...CONSENT_POINTS, CONSENT_LABEL].join(" ").toLowerCase();
-    for (const word of ["recorded", "transcript", "dograh", "ai model", "reviews", "delete"]) {
+    for (const word of ["voice", "transcript", "google gemini", "english only", "ai model", "reviews", "delete"]) {
       expect(text, word).toContain(word);
     }
   });

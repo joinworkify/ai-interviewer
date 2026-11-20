@@ -7,13 +7,20 @@
 
 export const ADMIN_ROLE = "admin";
 
-export const REVIEW_STATUSES = ["pending", "in_progress", "completed", "rejected"] as const;
+export const REVIEW_STATUSES = [
+  "pending",
+  "in_progress",
+  "completed",
+  "accepted",
+  "rejected",
+] as const;
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
 export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
   pending: "Pending",
   in_progress: "In progress",
   completed: "Completed",
+  accepted: "Accepted",
   rejected: "Rejected",
 };
 

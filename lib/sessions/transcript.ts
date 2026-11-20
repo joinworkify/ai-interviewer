@@ -17,6 +17,8 @@ export type TurnRole = "interviewer" | "candidate" | "unknown";
 export interface TranscriptTurn {
   role: TurnRole;
   text: string;
+  /** Raw caption when the AI clean-up corrected `text`; for reviewers only. */
+  original?: string;
 }
 
 export type TranscriptResult =
@@ -71,7 +73,8 @@ function fromMessages(items: unknown[]): TranscriptTurn[] {
     const rawRole = typeof rec.role === "string" ? rec.role : rec.speaker;
     const role = typeof rawRole === "string" ? roleOf(rawRole) : "unknown";
     if (role === "ignore") continue;
-    turns.push({ role, text });
+    const original = typeof rec.original === "string" ? clean(rec.original) : "";
+    turns.push(original ? { role, text, original } : { role, text });
   }
   return turns;
 }
@@ -87,9 +90,7 @@ export function normalizeTranscript(value: unknown): TranscriptResult {
     if (Array.isArray(messages)) raw = fromMessages(messages);
   }
 
-  const turns = raw
-    .map((t) => ({ role: t.role, text: clean(t.text) }))
-    .filter((t) => t.text.length > 0);
+  const turns = raw.map((t) => ({ ...t, text: clean(t.text) })).filter((t) => t.text.length > 0);
 
   // Something the candidate could have said is required to evaluate anything.
   if (!turns.some((t) => t.role !== "interviewer")) {

@@ -73,6 +73,7 @@ export async function startBrowserMicrophone(
     let stopped = false;
     return {
       sampleRate: context.sampleRate,
+      stream,
       stop() {
         if (stopped) return;
         stopped = true;
@@ -101,7 +102,12 @@ export function createBrowserPlayer(onPlayingChange: (playing: boolean) => void)
     throw new Error("Web Audio API (AudioContext) is not available.");
   }
   const ctx = new window.AudioContext();
-  return new PcmPlayer(ctx as unknown as AudioContextLike, onPlayingChange);
+  // The tap lets the recorder hear the interviewer without touching playback.
+  const tap = ctx.createMediaStreamDestination();
+  return new PcmPlayer(ctx as unknown as AudioContextLike, onPlayingChange, {
+    node: tap,
+    stream: tap.stream,
+  });
 }
 
 /**

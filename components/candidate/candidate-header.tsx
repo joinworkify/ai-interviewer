@@ -1,5 +1,6 @@
 "use client";
 
+import { NotificationBell } from "@/components/candidate/notification-bell";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -95,6 +96,7 @@ export function CandidateHeader() {
         <div className="flex items-center justify-end gap-2 sm:gap-4">
           {email ? (
             <>
+              <NotificationBell />
               <Link
                 href="/candidate/profile"
                 className={`max-w-24 truncate text-sm font-medium hover:underline sm:max-w-none ${

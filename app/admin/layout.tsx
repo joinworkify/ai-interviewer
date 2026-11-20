@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { LogoMark } from "@/components/brand/logo-mark";
 import { LogoutButton } from "@/components/admin/logout-button";
+import { InterviewsSkeleton } from "@/components/admin/skeletons";
 import { requireAdmin } from "@/lib/admin/server";
 
 export const instant = false;
@@ -41,6 +42,12 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
             >
               Roles
             </Link>
+            <Link
+              href="/admin/calibration"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Calibration
+            </Link>
             <LogoutButton />
           </nav>
         </div>
@@ -59,7 +66,21 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="theme-datasea flex min-h-screen flex-col bg-background">
-      <Suspense fallback={<p className="p-5 text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense
+        fallback={
+          <>
+            <header className="border-b bg-background">
+              <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 font-heading font-semibold tracking-tight">
+                <LogoMark size={32} />
+                Admin dashboard
+              </div>
+            </header>
+            <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-5">
+              <InterviewsSkeleton />
+            </main>
+          </>
+        }
+      >
         <AdminShell>{children}</AdminShell>
       </Suspense>
     </div>

@@ -169,6 +169,11 @@ export default function RoleDetailPage() {
         <Button className="w-full" size="lg" disabled={applying} onClick={apply}>
           {applying ? "Opening..." : "Apply"}
         </Button>
+        <Button asChild variant="outline" className="mt-2 w-full">
+          <Link href={`/candidate/schedule?role=${encodeURIComponent(role.id)}`}>
+            Book a time instead
+          </Link>
+        </Button>
       </aside>
     </div>
   );

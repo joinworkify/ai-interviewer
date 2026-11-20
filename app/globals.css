@@ -76,9 +76,9 @@
   .theme-datasea {
     --background: 40 50% 97.65%;
     --foreground: 25.71 9.33% 14.71%;
-    --card: 40 100% 98.82%;
+    --card: 0 0% 100%;
     --card-foreground: 25.71 9.33% 14.71%;
-    --popover: 40 100% 98.82%;
+    --popover: 0 0% 100%;
     --popover-foreground: 25.71 9.33% 14.71%;
     --primary: 339.61 59.54% 33.92%;
     --primary-foreground: 30 100% 98.04%;

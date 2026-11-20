@@ -52,7 +52,7 @@ describe("createGeminiAuthToken (real SDK, stubbed network)", () => {
 
     const body = JSON.parse(String(init?.body));
     expect(body.uses).toBe(1);
-    expect(body.expireTime).toBe("2026-11-09T12:06:30.000Z");
+    expect(body.expireTime).toBe("2026-11-09T12:21:30.000Z");
     expect(body.newSessionExpireTime).toBe("2026-11-09T12:01:00.000Z");
     // No field mask -> the whole constrained setup is locked.
     expect(body).not.toHaveProperty("fieldMask");
@@ -62,7 +62,7 @@ describe("createGeminiAuthToken (real SDK, stubbed network)", () => {
     expect(setup.generationConfig.responseModalities).toEqual(["AUDIO"]);
     expect(setup.systemInstruction.parts[0].text).toContain('"QA Engineer"');
     expect(setup.tools[0].functionDeclarations[0].name).toBe("end_interview");
-    expect(setup.inputAudioTranscription).toEqual({});
+    expect(setup.inputAudioTranscription).toEqual({ languageCodes: ["en-US"] });
     expect(setup.outputAudioTranscription).toEqual({});
   });
 
