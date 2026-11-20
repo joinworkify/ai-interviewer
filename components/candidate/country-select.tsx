@@ -20,9 +20,9 @@ export function CountrySelect({
   value,
   onChange,
 }: {
-  /** Dial code such as "+95". */
+  /** ISO country code such as "MM". */
   value: string;
-  onChange: (dialCode: string) => void;
+  onChange: (iso: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const selected = getCountryConfig(value);
@@ -61,7 +61,7 @@ export function CountrySelect({
                   // The search matches against this text, not the dial code alone.
                   value={`${country.name} ${country.dialCode} ${country.iso}`}
                   onSelect={() => {
-                    onChange(country.dialCode);
+                    onChange(country.iso);
                     setOpen(false);
                   }}
                 >
@@ -71,7 +71,7 @@ export function CountrySelect({
                   <Check
                     className={cn(
                       "ml-2 h-4 w-4",
-                      country.dialCode === value ? "opacity-100" : "opacity-0",
+                      country.iso === value ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>
