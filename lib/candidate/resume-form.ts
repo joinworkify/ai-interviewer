@@ -1,59 +1,95 @@
+import {
+  getCountries,
+  getCountryCallingCode,
+  getExampleNumber,
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from "libphonenumber-js";
+import examples from "libphonenumber-js/mobile/examples";
+
 export interface CountryPhoneConfig {
-  iso: string;
+  /** ISO 3166-1 alpha-2 code. Unique, unlike the dial code (US and CA share +1). */
+  iso: CountryCode;
   name: string;
   flag: string;
   dialCode: string;
-  minDigits: number;
+  /** Longest national number (E.164 allows 15 digits including the country code). */
   maxDigits: number;
+  /** A sample national mobile number, for the placeholder. */
   example: string;
 }
 
+/** Countries shown first, in this order; the rest follow alphabetically. */
+const PRIORITY_ISOS: CountryCode[] = ["MM", "TH", "SG", "MY", "US", "GB", "IN", "JP", "AU", "NL"];
+
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+
+function flagEmoji(iso: string): string {
+  return String.fromCodePoint(...[...iso].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+}
+
+function buildConfig(iso: CountryCode): CountryPhoneConfig {
+  const callingCode = getCountryCallingCode(iso);
+  return {
+    iso,
+    name: regionNames.of(iso) ?? iso,
+    flag: flagEmoji(iso),
+    dialCode: `+${callingCode}`,
+    maxDigits: 15 - callingCode.length,
+    example: getExampleNumber(iso, examples)?.nationalNumber ?? "",
+  };
+}
+
+/** Every country libphonenumber knows, generated rather than hand-listed. */
 export const COUNTRY_PHONE_CONFIGS: CountryPhoneConfig[] = [
-  { iso: "MM", name: "Myanmar", flag: "🇲🇲", dialCode: "+95", minDigits: 7, maxDigits: 10, example: "912345678" },
-  { iso: "TH", name: "Thailand", flag: "🇹🇭", dialCode: "+66", minDigits: 8, maxDigits: 9, example: "812345678" },
-  { iso: "SG", name: "Singapore", flag: "🇸🇬", dialCode: "+65", minDigits: 8, maxDigits: 8, example: "81234567" },
-  { iso: "MY", name: "Malaysia", flag: "🇲🇾", dialCode: "+60", minDigits: 9, maxDigits: 10, example: "123456789" },
-  { iso: "US", name: "United States", flag: "🇺🇸", dialCode: "+1", minDigits: 10, maxDigits: 10, example: "2015550123" },
-  { iso: "GB", name: "United Kingdom", flag: "🇬🇧", dialCode: "+44", minDigits: 10, maxDigits: 10, example: "7911123456" },
-  { iso: "IN", name: "India", flag: "🇮🇳", dialCode: "+91", minDigits: 10, maxDigits: 10, example: "9876543210" },
-  { iso: "JP", name: "Japan", flag: "🇯🇵", dialCode: "+81", minDigits: 9, maxDigits: 10, example: "9012345678" },
-  { iso: "AU", name: "Australia", flag: "🇦🇺", dialCode: "+61", minDigits: 9, maxDigits: 9, example: "412345678" },
-  { iso: "NL", name: "Netherlands", flag: "🇳🇱", dialCode: "+31", minDigits: 9, maxDigits: 9, example: "612345678" },
-];
+  ...PRIORITY_ISOS,
+  ...getCountries()
+    .filter((iso) => !PRIORITY_ISOS.includes(iso))
+    .sort((a, b) => (regionNames.of(a) ?? a).localeCompare(regionNames.of(b) ?? b)),
+].map(buildConfig);
 
-/** Calling code preselected on the resume step. */
-export const DEFAULT_DIAL_CODE = "+1";
+/** Country preselected on the resume step. */
+export const DEFAULT_COUNTRY_ISO: CountryCode = "US";
 
-export function getCountryConfig(dialCode: string): CountryPhoneConfig {
+export function getCountryConfig(iso: string): CountryPhoneConfig {
   return (
-    COUNTRY_PHONE_CONFIGS.find((c) => c.dialCode === dialCode) ??
+    COUNTRY_PHONE_CONFIGS.find((c) => c.iso === iso) ??
+    COUNTRY_PHONE_CONFIGS.find((c) => c.iso === DEFAULT_COUNTRY_ISO) ??
     COUNTRY_PHONE_CONFIGS[0]
   );
 }
 
+/** Splits a saved profile phone ("+95 9123...") into country and national digits. */
 export function phoneInputFromProfile(phone: string | null | undefined): {
+  iso: CountryCode;
   dialCode: string;
   phone: string;
 } {
   const normalized = phone?.trim() ?? "";
   const digits = normalized.replace(/\D/g, "");
-  const country = normalized.startsWith("+")
-    ? [...COUNTRY_PHONE_CONFIGS]
-        .sort((a, b) => b.dialCode.length - a.dialCode.length)
-        .find(({ dialCode }) => normalized.startsWith(dialCode))
-    : undefined;
-
-  return {
-    dialCode: country?.dialCode ?? DEFAULT_DIAL_CODE,
-    phone: country
-      ? digits.slice(country.dialCode.replace(/\D/g, "").length)
-      : digits,
-  };
+  if (normalized.startsWith("+")) {
+    const parsed = parsePhoneNumberFromString(normalized);
+    if (parsed) {
+      // Several countries share a calling code; fall back to the first one listed.
+      const iso =
+        parsed.country ??
+        COUNTRY_PHONE_CONFIGS.find((c) => c.dialCode === `+${parsed.countryCallingCode}`)?.iso;
+      if (iso) {
+        return {
+          iso,
+          dialCode: `+${parsed.countryCallingCode}`,
+          phone: digits.slice(parsed.countryCallingCode.length),
+        };
+      }
+    }
+  }
+  const fallback = getCountryConfig(DEFAULT_COUNTRY_ISO);
+  return { iso: fallback.iso, dialCode: fallback.dialCode, phone: digits };
 }
 
 export function validatePhoneNumber(
   rawPhone: string,
-  dialCode: string = DEFAULT_DIAL_CODE
+  iso: string = DEFAULT_COUNTRY_ISO
 ): { valid: boolean; error?: string } {
   const trimmed = rawPhone.trim();
   // Phone is optional: empty input is valid
@@ -66,15 +102,14 @@ export function validatePhoneNumber(
     return { valid: false, error: "Phone number must contain digits only." };
   }
 
-  const config = getCountryConfig(dialCode);
-  if (cleaned.length < config.minDigits || cleaned.length > config.maxDigits) {
-    const digitRange =
-      config.minDigits === config.maxDigits
-        ? `${config.minDigits} digits`
-        : `${config.minDigits}–${config.maxDigits} digits`;
+  const config = getCountryConfig(iso);
+  const parsed = parsePhoneNumberFromString(`${config.dialCode}${cleaned}`, config.iso);
+  if (!parsed || !parsed.isPossible()) {
     return {
       valid: false,
-      error: `Enter a valid ${config.name} (${config.dialCode}) phone number (${digitRange}).`,
+      error: `Enter a valid ${config.name} (${config.dialCode}) phone number${
+        config.example ? `, e.g. ${config.example}` : ""
+      }.`,
     };
   }
 

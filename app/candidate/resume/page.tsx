@@ -8,7 +8,7 @@ import { StepGate } from "@/components/candidate/step-gate";
 import { createClient } from "@/lib/supabase/client";
 import { setupPath } from "@/lib/candidate/steps";
 import {
-  DEFAULT_DIAL_CODE,
+  DEFAULT_COUNTRY_ISO,
   formatFileSize,
   getCountryConfig,
   linkError,
@@ -50,7 +50,7 @@ function ResumeStep() {
       ? setupPath(openAttempt, roleId)
       : `/candidate/consent?role=${encodeURIComponent(roleId)}`;
   const [fullName, setFullName] = useState("");
-  const [dialCode, setDialCode] = useState(DEFAULT_DIAL_CODE);
+  const [countryIso, setCountryIso] = useState<string>(DEFAULT_COUNTRY_ISO);
   const [phone, setPhone] = useState("");
   const [resumeOption, setResumeOption] = useState<"upload" | "saved">(
     "upload",
@@ -111,7 +111,7 @@ function ResumeStep() {
         }
         if (!edited.current.phone && !edited.current.country) {
           const savedPhone = phoneInputFromProfile(profile?.phone);
-          setDialCode(savedPhone.dialCode);
+          setCountryIso(savedPhone.iso);
           setPhone(savedPhone.phone);
         }
         if (!edited.current.link) {
@@ -152,8 +152,9 @@ function ResumeStep() {
     };
   }, []);
 
-  const currentCountry = getCountryConfig(dialCode);
-  const phoneValidation = validatePhoneNumber(phone, dialCode);
+  const currentCountry = getCountryConfig(countryIso);
+  const dialCode = currentCountry.dialCode;
+  const phoneValidation = validatePhoneNumber(phone, countryIso);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Allow digits and spaces only, capped at the selected country's maxDigits
@@ -313,12 +314,12 @@ function ResumeStep() {
           </label>
           <div className="flex items-center gap-2">
             <CountrySelect
-              value={dialCode}
-              onChange={(nextDial) => {
+              value={countryIso}
+              onChange={(nextIso) => {
                 edited.current.country = true;
                 edited.current.phone = true;
-                const nextConfig = getCountryConfig(nextDial);
-                setDialCode(nextDial);
+                const nextConfig = getCountryConfig(nextIso);
+                setCountryIso(nextIso);
                 setPhone((prev) => prev.slice(0, nextConfig.maxDigits));
               }}
             />
@@ -330,7 +331,7 @@ function ResumeStep() {
               onChange={handlePhoneChange}
               onBlur={() => touch("phone")}
               aria-invalid={touched.phone && !phoneValidation.valid}
-              placeholder={`${currentCountry.example} (${currentCountry.minDigits === currentCountry.maxDigits ? `${currentCountry.minDigits}` : `${currentCountry.minDigits}-${currentCountry.maxDigits}`} digits)`}
+              placeholder={currentCountry.example}
               className={`${fieldClass(touched.phone && !phoneValidation.valid)} flex-1`}
             />
           </div>
