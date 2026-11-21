@@ -6,14 +6,27 @@ import { Analytics } from "@vercel/analytics/next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: { default: "DataSea Interviews", template: "%s | DataSea" },
+  metadataBase: new URL("https://talent.joindatasea.com"),
+  title: "Open roles",
   description: "AI-led interviews for DataSea candidates.",
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Datasea Interview",
+    images: [
+      {
+        url: "/images/1.jpg",
+        width: 1200,
+        height: 600,
+        alt: "Human Judgment for AI Teams - DataSea",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/images/1.jpg"],
+  },
 };
 
 const geistSans = Geist({
